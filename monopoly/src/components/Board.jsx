@@ -11,6 +11,9 @@ const Board = ({
   players,
   currentPlayerIndex,
   diceValue,
+  dice1,
+  dice2,
+  onRollComplete,
 }) => {
   // Create a flat array of all tiles in order for easy indexing
   const allTilesInOrder = [
@@ -168,7 +171,7 @@ const Board = ({
         className="transition-all duration-800 ease-in-out"
         style={{
           transformStyle: "preserve-3d",
-          transform: getCameraTransform(),
+          // transform: getCameraTransform(),
         }}
       >
         <div
@@ -177,7 +180,15 @@ const Board = ({
         >
           <div className="w-full h-full grid grid-cols-[1.6fr_repeat(5,1fr)_1.6fr] grid-rows-[1.6fr_repeat(5,1fr)_1.6fr]">
             {tileElements}
-            <CenterComponent />
+            <CenterComponent 
+              dice1={dice1}
+              dice2={dice2}
+              isRolling={animationStep === "rotating"}
+              onRollComplete={onRollComplete}
+              showDice={dice1 > 0 && dice2 > 0}
+              currentPlayerIndex={currentPlayerIndex}
+              totalPlayers={players.length}
+            />
           </div>
 
           {/* Render all player tokens */}

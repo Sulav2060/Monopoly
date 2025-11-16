@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Board from "./Board";
+import Dice3D from "./Dice3D";
 
 const TILES_ON_BOARD = 24;
 
@@ -18,8 +19,8 @@ const Game = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [diceValue, setDiceValue] = useState(0);
   const [animationStep, setAnimationStep] = useState("idle");
-  const [dice1, setDice1] = useState(1);
-  const [dice2, setDice2] = useState(1);
+  const [dice1, setDice1] = useState(0);
+  const [dice2, setDice2] = useState(0);
 
   // Initialize game with selected number of players
   const startGame = () => {
@@ -36,18 +37,31 @@ const Game = () => {
     setCurrentPlayerIndex(0);
   };
 
-  const rollDice = useCallback(() => {
+  // Simulate backend API call for dice values
+  const fetchDiceFromBackend = async () => {
+    // Simulating API call with delay
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // For now, returning static values
+        // In production, this would be: const response = await fetch('/api/roll-dice')
+        resolve({ dice1: 4, dice2: 3 }); // Static values from "backend"
+      }, 100);
+    });
+  };
+
+  const rollDice = useCallback(async () => {
     if (isAnimating || !gameStarted) return;
 
-    const die1 = Math.floor(Math.random() * 6) + 1;
-    const die2 = Math.floor(Math.random() * 6) + 1;
+    setIsAnimating(true);
+    setAnimationStep("rotating");
+
+    // Fetch dice values from backend
+    const { dice1: die1, dice2: die2 } = await fetchDiceFromBackend();
     const total = die1 + die2;
 
     setDice1(die1);
     setDice2(die2);
     setDiceValue(total);
-    setIsAnimating(true);
-    setAnimationStep("rotating");
   }, [isAnimating, gameStarted]);
 
   // Effect to handle the animation sequence
@@ -174,40 +188,38 @@ const Game = () => {
         </div>
 
         {/* Game Board */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+        <div className="flex-1 flex items-center justify-center">
           <Board
             isAnimating={isAnimating}
             animationStep={animationStep}
             players={players}
             currentPlayerIndex={currentPlayerIndex}
             diceValue={diceValue}
+            dice1={dice1}
+            dice2={dice2}
+            onRollComplete={() => {
+              if (animationStep === "rotating") {
+                setAnimationStep("waving");
+              }
+            }}
           />
+        </div>
 
-          {/* Dice and Controls */}
-          <div className="bg-white rounded-xl shadow-xl p-6 flex items-center gap-6">
-            <div className="flex gap-3">
-              <div className="w-16 h-16 bg-white border-4 border-gray-800 rounded-lg flex items-center justify-center text-3xl font-bold shadow-lg">
-                {dice1}
-              </div>
-              <div className="w-16 h-16 bg-white border-4 border-gray-800 rounded-lg flex items-center justify-center text-3xl font-bold shadow-lg">
-                {dice2}
-              </div>
-            </div>
-
-            <button
-              onClick={rollDice}
-              disabled={isAnimating}
-              className={`px-8 py-4 font-bold text-lg rounded-lg shadow-lg transition-all ${
-                isAnimating
-                  ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                  : `${currentPlayer.color.color} text-white hover:opacity-90 transform hover:scale-105`
-              }`}
-            >
-              {isAnimating
-                ? "Moving..."
-                : `${currentPlayer.name}'s Turn - Roll Dice`}
-            </button>
-          </div>
+        {/* Roll Button - Fixed position */}
+        <div className="fixed bottom-8 right-8">
+          <button
+            onClick={rollDice}
+            disabled={isAnimating}
+            className={`px-8 py-4 font-bold text-lg rounded-lg shadow-2xl transition-all ${
+              isAnimating
+                ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                : `${currentPlayer.color.color} text-white hover:opacity-90 transform hover:scale-105`
+            }`}
+          >
+            {isAnimating
+              ? "Moving..."
+              : `${currentPlayer.name}'s Turn - Roll Dice`}
+          </button>
         </div>
       </div>
     </div>

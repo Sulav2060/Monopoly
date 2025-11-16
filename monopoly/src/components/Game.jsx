@@ -104,7 +104,7 @@ const Game = () => {
 
   if (!gameStarted) {
     return (
-      <div className="w-screen h-screen bg-gradient-to-br from-green-800 to-green-600 flex items-center justify-center">
+      <div className="w-screen h-screen  flex items-center justify-center">
         <div className="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full">
           <h1 className="text-4xl font-bold text-center mb-8 text-green-800">
             Monopoly Game
@@ -143,7 +143,7 @@ const Game = () => {
   const currentPlayer = players[currentPlayerIndex];
 
   return (
-    <div className="w-screen h-screen bg-gradient-to-br from-green-800 to-green-600 flex items-center justify-center p-4">
+    <div className="w-screen h-screen flex items-center justify-center p-4">
       <div className="w-full h-full max-w-7xl flex gap-4">
         {/* Player Info Sidebar */}
         <div className="w-64 bg-white rounded-xl shadow-xl p-4 overflow-y-auto">

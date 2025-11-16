@@ -88,12 +88,72 @@ const Board = ({
     );
   });
 
-  // Camera-like animation: zoom in, rotate, move down
   const getCameraTransform = () => {
-    if (isAnimating && animationStep !== "idle") {
-      return "translateZ(200px) rotateX(45deg) translateY(-50px) scale(1.1)";
+    const total = allTilesInOrder.length;
+    const currentPlayer = players[currentPlayerIndex];
+
+    const basePos = currentPlayer?.position ?? currentPosition;
+
+    // --- 1) CALCULATE ROTATION ONLY WHEN TURN STARTS (wave step) ---
+    if (animationStep === "waving") {
+      const futurePos = (basePos + diceValue) % total;
+
+      let targetRotation = 0;
+      let tiltX = 0;
+      let tiltY = 0;
+
+      if (futurePos >= 0 && futurePos < 7) {
+        targetRotation = 180;
+        tiltX = -40;
+      } else if (futurePos >= 7 && futurePos < 12) {
+        targetRotation = 90;
+        tiltY = -40;
+      } else if (futurePos >= 12 && futurePos < 19) {
+        targetRotation = 0;
+        tiltX = 40;
+      } else if (futurePos >= 19 && futurePos < 24) {
+        targetRotation = -90;
+        tiltY = 40;
+      }
+
+      // Save once when turn starts
+      getCameraTransform.targetRotation = targetRotation;
+      getCameraTransform.savedTiltX = tiltX;
+      getCameraTransform.savedTiltY = tiltY;
+
+      return `
+      rotateZ(${targetRotation}deg)
+      rotateX(${tiltX}deg)
+      rotateY(${tiltY}deg)
+      scale(1.1)
+    `;
     }
-    return "translateZ(0px) rotateX(0deg) translateY(0px) scale(1)";
+
+    // --- 2) DURING MOVEMENT — USE SAVED ROTATION (NO RECALC) ---
+    if (
+      animationStep === "moving" ||
+      animationStep === "jumping" ||
+      animationStep === "landing"
+    ) {
+      const r = getCameraTransform.targetRotation ?? 0;
+      return `
+      rotateZ(${r}deg)
+      rotateX(0deg)
+      rotateY(0deg)
+      scale(1)
+    `;
+    }
+
+    // --- 3) AFTER TURN FINISHES — LOCK CAMERA (NO NEW ROTATION) ---
+    if (animationStep === "idle") {
+      const r = getCameraTransform.targetRotation ?? 0;
+      return `
+      rotateZ(${r}deg)
+      rotateX(0deg)
+      rotateY(0deg)
+      scale(1)
+    `;
+    }
   };
 
   return (
@@ -105,7 +165,7 @@ const Board = ({
       }}
     >
       <div
-        className="transition-all duration-1000 ease-in-out"
+        className="transition-all duration-800 ease-in-out"
         style={{
           transformStyle: "preserve-3d",
           transform: getCameraTransform(),

@@ -1,14 +1,28 @@
-@keyframes tile-jump {
-  0%, 100% {
-    transform: translateZ(0px);
-  }
-  50% {
-    transform: translateZ(40px);
-  }
+/* Add these at the end of your main CSS file */
+
+.transform-style-3d {
+  transform-style: preserve-3d;
 }
 
-@layer utilities {
-  .animate-tile-jump {
-    animation: tile-jump 0.4s ease-in-out;
+.rotate-x-30 {
+  transform: rotateX(30deg);
+}
+
+.rotate-x-0 {
+  transform: rotateX(0deg);
+}
+
+@keyframes wave {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(52, 144, 220, 0.7);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px 10px rgba(52, 144, 220, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(52, 144, 220, 0);
   }
 }

@@ -1,10 +1,17 @@
 import React from "react";
 
-const CornerTile = ({ title, rotation }) => {
+const CornerTile = ({ id, title, rotation }) => {
   return (
-    <div className="border border-black bg-gray-400 overflow-hidden flex items-center justify-center">
-      <div style={{ transform: `rotate(${rotation}deg)` }}>
-        <span className="font-bold">{title}</span>
+    // FIX: Added w-full and h-full here
+    <div
+      id={id}
+      className="border border-black bg-gray-400 overflow-hidden flex items-center justify-center w-full h-full"
+    >
+      <div
+        style={{ transform: `rotate(${rotation}deg)` }}
+        className="text-center"
+      >
+        <span className="font-bold text-sm">{title}</span>
       </div>
     </div>
   );

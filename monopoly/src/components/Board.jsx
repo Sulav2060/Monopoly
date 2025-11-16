@@ -11,6 +11,7 @@ const Board = ({
   players,
   currentPlayerIndex,
   diceValue,
+  isMyTurn, // NEW PROP
 }) => {
   // Create a flat array of all tiles in order for easy indexing
   const allTilesInOrder = [
@@ -27,6 +28,7 @@ const Board = ({
     corners["top-right"],
     ...tiles.right, // move down right column
   ].map((tile, index) => ({ ...tile, id: `tile-${index}` }));
+
   // Get current player position safely
   const currentPosition =
     players && players[currentPlayerIndex]
@@ -87,6 +89,11 @@ const Board = ({
       </div>
     );
   });
+  const rotationRef = React.useRef({
+    z: 0,
+    tiltX: 0,
+    tiltY: 0,
+  });
 
   const getCameraTransform = () => {
     const total = allTilesInOrder.length;
@@ -94,73 +101,65 @@ const Board = ({
 
     const basePos = currentPlayer?.position ?? currentPosition;
 
-    // --- 1) CALCULATE ROTATION ONLY WHEN TURN STARTS (wave step) ---
+    const { z, tiltX, tiltY } = rotationRef.current;
+
+    // If it's NOT my turn -> DO NOT rotate, keep last saved rotation
+    if (!isMyTurn) {
+      return `
+      rotateZ(${z}deg)
+      rotateX(0deg)
+      rotateY(0deg)
+      scale(1)
+    `;
+    }
+
+    // --- 1. During WAVING -> calculate and SAVE rotation ---
     if (animationStep === "waving") {
       const futurePos = (basePos + diceValue) % total;
 
-      let targetRotation = 0;
-      let tiltX = 0;
-      let tiltY = 0;
+      let targetZ = 0;
+      let tX = 0;
+      let tY = 0;
 
       if (futurePos >= 0 && futurePos < 7) {
-        targetRotation = 180;
-        tiltX = -40;
+        targetZ = 180;
+        tX = -40;
       } else if (futurePos >= 7 && futurePos < 12) {
-        targetRotation = 90;
-        tiltY = -40;
+        targetZ = 90;
+        tY = -40;
       } else if (futurePos >= 12 && futurePos < 19) {
-        targetRotation = 0;
-        tiltX = 40;
+        targetZ = 0;
+        tX = 40;
       } else if (futurePos >= 19 && futurePos < 24) {
-        targetRotation = -90;
-        tiltY = 40;
+        targetZ = -90;
+        tY = 40;
       }
 
-      // Save once when turn starts
-      getCameraTransform.targetRotation = targetRotation;
-      getCameraTransform.savedTiltX = tiltX;
-      getCameraTransform.savedTiltY = tiltY;
+      // Save to ref (persistent!)
+      rotationRef.current = { z: targetZ, tiltX: tX, tiltY: tY };
 
       return `
-      rotateZ(${targetRotation}deg)
-      rotateX(${tiltX}deg)
-      rotateY(${tiltY}deg)
+      rotateZ(${targetZ}deg)
+      rotateX(${tX}deg)
+      rotateY(${tY}deg)
       scale(1.1)
     `;
     }
 
-    // --- 2) DURING MOVEMENT — USE SAVED ROTATION (NO RECALC) ---
-    if (
-      animationStep === "moving" ||
-      animationStep === "jumping" ||
-      animationStep === "landing"
-    ) {
-      const r = getCameraTransform.targetRotation ?? 0;
-      return `
-      rotateZ(${r}deg)
-      rotateX(0deg)
-      rotateY(0deg)
-      scale(1)
-    `;
-    }
-
-    // --- 3) AFTER TURN FINISHES — LOCK CAMERA (NO NEW ROTATION) ---
-    if (animationStep === "idle") {
-      const r = getCameraTransform.targetRotation ?? 0;
-      return `
-      rotateZ(${r}deg)
-      rotateX(0deg)
-      rotateY(0deg)
-      scale(1)
-    `;
-    }
+    // --- 2. For moving, jumping, landing, idle: KEEP LAST ROTATION ---
+    return `
+    rotateZ(${z}deg)
+    rotateX(0deg)
+    rotateY(0deg)
+    scale(1)
+  `;
   };
 
   return (
     <div
       className="w-full h-full flex items-center justify-center"
       style={{
-        perspective: "2000px", // Increased for more dramatic 3D effect
+        perspective: "2000px",
         perspectiveOrigin: "center center",
       }}
     >
@@ -191,7 +190,6 @@ const Board = ({
                 isCurrentPlayer={index === currentPlayerIndex}
                 playerCount={players.length}
                 playerIndex={index}
-                // NEW props to enable jumping animation & correct timing
                 animationStep={animationStep}
                 diceValue={diceValue}
                 currentPosition={currentPosition}

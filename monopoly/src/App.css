@@ -26,3 +26,15 @@
     box-shadow: 0 0 0 0 rgba(52, 144, 220, 0);
   }
 }
+@keyframes tokenJump {
+  0%   { transform: translateY(0) scale(1); }
+  40%  { transform: translateY(-14px) scale(1.12); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+/* class toggled by PlayerToken when it should hop */
+.player-token--jump {
+  animation: tokenJump 0.35s ease-in-out;
+  /* ensure animation plays even when added dynamically */
+  animation-fill-mode: forwards;
+}

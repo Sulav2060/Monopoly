@@ -5,20 +5,34 @@ import CornerTile from "./CornerTile";
 import CenterComponent from "./CenterComponent.jsx";
 import PlayerToken from "./PlayerToken.jsx";
 
-const Board = ({ isAnimating, animationStep, currentPosition, diceValue }) => {
+const Board = ({
+  isAnimating,
+  animationStep,
+  players,
+  currentPlayerIndex,
+  diceValue,
+}) => {
   // Create a flat array of all tiles in order for easy indexing
   const allTilesInOrder = [
-    corners["top-left"],
-    ...tiles.top,
-    corners["top-right"],
-    ...tiles.right,
+    // Start at GO (bottom-right)
     corners["bottom-right"],
-    ...tiles.bottom,
-    corners["bottom-left"],
-    ...tiles.left,
-  ].map((tile, index) => ({ ...tile, id: `tile-${index}` }));
+    ...tiles.bottom, // move left along bottom row
 
-  // Effect for the "wave" animation
+    corners["bottom-left"],
+    ...tiles.left, // move up left column
+
+    corners["top-left"],
+    ...tiles.top, // move right along top row
+
+    corners["top-right"],
+    ...tiles.right, // move down right column
+  ].map((tile, index) => ({ ...tile, id: `tile-${index}` }));
+  // Get current player position safely
+  const currentPosition =
+    players && players[currentPlayerIndex]
+      ? players[currentPlayerIndex].position
+      : 0;
+
   useEffect(() => {
     if (animationStep === "waving") {
       for (let i = 1; i <= diceValue; i++) {
@@ -106,7 +120,24 @@ const Board = ({ isAnimating, animationStep, currentPosition, diceValue }) => {
             <CenterComponent />
           </div>
 
-          <PlayerToken position={currentPosition} />
+          {/* Render all player tokens */}
+          {players &&
+            players.length > 0 &&
+            players.map((player, index) => (
+              <PlayerToken
+                key={player.id}
+                position={player.position}
+                color={player.color}
+                isCurrentPlayer={index === currentPlayerIndex}
+                playerCount={players.length}
+                playerIndex={index}
+                // NEW props to enable jumping animation & correct timing
+                animationStep={animationStep}
+                diceValue={diceValue}
+                currentPosition={currentPosition}
+                tilesCount={allTilesInOrder.length}
+              />
+            ))}
         </div>
       </div>
     </div>

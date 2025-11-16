@@ -34,8 +34,8 @@ export const tiles = {
 };
 
 export const corners = {
-  "top-left": { type: "corner", title: "Free Parking", rotation: 135 },
-  "top-right": { type: "corner", title: "Go to Jail", rotation: -135 },
-  "bottom-right": { type: "corner", title: "Go", rotation: -45 },
-  "bottom-left": { type: "corner", title: "Just Visiting", rotation: 45 },
+  "top-left": { type: "corner", title: "Free Parking", rotation: -45 },
+  "top-right": { type: "corner", title: "Go to Jail", rotation: 45 },
+  "bottom-right": { type: "corner", title: "Go", rotation: 135 },
+  "bottom-left": { type: "corner", title: "Just Visiting", rotation: -135 },
 };

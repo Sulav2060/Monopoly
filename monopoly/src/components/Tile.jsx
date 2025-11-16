@@ -57,10 +57,10 @@ const Tile = ({ id, title, price, rotation, group, type }) => {
         className="bg-white w-full h-[85%] p-1 flex flex-col justify-around text-center items-center"
         style={{
           position: "absolute",
-          ...(rotation === 0 && { bottom: 0 }),
-          ...(rotation === 180 && { top: 0 }),
-          ...(rotation === 90 && { left: 0, width: "85%", height: "100%" }),
-          ...(rotation === -90 && { right: 0, width: "85%", height: "100%" }),
+          ...(rotation === 180 && { bottom: 0 }),
+          ...(rotation === 0 && { top: 0 }),
+          ...(rotation === -90 && { left: 0, width: "85%", height: "100%" }),
+          ...(rotation === 90 && { right: 0, width: "85%", height: "100%" }),
         }}
       >
         <div
@@ -75,7 +75,8 @@ const Tile = ({ id, title, price, rotation, group, type }) => {
             }),
           }}
         >
-          {renderIcon()}
+          {/* NEW WRAPPER — forces correct orientation */}
+          <div style={{ transform: "rotate(180deg)" }}>{renderIcon()}</div>
         </div>
       </div>
     </div>

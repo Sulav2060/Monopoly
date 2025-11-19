@@ -1,42 +1,40 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* Add these at the end of your main CSS file */
+
+.transform-style-3d {
+  transform-style: preserve-3d;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.rotate-x-30 {
+  transform: rotateX(30deg);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+.rotate-x-0 {
+  transform: rotateX(0deg);
+}
+
+@keyframes wave {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(52, 144, 220, 0.7);
   }
-  to {
-    transform: rotate(360deg);
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 20px 10px rgba(52, 144, 220, 0.3);
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(52, 144, 220, 0);
   }
 }
-
-.card {
-  padding: 2em;
+@keyframes tokenJump {
+  0%   { transform: translateY(0) scale(1); }
+  40%  { transform: translateY(-14px) scale(1.12); }
+  100% { transform: translateY(0) scale(1); }
 }
 
-.read-the-docs {
-  color: #888;
+/* class toggled by PlayerToken when it should hop */
+.player-token--jump {
+  animation: tokenJump 0.35s ease-in-out;
+  /* ensure animation plays even when added dynamically */
+  animation-fill-mode: forwards;
 }

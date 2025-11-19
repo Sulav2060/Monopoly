@@ -151,7 +151,7 @@ const Game = () => {
   // -----------------------------
   if (!gameStarted) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100">
+      <div className="w-screen h-screen flex items-center justify-center from-green-100 to-blue-100">
         <div className="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full">
           <h1 className="text-4xl font-bold text-center mb-8 text-green-800">
             Monopoly Game
@@ -197,7 +197,7 @@ const Game = () => {
   // Main Game UI
   // -----------------------------
   return (
-    <div className="w-screen h-screen flex items-center justify-center p-4 bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="w-screen h-screen flex items-center justify-center p-4 from-green-50 to-blue-50">
       <div className="w-full h-full max-w-7xl flex gap-4">
         {/* Player Sidebar */}
         <div className="w-64 bg-white rounded-xl shadow-xl p-4 overflow-y-auto">

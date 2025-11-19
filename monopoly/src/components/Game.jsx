@@ -19,9 +19,8 @@ const Game = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationStep, setAnimationStep] = useState("idle");
 
-  const [diceValue, setDiceValue] = useState(0);
-  const [dice1, setDice1] = useState(1);
-  const [dice2, setDice2] = useState(1);
+  // Single source of truth for dice values
+  const [currentDice, setCurrentDice] = useState({ d1: 1, d2: 1 });
 
   const botTimerRef = useRef(null);
 
@@ -36,7 +35,7 @@ const Game = () => {
       money: 1500,
       color: PLAYER_COLORS[i],
       properties: [],
-      isBot: i !== 0, // Player 1 (index 0) is human
+      isBot: i !== 0,
     }));
     setPlayers(initialPlayers);
     setCurrentPlayerIndex(0);
@@ -52,9 +51,10 @@ const Game = () => {
     const d1 = Math.floor(Math.random() * 6) + 1;
     const d2 = Math.floor(Math.random() * 6) + 1;
 
-    setDice1(d1);
-    setDice2(d2);
-    setDiceValue(d1 + d2);
+    console.log("Rolling dice:", d1, "+", d2, "=", d1 + d2);
+
+    // Set the dice values - single source of truth
+    setCurrentDice({ d1, d2 });
 
     setAnimationStep("rotating");
     setIsAnimating(true);
@@ -68,11 +68,10 @@ const Game = () => {
 
     const currentPlayer = players[currentPlayerIndex];
 
-    // If it's a bot's turn and not animating, schedule auto-roll
     if (currentPlayer?.isBot && !isAnimating) {
       botTimerRef.current = setTimeout(() => {
         rollDice();
-      }, 5000); // 5 seconds delay for bots
+      }, 2000);
     }
 
     return () => {
@@ -92,25 +91,32 @@ const Game = () => {
     let timeout;
     const currentPlayer = players[currentPlayerIndex];
     const isMyTurn = currentPlayer && !currentPlayer.isBot;
+    const diceSum = currentDice.d1 + currentDice.d2;
 
-    // 1. Dice Rotate Stage (only for human player)
+    console.log("Animation step:", animationStep, "Dice sum:", diceSum);
+
+    // 1. Dice Rotate Stage
     if (animationStep === "rotating") {
-      const rotationDuration = isMyTurn ? 1000 : 0; // Skip rotation for bots
+      const rotationDuration = 1000;
       timeout = setTimeout(() => setAnimationStep("waving"), rotationDuration);
     }
 
     // 2. Token "waving" animation (shake) before moving
     else if (animationStep === "waving") {
-      const waveDuration = diceValue * 100 + 500;
+      const waveDuration = diceSum * 100 + 500;
 
       timeout = setTimeout(() => {
-        // Move Player
+        // Move Player using dice sum
         setPlayers((prev) => {
           const updated = [...prev];
           const current = updated[currentPlayerIndex];
-          const newPos = (current.position + diceValue) % TILES_ON_BOARD;
+          const newPos = (current.position + diceSum) % TILES_ON_BOARD;
 
           const passedGo = newPos < current.position;
+
+          console.log(
+            `Moving player ${current.name} from ${current.position} to ${newPos} (rolled ${diceSum})`
+          );
 
           updated[currentPlayerIndex] = {
             ...current,
@@ -125,9 +131,9 @@ const Game = () => {
       }, waveDuration);
     }
 
-    // 3. Camera zoom animation (only for human player)
+    // 3. Camera zoom animation
     else if (animationStep === "zooming") {
-      const zoomDuration = isMyTurn ? 1200 : 0; // Skip zoom for bots
+      const zoomDuration = 1200;
       timeout = setTimeout(() => {
         setIsAnimating(false);
         setAnimationStep("idle");
@@ -138,7 +144,7 @@ const Game = () => {
     }
 
     return () => clearTimeout(timeout);
-  }, [animationStep, diceValue, currentPlayerIndex, isAnimating, players]);
+  }, [animationStep, currentDice, currentPlayerIndex, isAnimating, players]);
 
   // -----------------------------
   // Before Game Start Screen
@@ -233,36 +239,46 @@ const Game = () => {
             animationStep={animationStep}
             players={players}
             currentPlayerIndex={currentPlayerIndex}
-            diceValue={diceValue}
+            currentDice={currentDice}
             isMyTurn={isMyTurn}
+            onRollComplete={() => {
+              if (animationStep === "rotating") {
+                setAnimationStep("waving");
+              }
+            }}
           />
 
-          {/* Dice + Turn Button */}
+          {/* Dice + Turn Button (2D display) */}
           <div className="bg-white rounded-xl shadow-xl p-6 flex items-center gap-6">
             <div className="flex gap-3">
               <div className="w-16 h-16 bg-white border-4 border-gray-800 rounded-lg flex items-center justify-center text-3xl font-bold">
-                {dice1}
+                {currentDice.d1}
               </div>
               <div className="w-16 h-16 bg-white border-4 border-gray-800 rounded-lg flex items-center justify-center text-3xl font-bold">
-                {dice2}
+                {currentDice.d2}
               </div>
             </div>
 
-            <button
-              onClick={rollDice}
-              disabled={isAnimating || !isMyTurn}
-              className={`px-8 py-4 font-bold text-lg rounded-lg shadow-lg transition-all ${
-                isAnimating || !isMyTurn
-                  ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                  : `${currentPlayer.color.color} text-white hover:opacity-90 transform hover:scale-105`
-              }`}
-            >
-              {isAnimating
-                ? "Moving..."
-                : isMyTurn
-                ? "Roll Dice"
-                : `${currentPlayer.name} is thinking...`}
-            </button>
+            <div className="flex flex-col items-start gap-1">
+              <button
+                onClick={rollDice}
+                disabled={isAnimating || !isMyTurn}
+                className={`px-8 py-4 font-bold text-lg rounded-lg shadow-lg transition-all ${
+                  isAnimating || !isMyTurn
+                    ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                    : `${currentPlayer.color.color} text-white hover:opacity-90 transform hover:scale-105`
+                }`}
+              >
+                {isAnimating
+                  ? "Moving..."
+                  : isMyTurn
+                  ? "Roll Dice"
+                  : `${currentPlayer.name} is thinking...`}
+              </button>
+              <div className="text-sm text-gray-600 font-semibold">
+                Total: {currentDice.d1 + currentDice.d2}
+              </div>
+            </div>
           </div>
         </div>
 

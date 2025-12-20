@@ -1,7 +1,15 @@
 import React from "react";
 
-const Tile = ({ id, title, price, rotation, group, type }) => {
-  // Color mapping for property groups
+const Tile = ({
+  id,
+  title,
+  price,
+  rotation,
+  group,
+  type,
+  ownedBy, // pass tailwind bg color e.g. "bg-red-600"
+}) => {
+  // Property group color (original Monopoly color strip)
   const colorMap = {
     "dark-purple": "bg-purple-900",
     "light-blue": "bg-sky-400",
@@ -18,9 +26,8 @@ const Tile = ({ id, title, price, rotation, group, type }) => {
   const bgColor = group ? colorMap[group] || "bg-gray-300" : "bg-green-100";
   const isVertical = rotation === 90 || rotation === -90;
 
-  // Render icon based on tile type
+  // Icon / content renderer
   const renderIcon = () => {
-    // This part remains the same as your code
     if (type === "community-chest") {
       return (
         <div className="flex flex-col items-center gap-1">
@@ -38,7 +45,7 @@ const Tile = ({ id, title, price, rotation, group, type }) => {
         </div>
       );
     }
-    // ... all other icon types
+
     return (
       <>
         <div className="font-semibold text-xs">{title}</div>
@@ -47,39 +54,81 @@ const Tile = ({ id, title, price, rotation, group, type }) => {
     );
   };
 
+  // Ownership color strip (opposite side of group strip)
+  const ownerStripStyle = {
+    ...(rotation === 180 && { top: 0 }),
+    ...(rotation === 0 && { bottom: 0 }),
+    ...(rotation === -90 && { right: 0, width: "15%", height: "100%" }),
+    ...(rotation === 90 && { left: 0, width: "15%", height: "100%" }),
+  };
+
   return (
-    // FIX: Added w-full and h-full here
-    <div
-      id={id}
-      className={`relative border border-black ${bgColor} overflow-hidden w-full h-full`}
-    >
+    <>
       <div
-        className="bg-white w-full h-[85%] p-1 flex flex-col justify-around text-center items-center"
-        style={{
-          position: "absolute",
-          ...(rotation === 180 && { bottom: 0 }),
-          ...(rotation === 0 && { top: 0 }),
-          ...(rotation === -90 && { left: 0, width: "85%", height: "100%" }),
-          ...(rotation === 90 && { right: 0, width: "85%", height: "100%" }),
-        }}
+        id={id}
+        className={`relative border border-black ${bgColor} overflow-hidden w-full h-full`}
       >
+        {/* MAIN WHITE CONTENT */}
         <div
+          className="bg-white w-full h-[85%] p-1 flex flex-col justify-around text-center items-center"
           style={{
-            transform: `rotate(${rotation}deg)`,
-            ...(isVertical && {
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-              width: "75px",
-            }),
+            position: "absolute",
+            ...(rotation === 180 && { bottom: 0 }),
+            ...(rotation === 0 && { top: 0 }),
+            ...(rotation === -90 && { left: 0, width: "85%", height: "100%" }),
+            ...(rotation === 90 && { right: 0, width: "85%", height: "100%" }),
           }}
         >
-          {/* NEW WRAPPER — forces correct orientation */}
-          <div style={{ transform: "rotate(180deg)" }}>{renderIcon()}</div>
+          <div
+            style={{
+              transform: `rotate(${rotation}deg)`,
+              ...(isVertical && {
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+                width: "75px",
+              }),
+            }}
+          >
+            {/* force correct text orientation */}
+            <div style={{ transform: "rotate(180deg)" }}>{renderIcon()}</div>
+            {/* OWNER COLOR STRIP */}
+          </div>
+          {ownedBy && (
+            <div
+              className={`absolute ${ownedBy} z-10`}
+              style={{
+                ...(rotation === 0 && {
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "15%",
+                }),
+                ...(rotation === 180 && {
+                  bottom: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "15%",
+                }),
+                ...(rotation === 90 && {
+                  right: 0,
+                  top: 0,
+                  width: "15%",
+                  height: "100%",
+                }),
+                ...(rotation === -90 && {
+                  left: 0,
+                  top: 0,
+                  width: "15%",
+                  height: "100%",
+                }),
+              }}
+            />
+          )}
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

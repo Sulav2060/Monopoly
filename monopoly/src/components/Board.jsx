@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { tiles, corners } from "./tiles.js";
 import Tile from "./Tile";
 import CornerTile from "./CornerTile";
@@ -34,7 +34,23 @@ const Board = ({
 
   const diceSum = currentDice.d1 + currentDice.d2;
 
-  // Tile "wave" animation
+  // ─────────────────────────────────────────────
+  // OWNERSHIP RESOLVER (single source of truth)
+  // players[i].ownedTiles = [tileIndex, ...]
+  // players[i].color = "bg-red-600"
+  // ─────────────────────────────────────────────
+  const getOwnerColorForTile = (tileIndex) => {
+    if (!players) return null;
+
+    for (const player of players) {
+      if (player.ownedTiles?.includes(tileIndex)) {
+        return player.color;
+      }
+    }
+    return null;
+  };
+
+  // Tile wave animation
   useEffect(() => {
     if (animationStep === "waving") {
       for (let i = 1; i <= diceSum; i++) {
@@ -52,37 +68,59 @@ const Board = ({
 
   const tileElements = [];
 
-  // Tile rendering logic
+  // ─────────────────────────────────────────────
+  // BOTTOM ROW
+  // ─────────────────────────────────────────────
   allTilesInOrder.slice(0, 7).forEach((tile, index) => {
     const Component = tile.type === "corner" ? CornerTile : Tile;
+    const ownerColor = getOwnerColorForTile(index)?.color;
+
     tileElements.push(
       <div style={{ gridRow: 1, gridColumn: index + 1 }} key={tile.id}>
-        <Component {...tile} />
+        <Component {...tile} ownedBy={ownerColor} />
       </div>
     );
   });
 
+  // ─────────────────────────────────────────────
+  // RIGHT COLUMN
+  // ─────────────────────────────────────────────
   allTilesInOrder.slice(7, 12).forEach((tile, index) => {
+    const tileIndex = index + 7;
+    const ownerColor = getOwnerColorForTile(tileIndex)?.color;
+
     tileElements.push(
       <div style={{ gridRow: index + 2, gridColumn: 7 }} key={tile.id}>
-        <Tile {...tile} />
+        <Tile {...tile} ownedBy={ownerColor} />
       </div>
     );
   });
 
+  // ─────────────────────────────────────────────
+  // TOP ROW
+  // ─────────────────────────────────────────────
   allTilesInOrder.slice(12, 19).forEach((tile, index) => {
+    const tileIndex = index + 12;
     const Component = tile.type === "corner" ? CornerTile : Tile;
+    const ownerColor = getOwnerColorForTile(tileIndex)?.color;
+
     tileElements.push(
       <div style={{ gridRow: 7, gridColumn: 7 - index }} key={tile.id}>
-        <Component {...tile} />
+        <Component {...tile} ownedBy={ownerColor} />
       </div>
     );
   });
 
+  // ─────────────────────────────────────────────
+  // LEFT COLUMN
+  // ─────────────────────────────────────────────
   allTilesInOrder.slice(19, 24).forEach((tile, index) => {
+    const tileIndex = index + 19;
+    const ownerColor = getOwnerColorForTile(tileIndex)?.color;
+
     tileElements.push(
       <div style={{ gridRow: 7 - (index + 1), gridColumn: 1 }} key={tile.id}>
-        <Tile {...tile} />
+        <Tile {...tile} ownedBy={ownerColor} />
       </div>
     );
   });
@@ -94,9 +132,7 @@ const Board = ({
     >
       <div
         className="transition-all duration-800 ease-in-out"
-        style={{
-          transformStyle: "preserve-3d",
-        }}
+        style={{ transformStyle: "preserve-3d" }}
       >
         <div
           className="w-full h-full min-w-[80vmin] min-h-[80vmin] aspect-square relative"
@@ -116,7 +152,6 @@ const Board = ({
           </div>
 
           {players &&
-            players.length > 0 &&
             players.map((player, index) => (
               <PlayerToken
                 key={player.id}

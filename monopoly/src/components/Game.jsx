@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Board from "./Board";
+import { tiles } from "./tiles";
 
-const TILES_ON_BOARD = 24;
+const TILES_ON_BOARD =
+  tiles.bottom.length +
+  tiles.left.length +
+  tiles.top.length +
+  tiles.right.length +
+  4; // four corners
 
 const PLAYER_COLORS = [
   { name: "Red", color: "bg-red-500", borderColor: "border-red-600" },
@@ -364,7 +370,7 @@ const Game = () => {
         </div>
 
         {/* Game Board */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 ">
           <Board
             isAnimating={isAnimating}
             animationStep={animationStep}
@@ -372,6 +378,9 @@ const Game = () => {
             currentPlayerIndex={currentPlayerIndex}
             currentDice={currentDice}
             isMyTurn={isMyTurn}
+            hasRolled={hasRolled}
+            onRollDice={rollDice}
+            onEndTurn={endTurn}
             onRollComplete={() => {
               if (animationStep === "rotating") {
                 setAnimationStep("waving");
@@ -379,57 +388,7 @@ const Game = () => {
             }}
           />
 
-          {/* Dice + Controls Panel */}
-          <div className="bg-white rounded-xl shadow-xl p-6 flex items-center gap-6">
-            {/* Dice Display */}
-            <div className="flex gap-3">
-              <div className="w-16 h-16 bg-white border-4 border-gray-800 rounded-lg flex items-center justify-center text-3xl font-bold shadow-md">
-                {currentDice.d1}
-              </div>
-              <div className="w-16 h-16 bg-white border-4 border-gray-800 rounded-lg flex items-center justify-center text-3xl font-bold shadow-md">
-                {currentDice.d2}
-              </div>
-            </div>
-
-            {/* Turn Controls */}
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <button
-                  onClick={rollDice}
-                  disabled={isAnimating || !isMyTurn || hasRolled}
-                  className={`px-8 py-3 font-bold text-lg rounded-lg shadow-lg transition-all ${
-                    isAnimating || !isMyTurn || hasRolled
-                      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                      : `${currentPlayer.color.color} text-white hover:opacity-90 transform hover:scale-105`
-                  }`}
-                >
-                  {isAnimating
-                    ? "Moving..."
-                    : hasRolled
-                    ? "Rolled"
-                    : "🎲 Roll Dice"}
-                </button>
-
-                <button
-                  onClick={endTurn}
-                  disabled={!hasRolled || isAnimating}
-                  className={`px-6 py-3 font-bold text-lg rounded-lg shadow-lg transition-all ${
-                    !hasRolled || isAnimating
-                      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700 transform hover:scale-105"
-                  }`}
-                >
-                  End Turn
-                </button>
-              </div>
-
-              <div className="text-sm text-gray-600 font-semibold text-center">
-                {isMyTurn
-                  ? `Your Turn - Total: ${currentDice.d1 + currentDice.d2}`
-                  : `${currentPlayer.name}'s Turn`}
-              </div>
-            </div>
-          </div>
+          {/* Dice + Controls Panel - Now inside Board center component */}
         </div>
 
         {/* Right Sidebar - Actions & Info */}

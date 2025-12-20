@@ -13,19 +13,23 @@ const Board = ({
   currentDice,
   isMyTurn,
   onRollComplete,
+  hasRolled,
+  onRollDice,
+  onEndTurn,
 }) => {
+  // ────────────────────────────────
+  // Flatten all tiles in board order (starting from GO at top-left)
+  // ────────────────────────────────
   const allTilesInOrder = [
-    corners["bottom-right"],
-    ...tiles.bottom,
-    corners["bottom-left"],
-    ...tiles.left,
     corners["top-left"],
     ...tiles.top,
     corners["top-right"],
     ...tiles.right,
+    corners["bottom-right"],
+    ...tiles.bottom,
+    corners["bottom-left"],
+    ...tiles.left,
   ].map((tile, index) => ({ ...tile, id: `tile-${index}` }));
-
-  const rotationRef = useRef({ z: 0, tiltX: 0, tiltY: 0 });
 
   const currentPosition =
     players && players[currentPlayerIndex]
@@ -34,23 +38,17 @@ const Board = ({
 
   const diceSum = currentDice.d1 + currentDice.d2;
 
-  // ─────────────────────────────────────────────
-  // OWNERSHIP RESOLVER (single source of truth)
-  // players[i].ownedTiles = [tileIndex, ...]
-  // players[i].color = "bg-red-600"
-  // ─────────────────────────────────────────────
   const getOwnerColorForTile = (tileIndex) => {
     if (!players) return null;
-
     for (const player of players) {
-      if (player.ownedTiles?.includes(tileIndex)) {
-        return player.color;
-      }
+      if (player.ownedTiles?.includes(tileIndex)) return player.color;
     }
     return null;
   };
 
-  // Tile wave animation
+  // ────────────────────────────────
+  // Wave animation
+  // ────────────────────────────────
   useEffect(() => {
     if (animationStep === "waving") {
       for (let i = 1; i <= diceSum; i++) {
@@ -66,61 +64,41 @@ const Board = ({
     }
   }, [animationStep, currentPosition, diceSum, allTilesInOrder.length]);
 
-  const tileElements = [];
+  // ────────────────────────────────
+  // Dynamic tile positions (rotated 180°: GO at top-left)
+  // ────────────────────────────────
+  const boardSize = 11; // 11×11 grid for full Monopoly board
+  const tileElements = allTilesInOrder.map((tile, index) => {
+    let row = 0;
+    let col = 0;
 
-  // ─────────────────────────────────────────────
-  // BOTTOM ROW
-  // ─────────────────────────────────────────────
-  allTilesInOrder.slice(0, 7).forEach((tile, index) => {
+    // Top row (GO starts here)
+    if (index <= 10) {
+      row = 1;
+      col = index + 1;
+    }
+    // Right column
+    else if (index <= 20) {
+      row = index - 10 + 1;
+      col = boardSize;
+    }
+    // Bottom row
+    else if (index <= 30) {
+      row = boardSize;
+      col = boardSize - (index - 20);
+    }
+    // Left column
+    else {
+      row = boardSize - (index - 30);
+      col = 1;
+    }
+
     const Component = tile.type === "corner" ? CornerTile : Tile;
     const ownerColor = getOwnerColorForTile(index)?.color;
 
-    tileElements.push(
-      <div style={{ gridRow: 1, gridColumn: index + 1 }} key={tile.id}>
+    return (
+      <div style={{ gridRow: row, gridColumn: col }} key={tile.id}>
         <Component {...tile} ownedBy={ownerColor} />
-      </div>
-    );
-  });
-
-  // ─────────────────────────────────────────────
-  // RIGHT COLUMN
-  // ─────────────────────────────────────────────
-  allTilesInOrder.slice(7, 12).forEach((tile, index) => {
-    const tileIndex = index + 7;
-    const ownerColor = getOwnerColorForTile(tileIndex)?.color;
-
-    tileElements.push(
-      <div style={{ gridRow: index + 2, gridColumn: 7 }} key={tile.id}>
-        <Tile {...tile} ownedBy={ownerColor} />
-      </div>
-    );
-  });
-
-  // ─────────────────────────────────────────────
-  // TOP ROW
-  // ─────────────────────────────────────────────
-  allTilesInOrder.slice(12, 19).forEach((tile, index) => {
-    const tileIndex = index + 12;
-    const Component = tile.type === "corner" ? CornerTile : Tile;
-    const ownerColor = getOwnerColorForTile(tileIndex)?.color;
-
-    tileElements.push(
-      <div style={{ gridRow: 7, gridColumn: 7 - index }} key={tile.id}>
-        <Component {...tile} ownedBy={ownerColor} />
-      </div>
-    );
-  });
-
-  // ─────────────────────────────────────────────
-  // LEFT COLUMN
-  // ─────────────────────────────────────────────
-  allTilesInOrder.slice(19, 24).forEach((tile, index) => {
-    const tileIndex = index + 19;
-    const ownerColor = getOwnerColorForTile(tileIndex)?.color;
-
-    tileElements.push(
-      <div style={{ gridRow: 7 - (index + 1), gridColumn: 1 }} key={tile.id}>
-        <Tile {...tile} ownedBy={ownerColor} />
       </div>
     );
   });
@@ -135,12 +113,17 @@ const Board = ({
         style={{ transformStyle: "preserve-3d" }}
       >
         <div
-          className="w-full h-full min-w-[80vmin] min-h-[80vmin] aspect-square relative"
+          className="w-full h-full min-w-[92vmin] min-h-[92vmin] aspect-square relative"
           style={{ transformStyle: "preserve-3d" }}
         >
-          <div className="w-full h-full grid grid-cols-[1.6fr_repeat(5,1fr)_1.6fr] grid-rows-[1.6fr_repeat(5,1fr)_1.6fr]">
+          <div
+            className={`w-full h-full grid`}
+            style={{
+              gridTemplateRows: "1.6fr repeat(9, 1fr) 1.6fr",
+              gridTemplateColumns: "1.6fr repeat(9, 1fr) 1.6fr",
+            }}
+          >
             {tileElements}
-
             <CenterComponent
               currentDice={currentDice}
               isRolling={animationStep === "rotating"}
@@ -148,24 +131,29 @@ const Board = ({
               showDice={true}
               currentPlayerIndex={currentPlayerIndex}
               totalPlayers={players.length}
+              hasRolled={hasRolled}
+              isMyTurn={isMyTurn}
+              isAnimating={isAnimating}
+              onRollDice={onRollDice}
+              onEndTurn={onEndTurn}
+              currentPlayer={players[currentPlayerIndex]}
             />
           </div>
 
-          {players &&
-            players.map((player, index) => (
-              <PlayerToken
-                key={player.id}
-                position={player.position}
-                color={player.color}
-                isCurrentPlayer={index === currentPlayerIndex}
-                playerCount={players.length}
-                playerIndex={index}
-                animationStep={animationStep}
-                diceValue={diceSum}
-                currentPosition={currentPosition}
-                tilesCount={allTilesInOrder.length}
-              />
-            ))}
+          {players?.map((player, index) => (
+            <PlayerToken
+              key={player.id}
+              position={player.position}
+              color={player.color}
+              isCurrentPlayer={index === currentPlayerIndex}
+              playerCount={players.length}
+              playerIndex={index}
+              animationStep={animationStep}
+              diceValue={diceSum}
+              currentPosition={player.position}
+              tilesCount={allTilesInOrder.length}
+            />
+          ))}
         </div>
       </div>
     </div>

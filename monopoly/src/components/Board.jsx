@@ -19,14 +19,16 @@ const Board = ({
 }) => {
   // ────────────────────────────────
   // Flatten all tiles in board order (starting from GO at top-left)
+  // If your intended "top" side content is currently in tiles.bottom,
+  // we render tiles.bottom on the top row and tiles.top on the bottom row.
   // ────────────────────────────────
   const allTilesInOrder = [
     corners["top-left"],
-    ...tiles.top,
+    ...tiles.bottom, // render this immediately after GO on the top row
     corners["top-right"],
     ...tiles.right,
     corners["bottom-right"],
-    ...tiles.bottom,
+    ...tiles.top, // render this on the bottom row
     corners["bottom-left"],
     ...tiles.left,
   ].map((tile, index) => ({ ...tile, id: `tile-${index}` }));

@@ -35,17 +35,17 @@ const CenterComponent = ({
       {/* Control Panel at Bottom */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-60 bg-white rounded-xl shadow-2xl p-4 flex items-center gap-4 max-w-sm">
         {/* Dice Display */}
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           <div className="w-12 h-12 bg-white border-4 border-gray-800 rounded-lg flex items-center justify-center text-xl font-bold shadow-md">
             {currentDice.d1}
           </div>
           <div className="w-12 h-12 bg-white border-4 border-gray-800 rounded-lg flex items-center justify-center text-xl font-bold shadow-md">
             {currentDice.d2}
           </div>
-        </div>
+        </div> */}
 
         {/* Buttons */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-row gap-2">
           <button
             onClick={onRollDice}
             disabled={isAnimating || !isMyTurn || hasRolled}

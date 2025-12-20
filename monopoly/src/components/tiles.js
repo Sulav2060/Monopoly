@@ -1,15 +1,15 @@
 export const tiles = {
   bottom: [
   
-    { type: "property", group: "dark-purple", title: "Kathmandu Durbar Square", price: 60, rent: [2, 10, 30, 90, 160, 250], houseCost: 50, rotation: 180 },
-    { type: "community-chest", title: "Community Chest", rotation: 180 },
-    { type: "property", group: "dark-purple", title: "Patan Durbar Square", price: 60, rent: [4, 20, 60, 180, 320, 450], houseCost: 50, rotation: 180 },
-    { type: "tax", title: "Income Tax", price: 200, rotation: 180 },
-    { type: "railroad", title: "Kathmandu-Pokhara Express", price: 200, rent: [25, 50, 100, 200], rotation: 180 },
-    { type: "property", group: "light-blue", title: "Phewa Lake, Pokhara", price: 100, rent: [6, 30, 90, 270, 400, 550], houseCost: 50, rotation: 180 },
-    { type: "chance", title: "Tourism Boost", rotation: 180 },
-    { type: "property", group: "light-blue", title: "Nagarkot Viewpoint", price: 120, rent: [8, 40, 100, 300, 450, 600], houseCost: 50, rotation: 180 },
-    { type: "property", group: "light-blue", title: "Dhulikhel Hills", price: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, rotation: 180 },
+    { type: "property", group: "dark-purple", title: "Kathmandu Durbar Square", price: 60, rent: [2, 10, 30, 90, 160, 250], houseCost: 50, rotation: 0 },
+    { type: "community-chest", title: "Community Chest", rotation: 0 },
+    { type: "property", group: "dark-purple", title: "Patan Durbar Square", price: 60, rent: [4, 20, 60, 180, 320, 450], houseCost: 50, rotation: 0 },
+    { type: "tax", title: "Income Tax", price: 200, rotation: 0 },
+    { type: "railroad", title: "Kathmandu-Pokhara Express", price: 200, rent: [25, 50, 100, 200], rotation: 0 },
+    { type: "property", group: "light-blue", title: "Phewa Lake, Pokhara", price: 100, rent: [6, 30, 90, 270, 400, 550], houseCost: 50, rotation: 0 },
+    { type: "chance", title: "Tourism Boost", rotation: 0 },
+    { type: "property", group: "light-blue", title: "Nagarkot Viewpoint", price: 120, rent: [8, 40, 100, 300, 450, 600], houseCost: 50, rotation: 0 },
+    { type: "property", group: "light-blue", title: "Dhulikhel Hills", price: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, rotation: 0 },
    
   ],
   right: [
@@ -25,15 +25,15 @@ export const tiles = {
    
   ],
   top: [
-    { type: "property", group: "red", title: "Pashupatinath Temple", price: 260, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 150, rotation: 0 },
-    { type: "chance", title: "Festival Bonus", rotation: 0 },
-    { type: "property", group: "red", title: "Sagarmatha National Park", price: 280, rent: [28, 150, 450, 1000, 1200, 1400], houseCost: 200, rotation: 0 },
-    { type: "property", group: "red", title: "Rara Lake", price: 300, rent: [30, 160, 500, 1100, 1300, 1500], houseCost: 200, rotation: 0 },
-    { type: "railroad", title: "Kathmandu-Birgunj Express", price: 300, rent: [25, 50, 100, 200], rotation: 0 },
-    { type: "property", group: "yellow", title: "Manaslu Region", price: 320, rent: [32, 170, 550, 1200, 1400, 1600], houseCost: 200, rotation: 0 },
-    { type: "utility", title: "Telecommunication Tower", price: 150, rentMultiplier: [4, 10], rotation: 0 },
-    { type: "property", group: "yellow", title: "Annapurna Circuit", price: 400, rent: [50, 200, 600, 1400, 1700, 2000], houseCost: 200, rotation: 0 },
-    { type: "property", group: "yellow", title: "Upper Mustang", price: 450, rent: [60, 220, 660, 1500, 1800, 2100], houseCost: 200, rotation: 0 },
+    { type: "property", group: "red", title: "Pashupatinath Temple", price: 260, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 150, rotation: 180 },
+    { type: "chance", title: "Festival Bonus", rotation: 180 },
+    { type: "property", group: "red", title: "Sagarmatha National Park", price: 280, rent: [28, 150, 450, 1000, 1200, 1400], houseCost: 200, rotation: 180 },
+    { type: "property", group: "red", title: "Rara Lake", price: 300, rent: [30, 160, 500, 1100, 1300, 1500], houseCost: 200, rotation: 180 },
+    { type: "railroad", title: "Kathmandu-Birgunj Express", price: 300, rent: [25, 50, 100, 200], rotation: 180 },
+    { type: "property", group: "yellow", title: "Manaslu Region", price: 320, rent: [32, 170, 550, 1200, 1400, 1600], houseCost: 200, rotation: 180 },
+    { type: "utility", title: "Telecommunication Tower", price: 150, rentMultiplier: [4, 10], rotation: 180 },
+    { type: "property", group: "yellow", title: "Annapurna Circuit", price: 400, rent: [50, 200, 600, 1400, 1700, 2000], houseCost: 200, rotation: 180 },
+    { type: "property", group: "yellow", title: "Upper Mustang", price: 450, rent: [60, 220, 660, 1500, 1800, 2100], houseCost: 200, rotation: 180 },
     
   ],
   left: [
@@ -51,8 +51,8 @@ export const tiles = {
 };
 
 export const corners = {
-  "top-left": { type: "corner", title: "GO", rotation: -45 },
-  "top-right": { type: "corner", title: "Just Visiting / Jail", rotation: 45 },
-  "bottom-right": { type: "corner", title: "Free Parking", rotation: 135 },
-  "bottom-left": { type: "corner", title: "Go to Jail", rotation: -135 },
+  "top-left": { type: "corner", title: "GO", rotation: 135 },
+  "top-right": { type: "corner", title: "Just Visiting / Jail", rotation: -135 },
+  "bottom-right": { type: "corner", title: "Free Parking", rotation: -45 },
+  "bottom-left": { type: "corner", title: "Go to Jail", rotation: 45 },
 };

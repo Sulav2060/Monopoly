@@ -321,7 +321,7 @@ const Game = () => {
         </div>
       )}
 
-      <div className="w-full h-full max-w-7xl flex gap-4">
+      <div className="w-full h-full  flex gap-4">
         {/* Left Sidebar - Players */}
         <div className="w-64 bg-white rounded-xl shadow-xl p-4 overflow-y-auto flex flex-col gap-3">
           <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">

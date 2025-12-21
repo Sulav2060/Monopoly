@@ -4,6 +4,7 @@ import Tile from "./Tile";
 import CornerTile from "./CornerTile";
 import CenterComponent from "./CenterComponent.jsx";
 import PlayerToken from "./PlayerToken.jsx";
+import PopoverCard from "./PopoverCard.jsx";
 
 const Board = ({
   isAnimating,
@@ -16,7 +17,11 @@ const Board = ({
   hasRolled,
   onRollDice,
   onEndTurn,
+  onTileClick,
 }) => {
+  const [activeIndex, setActiveIndex] = React.useState(null);
+  const gridRef = useRef(null);
+  const [popoverPos, setPopoverPos] = React.useState(null);
   // ────────────────────────────────
   // Flatten all tiles in board order (starting from GO at top-left)
   // If your intended "top" side content is currently in tiles.bottom,
@@ -98,8 +103,68 @@ const Board = ({
     const Component = tile.type === "corner" ? CornerTile : Tile;
     const ownerColor = getOwnerColorForTile(index)?.color;
 
+    const handleClick = (e) => {
+      setActiveIndex(index);
+
+      // Calculate popover position based on tile location
+      const tileElement = e.currentTarget;
+      const boardElement = gridRef.current;
+
+      if (tileElement && boardElement) {
+        const tileRect = tileElement.getBoundingClientRect();
+        const boardRect = boardElement.getBoundingClientRect();
+
+        // Calculate relative position within the board
+        const relativeLeft = tileRect.left - boardRect.left;
+        const relativeTop = tileRect.top - boardRect.top;
+
+        // Determine which side of the board the tile is on
+        let side, left, top, transform;
+
+        // Top row
+        if (index <= 10) {
+          side = "bottom";
+          left = relativeLeft + tileRect.width / 2;
+          top = relativeTop + tileRect.height;
+          transform = "translate(-50%, 8px)";
+        }
+        // Right column
+        else if (index <= 20) {
+          side = "left";
+          left = relativeLeft;
+          top = relativeTop + tileRect.height / 2;
+          transform = "translate(-100%, -50%) translateX(-8px)";
+        }
+        // Bottom row
+        else if (index <= 30) {
+          side = "top";
+          left = relativeLeft + tileRect.width / 2;
+          top = relativeTop;
+          transform = "translate(-50%, -100%) translateY(-8px)";
+        }
+        // Left column
+        else {
+          side = "right";
+          left = relativeLeft + tileRect.width;
+          top = relativeTop + tileRect.height / 2;
+          transform = "translate(8px, -50%)";
+        }
+
+        setPopoverPos({ left, top, side, transform });
+      }
+
+      if (typeof onTileClick === "function") {
+        onTileClick({ tile: allTilesInOrder[index], index });
+      }
+    };
+
     return (
-      <div style={{ gridRow: row, gridColumn: col }} key={tile.id}>
+      <div
+        style={{ gridRow: row, gridColumn: col }}
+        key={tile.id}
+        onClick={handleClick}
+        className="cursor-pointer"
+      >
         <Component {...tile} ownedBy={ownerColor} />
       </div>
     );
@@ -119,13 +184,30 @@ const Board = ({
           style={{ transformStyle: "preserve-3d" }}
         >
           <div
-            className={`w-full h-full grid`}
+            ref={gridRef}
+            className={`w-full h-full grid relative`}
             style={{
               gridTemplateRows: "1.6fr repeat(9, 1fr) 1.6fr",
               gridTemplateColumns: "1.6fr repeat(9, 1fr) 1.6fr",
             }}
           >
             {tileElements}
+            {popoverPos && activeIndex !== null && (
+              <div
+                className="absolute z-70"
+                style={{
+                  left: popoverPos.left,
+                  top: popoverPos.top,
+                  transform: popoverPos.transform,
+                }}
+              >
+                <PopoverCard
+                  tile={allTilesInOrder[activeIndex]}
+                  side={popoverPos.side}
+                  onClose={() => setActiveIndex(null)}
+                />
+              </div>
+            )}
             <CenterComponent
               currentDice={currentDice}
               isRolling={animationStep === "rotating"}

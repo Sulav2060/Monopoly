@@ -386,6 +386,9 @@ const Game = () => {
                 setAnimationStep("waving");
               }
             }}
+            onTileClick={({ tile, index }) =>
+              setShowPropertyCard({ tile, index })
+            }
           />
 
           {/* Dice + Controls Panel - Now inside Board center component */}

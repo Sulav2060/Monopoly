@@ -2,7 +2,6 @@ import express, { Request, Response } from "express";
 import RoomManager from "../services/room.service";
 import GameService from "../services/game.service";
 import { ApiResponse, GameState } from "../types/game";
-import SocketService from "../services/socket.service";
 
 const router = express.Router();
 const roomManager = RoomManager.getInstance();
@@ -29,7 +28,6 @@ router.post("/:gameId/roll", (req: Request, res: Response) => {
   try {
     const { gameId } = req.params;
     const { playerId } = req.body;
-    const safeGameId = gameId as string;
 
     if (!playerId) {
       return res.status(400).json({
@@ -82,10 +80,6 @@ router.post("/:gameId/roll", (req: Request, res: Response) => {
 
     // Attach dice roll to game for frontend
     game.lastDiceRoll = diceRoll;
-
-    // Emit socket event for real-time updates
-    SocketService.emitGameUpdate(safeGameId, game);
-    SocketService.emitDiceRoll(safeGameId, playerId, diceRoll);
 
     return res.status(200).json({
       success: true,
@@ -375,7 +369,6 @@ router.post("/:gameId/end-turn", (req: Request, res: Response) => {
   try {
     const { gameId } = req.params;
     const { playerId } = req.body;
-    const safeGameId = gameId as string;
 
     if (!playerId) {
       return res.status(400).json({
@@ -423,10 +416,6 @@ router.post("/:gameId/end-turn", (req: Request, res: Response) => {
 
     // Stay in TURN_END state - let next player roll by clicking roll button
     // The rollDice endpoint will handle transitioning from TURN_END → ROLLING
-
-    // Emit socket event for turn change
-    SocketService.emitGameUpdate(safeGameId, game);
-    SocketService.emitTurnChanged(safeGameId, game.currentPlayerIndex);
 
     return res.status(200).json({
       success: true,

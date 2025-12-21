@@ -51,7 +51,7 @@ const PopoverCard = ({ tile, side = "top", arrowOffset = 0.5, onClose }) => {
     : "bg-gray-600";
 
   return (
-    <div className="relative z-70">
+    <div className="relative z-70 popover-card">
       <div className="relative bg-white rounded-xl shadow-xl border border-gray-200 w-56">
         <div
           className={`px-3 py-2 ${headerColor} text-white rounded-t-xl flex justify-between items-center`}

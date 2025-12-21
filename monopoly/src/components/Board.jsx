@@ -18,6 +18,7 @@ const Board = ({
   onRollDice,
   onEndTurn,
   onTileClick,
+  prevPositions = {},
 }) => {
   const [activeIndex, setActiveIndex] = React.useState(null);
   const gridRef = useRef(null);
@@ -43,6 +44,8 @@ const Board = ({
       ? players[currentPlayerIndex].position
       : 0;
 
+  const tilesCount = allTilesInOrder.length;
+
   const diceSum = currentDice.d1 + currentDice.d2;
 
   const getOwnerColorForTile = (tileIndex) => {
@@ -58,8 +61,22 @@ const Board = ({
   // ────────────────────────────────
   useEffect(() => {
     if (animationStep === "waving") {
-      for (let i = 1; i <= diceSum; i++) {
-        const tileIndex = (currentPosition + i) % allTilesInOrder.length;
+      if (!players?.length) return;
+
+      // Find the player who actually moved (actor)
+      const actor = players.find((p) => {
+        const prev = prevPositions?.[p.id] ?? p.position ?? 0;
+        const delta = (p.position - prev + tilesCount) % tilesCount;
+        return delta > 0;
+      });
+
+      if (!actor) return;
+
+      const startPos = prevPositions?.[actor.id] ?? actor.position ?? 0;
+      const steps = (actor.position - startPos + tilesCount) % tilesCount;
+
+      for (let i = 1; i <= steps; i++) {
+        const tileIndex = (startPos + i) % tilesCount;
         const tileElement = document.getElementById(`tile-${tileIndex}`);
         if (tileElement) {
           tileElement.style.animation = "none";
@@ -69,7 +86,42 @@ const Board = ({
         }
       }
     }
-  }, [animationStep, currentPosition, diceSum, allTilesInOrder.length]);
+  }, [
+    animationStep,
+    currentPosition,
+    tilesCount,
+    players,
+    currentPlayerIndex,
+    prevPositions,
+  ]);
+
+  // ────────────────────────────────
+  // Close popover on outside click
+  // ────────────────────────────────
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (activeIndex === null) return;
+
+      // Check if the click is on a popover or within the board
+      const popoverElement = document.querySelector(".popover-card");
+      const boardElement = gridRef.current;
+
+      // If popover exists and click is outside both popover and tiles, close it
+      if (
+        popoverElement &&
+        !popoverElement.contains(event.target) &&
+        boardElement &&
+        !boardElement.contains(event.target)
+      ) {
+        setActiveIndex(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [activeIndex]);
 
   // ────────────────────────────────
   // Dynamic tile positions (rotated 180°: GO at top-left)
@@ -224,20 +276,29 @@ const Board = ({
             />
           </div>
 
-          {players?.map((player, index) => (
-            <PlayerToken
-              key={player.id}
-              position={player.position}
-              color={player.color}
-              isCurrentPlayer={index === currentPlayerIndex}
-              playerCount={players.length}
-              playerIndex={index}
-              animationStep={animationStep}
-              diceValue={diceSum}
-              currentPosition={player.position}
-              tilesCount={allTilesInOrder.length}
-            />
-          ))}
+          {players?.map((player, index) => {
+            const prevPos = prevPositions?.[player.id] ?? player.position ?? 0;
+            const steps = (player.position - prevPos + tilesCount) % tilesCount;
+            const isAnimatingPlayer =
+              (animationStep === "rotating" || animationStep === "waving") &&
+              steps > 0;
+
+            return (
+              <PlayerToken
+                key={player.id}
+                position={player.position}
+                color={player.color}
+                isAnimatingPlayer={isAnimatingPlayer}
+                isCurrentPlayer={index === currentPlayerIndex}
+                playerCount={players.length}
+                playerIndex={index}
+                animationStep={animationStep}
+                startPosition={prevPos}
+                moveSteps={steps}
+                tilesCount={tilesCount}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

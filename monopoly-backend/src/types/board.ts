@@ -10,16 +10,18 @@ export type TileType =
 
 export type PropertyTile = {
   type: "PROPERTY";
+  id: string;
   name: string;
   price: number;
-  rent: number;
+  baseRent: number;
 };
 
 export type Tile =
   | { type: "GO" }
-  | { type: "TAX"; amount: number }
+  | PropertyTile
+  | { type: "GO_TO_JAIL" }
   | { type: "JAIL" }
   | { type: "FREE_PARKING" }
-  | { type: "GO_TO_JAIL" }
-  | PropertyTile
-  | { type: "COMMUNITY" };
+  | { type: "CHANCE" }
+  | { type: "COMMUNITY_CHEST" }
+  | { type: "TAX" };

@@ -21,11 +21,16 @@ export type GameEvent =
   | { type: "PASSED_GO"; amount: number }
   | { type: "TURN_ENDED"; nextPlayerId: PlayerId }
   | { type: "PROPERTY_BOUGHT"; tile: string } //FIXME:fix the tile type to be specifically one of the tile names from the board
-  | { type: "RENT_PAID"; amount: number };
-export type PropertyOwnership = {
-  tileIndex: number;
-  ownerId: PlayerId;
-};
+  | {
+      type: "RENT_PAID";
+      from: PlayerId;
+      to: PlayerId;
+      amount: number;
+    }
+  //jail regarding events
+  | { type: "PLAYER_SENT_TO_JAIL"; playerId: PlayerId }
+  | { type: "JAIL_TURN_FAILED"; attempt: number }
+  | { type: "JAIL_EXITED"; reason: "DOUBLES" | "MAX_TURNS" };
 
 export type GameState = {
   players: PlayerState[];
@@ -33,4 +38,9 @@ export type GameState = {
   lastDice?: DiceRoll;
   events: GameEvent[];
   properties: PropertyOwnership[];
+};
+
+export type PropertyOwnership = {
+  propertyId: string;
+  ownerId: PlayerId;
 };

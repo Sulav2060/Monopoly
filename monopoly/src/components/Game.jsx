@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import io from "socket.io-client";
 import Board from "./Board";
+import { tiles } from "./tiles";
+import { useGame } from "../context/GameContext";
 
-const TILES_ON_BOARD = 24;
+const TILES_ON_BOARD =
+  tiles.bottom.length +
+  tiles.left.length +
+  tiles.top.length +
+  tiles.right.length +
+  4; // four corners
 
 const PLAYER_COLORS = [
   { name: "Red", color: "bg-red-500", borderColor: "border-red-600" },
@@ -10,30 +18,41 @@ const PLAYER_COLORS = [
   { name: "Yellow", color: "bg-yellow-500", borderColor: "border-yellow-600" },
 ];
 
+// Tile types that can be purchased
+const PURCHASABLE_TYPES = ["property", "railroad", "utility"];
+
 const Game = () => {
-  const [gameStarted, setGameStarted] = useState(false);
-  const [numPlayers, setNumPlayers] = useState(2);
-  const [players, setPlayers] = useState([]);
-  const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
+  const {
+    currentGame,
+    currentPlayerId,
+    currentRoom,
+    rollDice: contextRollDice,
+    buyProperty: contextBuyProperty,
+    endTurn: contextEndTurn,
+    syncGameFromSocket,
+  } = useGame();
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationStep, setAnimationStep] = useState("idle");
 
-  // Single source of truth for dice values
+  // Single source of truth for dice values from game state
   const [currentDice, setCurrentDice] = useState({ d1: 1, d2: 1 });
   const [hasRolled, setHasRolled] = useState(false);
+  const [isLoadingAction, setIsLoadingAction] = useState(false);
+  const [prevPositions, setPrevPositions] = useState({});
 
   // UI States
-  const [showPropertyCard, setShowPropertyCard] = useState(null);
+  const [_showPropertyCard, setShowPropertyCard] = useState(null);
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [notification, setNotification] = useState(null);
-  const [gameLog, setGameLog] = useState([]);
+  const [_gameLog, setGameLog] = useState([]);
 
   const botTimerRef = useRef(null);
+  const socketRef = useRef(null);
+  const prevGameRef = useRef(null);
+  const lastPositionsSigRef = useRef("");
 
-  // -----------------------------
   // Helper Functions
-  // -----------------------------
   const addLog = (message) => {
     setGameLog((prev) => [
       { id: Date.now(), message, time: new Date().toLocaleTimeString() },
@@ -46,150 +65,286 @@ const Game = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // -----------------------------
-  // Initialize Game
-  // -----------------------------
-  const startGame = () => {
-    const initialPlayers = Array.from({ length: numPlayers }, (_, i) => ({
-      id: i,
-      name: i === 0 ? "You" : `Bot ${i}`,
-      position: 0,
-      money: 1500,
-      color: PLAYER_COLORS[i],
-      properties: [],
-      ownedTiles: [],
-      isBot: i !== 0,
-      inJail: false,
-      jailTurns: 0,
-    }));
-    setPlayers(initialPlayers);
-    setCurrentPlayerIndex(0);
-    setGameStarted(true);
-    addLog("Game started! Roll the dice to begin.");
+  // Socket connection for real-time updates
+  useEffect(() => {
+    if (!currentGame || !currentPlayerId) return;
+
+    // Use mock socket if available, otherwise use real socket.io
+    const socket = window.__mockIO
+      ? window.__mockIO(
+          import.meta.env.VITE_BACKEND_URL || "http://localhost:4000",
+          { transports: ["websocket"] }
+        )
+      : io(import.meta.env.VITE_BACKEND_URL || "http://localhost:4000", {
+          transports: ["websocket"],
+        });
+
+    socketRef.current = socket;
+
+    socket.emit("join-game", currentGame.id, currentPlayerId);
+
+    socket.on("game-updated", (game) => {
+      if (game) {
+        console.log("🔄 Game updated from socket:", game);
+        syncGameFromSocket(game);
+      }
+    });
+
+    socket.on("turn-changed", () => {
+      setHasRolled(false);
+    });
+
+    socket.on("connect", () => {
+      console.log("✅ Socket connected");
+    });
+
+    socket.on("disconnect", () => {
+      console.log("❌ Socket disconnected");
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [currentGame?.id, currentPlayerId, syncGameFromSocket]);
+
+  // Reset hasRolled when turn changes
+  useEffect(() => {
+    const currentPlayerIndex = currentGame?.currentPlayerIndex;
+    if (currentPlayerIndex !== undefined) {
+      setHasRolled(false);
+    }
+  }, [currentGame?.currentPlayerIndex]);
+
+  // Roll Dice + Start Animation
+  // Roll Dice - CAPTURE POSITION BEFORE ROLLING
+  const rollDice = useCallback(async () => {
+    if (isAnimating || hasRolled || isLoadingAction || !currentGame) return;
+
+    try {
+      setIsLoadingAction(true);
+
+      // CRITICAL: Capture all player positions BEFORE the roll
+      const positionsBeforeRoll = {};
+      currentGame.players.forEach((p) => {
+        positionsBeforeRoll[p.id] = p.position;
+      });
+
+      console.log("Positions BEFORE roll:", positionsBeforeRoll);
+      setPrevPositions(positionsBeforeRoll);
+
+      // Now roll the dice (this will update positions on backend)
+      const diceRoll = await contextRollDice();
+
+      console.log(
+        "Rolled:",
+        diceRoll.d1,
+        "+",
+        diceRoll.d2,
+        "=",
+        diceRoll.d1 + diceRoll.d2
+      );
+      // ... rest of your code
+
+      setCurrentDice(diceRoll);
+      setAnimationStep("rotating");
+      setIsAnimating(true);
+      setHasRolled(true);
+    } catch (error) {
+      showNotification(error.message, "error");
+      console.error("Dice roll failed:", error);
+    } finally {
+      setIsLoadingAction(false);
+    }
+  }, [isAnimating, hasRolled, isLoadingAction, currentGame, contextRollDice]);
+
+  // End Turn Function
+  const endTurn = useCallback(async () => {
+    if (isAnimating || isLoadingAction || !currentGame) return;
+
+    try {
+      setIsLoadingAction(true);
+      await contextEndTurn();
+      addLog(
+        `${
+          currentGame.players[currentGame.currentPlayerIndex]?.name
+        }'s turn ended.`
+      );
+      setHasRolled(false);
+    } catch (error) {
+      showNotification(error.message, "error");
+      console.error("End turn failed:", error);
+    } finally {
+      setIsLoadingAction(false);
+    }
+  }, [isAnimating, isLoadingAction, currentGame, contextEndTurn]);
+
+  // Helper to get tile at position
+  const getTileAtPosition = (position) => {
+    const allTiles = [
+      { type: "corner", subType: "go" }, // 0: GO
+      ...tiles.bottom, // 1-9
+      { type: "corner", subType: "jail" }, // 10: Jail
+      ...tiles.right, // 11-19
+      { type: "corner", subType: "free-parking" }, // 20: Free Parking
+      ...tiles.top, // 21-29
+      { type: "corner", subType: "go-to-jail" }, // 30: Go to Jail
+      ...tiles.left, // 31-39
+    ];
+    return allTiles[position] || null;
   };
 
-  // -----------------------------
-  // Roll Dice + Start Animation
-  // -----------------------------
-  const rollDice = useCallback(() => {
-    if (isAnimating || !gameStarted || hasRolled) return;
+  // Helper function to check if property can be bought
+  const canBuyProperty = () => {
+    if (!currentGame || !isMyTurn || !hasRolled) return false;
 
-    const d1 = Math.floor(Math.random() * 6) + 1;
-    const d2 = Math.floor(Math.random() * 6) + 1;
+    const player = currentGame.players?.[currentGame.currentPlayerIndex];
+    if (!player) return false;
 
-    console.log("Rolling dice:", d1, "+", d2, "=", d1 + d2);
-    addLog(
-      `${players[currentPlayerIndex]?.name} rolled ${d1} + ${d2} = ${d1 + d2}`
-    );
-
-    setCurrentDice({ d1, d2 });
-    setAnimationStep("rotating");
-    setIsAnimating(true);
-    setHasRolled(true);
-  }, [isAnimating, gameStarted, hasRolled, players, currentPlayerIndex]);
-
-  // -----------------------------
-  // End Turn Function
-  // -----------------------------
-  const endTurn = useCallback(() => {
-    if (isAnimating) return;
-
-    addLog(`${players[currentPlayerIndex]?.name}'s turn ended.`);
-    setCurrentPlayerIndex((prev) => (prev + 1) % players.length);
-    setHasRolled(false);
-  }, [isAnimating, players, currentPlayerIndex]);
-
-  // -----------------------------
-  // Buy Property Function
-  // -----------------------------
-  const buyProperty = useCallback(() => {
-    const player = players[currentPlayerIndex];
     const tileIndex = player.position;
+    const tile = getTileAtPosition(tileIndex);
+
+    // Check if tile is a purchasable type
+    if (!tile || !PURCHASABLE_TYPES.includes(tile.type)) {
+      return false;
+    }
 
     // Check if property is already owned
-    const isOwned = players.some((p) => p.ownedTiles?.includes(tileIndex));
+    const isOwned = currentGame.properties?.some(
+      (p) => p.propertyId === tileIndex
+    );
+    if (isOwned) {
+      return false;
+    }
 
+    // Check if player has enough money
+    if (player.money < tile.price) {
+      return false;
+    }
+
+    return true;
+  };
+
+  // Buy Property Function
+  const buyProperty = useCallback(async () => {
+    if (!currentGame) return;
+
+    const player = currentGame.players?.[currentGame.currentPlayerIndex];
+    if (!player) return;
+
+    const tileIndex = player.position;
+    const tile = getTileAtPosition(tileIndex);
+
+    // Check if tile is purchasable
+    if (!tile || !PURCHASABLE_TYPES.includes(tile.type)) {
+      showNotification("This property cannot be purchased!", "error");
+      return;
+    }
+
+    // Check if property is already owned
+    const isOwned = currentGame.properties?.some(
+      (p) => p.propertyId === tileIndex
+    );
     if (isOwned) {
       showNotification("This property is already owned!", "error");
       return;
     }
 
-    const price = 200; // Simplified pricing
-
-    if (player.money < price) {
+    if (player.money < tile.price) {
       showNotification("Not enough money!", "error");
       return;
     }
 
-    setPlayers((prev) =>
-      prev.map((p, i) =>
-        i === currentPlayerIndex
-          ? {
-              ...p,
-              money: p.money - price,
-              ownedTiles: [...(p.ownedTiles || []), tileIndex],
-            }
-          : p
-      )
-    );
+    try {
+      setIsLoadingAction(true);
+      await contextBuyProperty(tileIndex);
+      addLog(
+        `${player.name} bought property "${tile.title}" for $${tile.price}`
+      );
+      showNotification(`Property purchased for $${tile.price}!`, "success");
+    } catch (error) {
+      showNotification(error.message, "error");
+      console.error("Buy property failed:", error);
+    } finally {
+      setIsLoadingAction(false);
+    }
+  }, [currentGame, contextBuyProperty]);
 
-    addLog(
-      `${player.name} bought property at position ${tileIndex} for $${price}`
-    );
-    showNotification(`Property purchased for $${price}!`, "success");
-  }, [players, currentPlayerIndex]);
-
-  // -----------------------------
-  // Bot Auto-Play Logic
-  // -----------------------------
+  // Bot auto-play removed to prevent unintended rolls on other players' turns
+  // Sync dice animation across all players in room
   useEffect(() => {
-    if (!gameStarted || !players.length) return;
+    if (!currentGame || !currentGame.lastDiceRoll) return;
 
-    const currentPlayer = players[currentPlayerIndex];
-
-    if (currentPlayer?.isBot && !isAnimating && !hasRolled) {
-      botTimerRef.current = setTimeout(() => {
-        rollDice();
-      }, 1500);
+    // Check if we already displayed this dice roll
+    if (
+      currentDice.d1 === currentGame.lastDiceRoll.d1 &&
+      currentDice.d2 === currentGame.lastDiceRoll.d2
+    ) {
+      return; // Already displayed
     }
 
-    // Bot auto-ends turn after rolling
-    if (currentPlayer?.isBot && hasRolled && !isAnimating) {
-      botTimerRef.current = setTimeout(() => {
-        // Bot randomly buys properties 50% of the time
-        if (Math.random() > 0.5) {
-          buyProperty();
-        }
-        setTimeout(() => endTurn(), 1000);
-      }, 2000);
+    // New dice roll detected - show it for all players
+    setCurrentDice({
+      d1: currentGame.lastDiceRoll.d1,
+      d2: currentGame.lastDiceRoll.d2,
+    });
+    setAnimationStep("rotating");
+    setIsAnimating(true);
+  }, [currentGame?.lastDiceRoll]);
+
+  // Sync player position changes from backend -> drive animation with previous positions
+  useEffect(() => {
+    if (!currentGame?.players) return;
+
+    const nextSig = currentGame.players.map((p) => p.position).join("-");
+    const prevSig = lastPositionsSigRef.current;
+
+    if (!prevGameRef.current) {
+      prevGameRef.current = currentGame;
+      lastPositionsSigRef.current = nextSig;
+      return;
     }
 
-    return () => {
-      if (botTimerRef.current) {
-        clearTimeout(botTimerRef.current);
-        botTimerRef.current = null;
+    // Detect any movement from the previous game snapshot
+    const movedPlayers = currentGame.players.filter((p) => {
+      const prevPlayer = prevGameRef.current.players?.find(
+        (pp) => pp.id === p.id
+      );
+      return prevPlayer && prevPlayer.position !== p.position;
+    });
+
+    if (nextSig !== prevSig && movedPlayers.length > 0) {
+      // Capture previous positions for all players to drive animation start
+      const prevPositionsMap = {};
+      currentGame.players.forEach((p) => {
+        const prevPlayer = prevGameRef.current.players?.find(
+          (pp) => pp.id === p.id
+        );
+        prevPositionsMap[p.id] = prevPlayer ? prevPlayer.position : p.position;
+      });
+
+      setPrevPositions(prevPositionsMap);
+
+      // Use latest dice from game if present
+      if (currentGame.lastDiceRoll) {
+        setCurrentDice({
+          d1: currentGame.lastDiceRoll.d1,
+          d2: currentGame.lastDiceRoll.d2,
+        });
       }
-    };
-  }, [
-    currentPlayerIndex,
-    gameStarted,
-    players,
-    isAnimating,
-    hasRolled,
-    rollDice,
-    endTurn,
-    buyProperty,
-  ]);
 
-  // -----------------------------
+      setAnimationStep("rotating");
+      setIsAnimating(true);
+      setHasRolled(true);
+    }
+
+    prevGameRef.current = currentGame;
+    lastPositionsSigRef.current = nextSig;
+  }, [currentGame]);
   // Handle Animation Steps
-  // -----------------------------
   useEffect(() => {
-    if (!isAnimating) return;
-
+    if (!isAnimating || !currentGame) return;
     let timeout;
-    const currentPlayer = players[currentPlayerIndex];
-    const isMyTurn = currentPlayer && !currentPlayer.isBot;
     const diceSum = currentDice.d1 + currentDice.d2;
 
     console.log("Animation step:", animationStep, "Dice sum:", diceSum);
@@ -205,31 +360,8 @@ const Game = () => {
       const waveDuration = diceSum * 100 + 500;
 
       timeout = setTimeout(() => {
-        // Move Player using dice sum
-        setPlayers((prev) => {
-          const updated = [...prev];
-          const current = updated[currentPlayerIndex];
-          const newPos = (current.position + diceSum) % TILES_ON_BOARD;
-
-          const passedGo = newPos < current.position;
-
-          console.log(
-            `Moving player ${current.name} from ${current.position} to ${newPos} (rolled ${diceSum})`
-          );
-
-          updated[currentPlayerIndex] = {
-            ...current,
-            position: newPos,
-            money: current.money + (passedGo ? 200 : 0),
-          };
-
-          if (passedGo) {
-            addLog(`${current.name} passed GO! Collected $200`);
-          }
-
-          return updated;
-        });
-
+        // Movement is handled by backend via rollDice
+        // Just update animation
         setAnimationStep("zooming");
       }, waveDuration);
     }
@@ -240,64 +372,31 @@ const Game = () => {
       timeout = setTimeout(() => {
         setIsAnimating(false);
         setAnimationStep("idle");
-
-        // Don't auto-advance turn - player must click "End Turn"
       }, zoomDuration);
     }
 
     return () => clearTimeout(timeout);
-  }, [animationStep, currentDice, currentPlayerIndex, isAnimating, players]);
+  }, [animationStep, currentDice, isAnimating, currentGame, currentPlayerId]);
 
-  // -----------------------------
-  // Before Game Start Screen
-  // -----------------------------
-  if (!gameStarted) {
+  // Determine current player and turn state
+  const currentPlayer = currentGame?.players?.[currentGame?.currentPlayerIndex];
+  const isMyTurn = currentPlayer?.id === currentPlayerId;
+
+  // Loading state or not in game
+  if (!currentRoom || !currentGame) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100">
-        <div className="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full">
-          <h1 className="text-4xl font-bold text-center mb-8 text-green-800">
-            Monopoly Game
-          </h1>
-
-          <div className="mb-8">
-            <label className="block text-lg font-semibold mb-4 text-gray-700">
-              Number of Players:
-            </label>
-
-            <div className="grid grid-cols-3 gap-3">
-              {[2, 3, 4].map((num) => (
-                <button
-                  key={num}
-                  onClick={() => setNumPlayers(num)}
-                  className={`py-4 px-6 rounded-lg font-bold text-lg transition-all ${
-                    numPlayers === num
-                      ? "bg-green-600 text-white shadow-lg scale-105"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  {num}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button
-            onClick={startGame}
-            className="w-full py-4 bg-green-600 text-white font-bold text-xl rounded-lg shadow-lg hover:bg-green-700 transition-all transform hover:scale-105"
-          >
-            Start Game
-          </button>
+        <div className="text-center">
+          <p className="text-2xl font-bold text-gray-800 mb-4">
+            Loading game...
+          </p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
         </div>
       </div>
     );
   }
 
-  const currentPlayer = players[currentPlayerIndex];
-  const isMyTurn = currentPlayer && !currentPlayer.isBot;
-
-  // -----------------------------
   // Main Game UI
-  // -----------------------------
   return (
     <div className="w-screen h-screen flex items-center justify-center p-4 bg-gradient-to-br from-green-50 to-blue-50">
       {/* Notification Toast */}
@@ -315,36 +414,36 @@ const Game = () => {
         </div>
       )}
 
-      <div className="w-full h-full max-w-7xl flex gap-4">
+      <div className="w-full h-full  flex gap-4">
         {/* Left Sidebar - Players */}
         <div className="w-64 bg-white rounded-xl shadow-xl p-4 overflow-y-auto flex flex-col gap-3">
           <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
             Players
           </h2>
 
-          {players.map((p, index) => (
+          {currentGame.players.map((p, index) => (
             <div
               key={p.id}
               className={`p-3 rounded-lg border-2 transition-all ${
-                index === currentPlayerIndex
+                index === currentGame.currentPlayerIndex
                   ? "bg-yellow-50 border-yellow-400 shadow-md scale-105"
                   : "bg-gray-50 border-gray-200"
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
                 <div
-                  className={`w-6 h-6 rounded-full ${p.color.color} border-2 ${p.color.borderColor}`}
+                  className={`w-6 h-6 rounded-full ${p.color} border-2 border-gray-800`}
                 />
                 <span className="font-bold text-lg">
                   {p.name}
-                  {p.isBot && " 🤖"}
+                  {p.id === currentPlayerId ? " (You)" : ""}
                 </span>
               </div>
 
               <div className="text-sm text-gray-700 space-y-1">
                 <p className="font-semibold text-green-700">💰 ${p.money}</p>
                 <p>📍 Position {p.position}</p>
-                <p>🏠 Properties: {p.ownedTiles?.length || 0}</p>
+                <p>🏠 Properties: {p.properties?.length || 0}</p>
               </div>
             </div>
           ))}
@@ -353,7 +452,7 @@ const Game = () => {
           <div className="mt-4 border-t pt-3">
             <h3 className="font-bold text-sm text-gray-700 mb-2">Game Log</h3>
             <div className="space-y-1 max-h-40 overflow-y-auto text-xs">
-              {gameLog.map((log) => (
+              {_gameLog.map((log) => (
                 <div key={log.id} className="text-gray-600">
                   <span className="text-gray-400">{log.time}</span> -{" "}
                   {log.message}
@@ -364,72 +463,29 @@ const Game = () => {
         </div>
 
         {/* Game Board */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-4">
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 ">
           <Board
             isAnimating={isAnimating}
             animationStep={animationStep}
-            players={players}
-            currentPlayerIndex={currentPlayerIndex}
+            players={currentGame.players}
+            currentPlayerIndex={currentGame.currentPlayerIndex}
             currentDice={currentDice}
             isMyTurn={isMyTurn}
+            hasRolled={hasRolled}
+            onRollDice={rollDice}
+            onEndTurn={endTurn}
             onRollComplete={() => {
               if (animationStep === "rotating") {
                 setAnimationStep("waving");
               }
             }}
+            onTileClick={({ tile, index }) =>
+              setShowPropertyCard({ tile, index })
+            }
+            prevPositions={prevPositions}
           />
 
-          {/* Dice + Controls Panel */}
-          <div className="bg-white rounded-xl shadow-xl p-6 flex items-center gap-6">
-            {/* Dice Display */}
-            <div className="flex gap-3">
-              <div className="w-16 h-16 bg-white border-4 border-gray-800 rounded-lg flex items-center justify-center text-3xl font-bold shadow-md">
-                {currentDice.d1}
-              </div>
-              <div className="w-16 h-16 bg-white border-4 border-gray-800 rounded-lg flex items-center justify-center text-3xl font-bold shadow-md">
-                {currentDice.d2}
-              </div>
-            </div>
-
-            {/* Turn Controls */}
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <button
-                  onClick={rollDice}
-                  disabled={isAnimating || !isMyTurn || hasRolled}
-                  className={`px-8 py-3 font-bold text-lg rounded-lg shadow-lg transition-all ${
-                    isAnimating || !isMyTurn || hasRolled
-                      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                      : `${currentPlayer.color.color} text-white hover:opacity-90 transform hover:scale-105`
-                  }`}
-                >
-                  {isAnimating
-                    ? "Moving..."
-                    : hasRolled
-                    ? "Rolled"
-                    : "🎲 Roll Dice"}
-                </button>
-
-                <button
-                  onClick={endTurn}
-                  disabled={!hasRolled || isAnimating}
-                  className={`px-6 py-3 font-bold text-lg rounded-lg shadow-lg transition-all ${
-                    !hasRolled || isAnimating
-                      ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-                      : "bg-blue-600 text-white hover:bg-blue-700 transform hover:scale-105"
-                  }`}
-                >
-                  End Turn
-                </button>
-              </div>
-
-              <div className="text-sm text-gray-600 font-semibold text-center">
-                {isMyTurn
-                  ? `Your Turn - Total: ${currentDice.d1 + currentDice.d2}`
-                  : `${currentPlayer.name}'s Turn`}
-              </div>
-            </div>
-          </div>
+          {/* Dice + Controls Panel - Now inside Board center component */}
         </div>
 
         {/* Right Sidebar - Actions & Info */}
@@ -442,14 +498,14 @@ const Game = () => {
           <div className="space-y-2">
             <button
               onClick={buyProperty}
-              disabled={!isMyTurn || !hasRolled || isAnimating}
+              disabled={!canBuyProperty() || isLoadingAction}
               className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                isMyTurn && hasRolled && !isAnimating
+                canBuyProperty() && !isLoadingAction
                   ? "bg-green-500 hover:bg-green-600 text-white shadow-md hover:scale-105"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
             >
-              🏠 Buy Property
+              {isLoadingAction ? "Processing..." : "🏠 Buy Property"}
             </button>
 
             <button
@@ -495,10 +551,10 @@ const Game = () => {
                 Position: {currentPlayer?.position}
               </p>
               <p className="text-gray-600 mt-1">
-                {currentPlayer?.ownedTiles?.includes(currentPlayer?.position)
+                {currentPlayer?.properties?.includes(currentPlayer?.position)
                   ? "✅ You own this!"
-                  : players.some((p) =>
-                      p.ownedTiles?.includes(currentPlayer?.position)
+                  : currentGame.players.some((p) =>
+                      p.properties?.includes(currentPlayer?.position)
                     )
                   ? "❌ Owned by another player"
                   : "Available for purchase"}
@@ -510,8 +566,8 @@ const Game = () => {
           <div className="border-t pt-3 flex-1 overflow-y-auto">
             <h4 className="font-bold text-gray-700 mb-2">Your Properties</h4>
             <div className="space-y-2">
-              {currentPlayer?.ownedTiles?.length > 0 ? (
-                currentPlayer.ownedTiles.map((tile) => (
+              {currentPlayer?.properties?.length > 0 ? (
+                currentPlayer.properties.map((tile) => (
                   <div
                     key={tile}
                     className="bg-blue-50 p-2 rounded border border-blue-200 text-sm"
@@ -565,7 +621,7 @@ const Game = () => {
                   <h3 className="font-bold mb-2">Request</h3>
                   <select className="w-full p-2 border rounded mb-2">
                     <option>Select player...</option>
-                    {players
+                    {currentGame.players
                       .filter((p) => p.id !== currentPlayer?.id)
                       .map((p) => (
                         <option key={p.id} value={p.id}>

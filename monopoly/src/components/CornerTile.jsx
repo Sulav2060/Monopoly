@@ -2,16 +2,17 @@ import React from "react";
 
 const CornerTile = ({ id, title, rotation }) => {
   return (
-    // FIX: Added w-full and h-full here
     <div
       id={id}
-      className="border border-black bg-gray-400 overflow-hidden flex items-center justify-center w-full h-full"
+      className="border-2 border-black bg-gradient-to-br from-red-400 to-red-600 overflow-hidden flex items-center justify-center w-full h-full relative"
     >
       <div
         style={{ transform: `rotate(${rotation}deg)` }}
-        className="text-center"
+        className="text-center absolute"
       >
-        <span className="font-bold text-sm">{title}</span>
+        <span className="font-bold text-sm text-white drop-shadow-lg whitespace-nowrap">
+          {title}
+        </span>
       </div>
     </div>
   );

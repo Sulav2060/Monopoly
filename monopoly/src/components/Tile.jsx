@@ -48,8 +48,10 @@ const Tile = ({
 
     return (
       <>
-        <div className="font-semibold text-xs">{title}</div>
-        {price && <div className="text-xs font-medium">${price}</div>}
+        <div className="font-semibold text-[10px] leading-tight text-center px-1">
+          {title}
+        </div>
+        {price && <div className="text-[9px] font-medium mt-0.5">${price}</div>}
       </>
     );
   };
@@ -66,20 +68,25 @@ const Tile = ({
     <>
       <div
         id={id}
-        className={`relative border border-black ${bgColor} overflow-hidden w-full h-full`}
+        className={`relative border border-black ${bgColor} overflow-hidden w-full h-full flex flex-col`}
       >
         {/* MAIN WHITE CONTENT */}
         <div
-          className="bg-white w-full h-[85%] p-1 flex flex-col justify-around text-center items-center"
+          className="bg-white p-2 flex flex-col justify-center text-center items-center"
           style={{
             position: "absolute",
-            ...(rotation === 180 && { bottom: 0 }),
-            ...(rotation === 0 && { top: 0 }),
+            ...(rotation === 180 && {
+              bottom: 0,
+              width: "100%",
+              height: "85%",
+            }),
+            ...(rotation === 0 && { top: 0, width: "100%", height: "85%" }),
             ...(rotation === -90 && { left: 0, width: "85%", height: "100%" }),
             ...(rotation === 90 && { right: 0, width: "85%", height: "100%" }),
           }}
         >
           <div
+            className="flex flex-col items-center justify-center gap-1"
             style={{
               transform: `rotate(${rotation}deg)`,
               ...(isVertical && {
@@ -87,7 +94,7 @@ const Tile = ({
                 top: "50%",
                 left: "50%",
                 transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-                width: "75px",
+                width: "80%",
               }),
             }}
           >

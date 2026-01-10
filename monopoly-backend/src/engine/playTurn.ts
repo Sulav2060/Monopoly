@@ -1,49 +1,92 @@
-//orchastrator
+//orchastraetor
 import { DiceRoll, GameState } from "../types/game";
-import { rollDice } from "./dice";
-import { resolveCurrentTile } from "./resolveTile";
-import { endTurn } from "./turn";
-import { movePlayer } from "./move";
 import { getCurrentPlayerSafe } from "./assertions";
+import { endTurn } from "./endTurn";
+import { goToJail } from "./goToJail";
+import { movePlayer } from "./move";
+import { resolveCurrentTile } from "./resolveTile";
 
 export function playTurn(state: GameState, dice: DiceRoll): GameState {
-  let nextState = { ...state }; //shallow copy->
+  let nextState = state;
+
+  const isDouble = dice.die1 === dice.die2;
+  let doublesCount = isDouble ? (state.doublesCount ?? 0) + 1 : 0;
+
+  // Record dice roll
+  nextState = {
+    ...nextState,
+    lastDice: dice,
+    events: [...nextState.events, { type: "DICE_ROLLED", dice }],
+  };
+
   const player = getCurrentPlayerSafe(nextState);
-  const events = [...nextState.events]; //to append the new event later
 
-  events.push({ type: "DICE_ROLLED", dice });
+  // Three doubles → jail
+  if (doublesCount >= 3) {
+    nextState = goToJail(nextState);
+    return {
+      ...nextState,
+      doublesCount: 0,
+    };
+  }
 
-  // 🚔 JAIL LOGIC
+  // Jail handling
   if (player.inJail) {
-    const isDouble = dice.die1 === dice.die2;
-
     if (isDouble) {
-      player.inJail = false;
-      player.jailTurns = 0;
-      events.push({ type: "JAIL_EXITED", reason: "DOUBLES" });
+      nextState = {
+        ...nextState,
+        players: nextState.players.map((p) =>
+          p.id === player.id ? { ...p, inJail: false, jailTurns: 0 } : p
+        ),
+        events: [
+          ...nextState.events,
+          { type: "JAIL_EXITED", reason: "DOUBLES" },
+        ],
+      };
       nextState = movePlayer(nextState, dice);
     } else {
-      player.jailTurns += 1;
-      events.push({
-        type: "JAIL_TURN_FAILED",
-        attempt: player.jailTurns,
-      });
+      const turns = player.jailTurns + 1;
 
-      if (player.jailTurns >= 3) {
-        player.inJail = false;
-        player.jailTurns = 0;
-        events.push({ type: "JAIL_EXITED", reason: "MAX_TURNS" });
+      nextState = {
+        ...nextState,
+        players: nextState.players.map((p) =>
+          p.id === player.id ? { ...p, jailTurns: turns } : p
+        ),
+        events: [
+          ...nextState.events,
+          { type: "JAIL_TURN_FAILED", attempt: turns },
+        ],
+      };
+
+      if (turns >= 3) {
+        nextState = {
+          ...nextState,
+          players: nextState.players.map((p) =>
+            p.id === player.id ? { ...p, inJail: false, jailTurns: 0 } : p
+          ),
+          events: [
+            ...nextState.events,
+            { type: "JAIL_EXITED", reason: "MAX_TURNS" },
+          ],
+        };
         nextState = movePlayer(nextState, dice);
       }
     }
   } else {
     nextState = movePlayer(nextState, dice);
   }
+
+  // Resolve tile effects
   nextState = resolveCurrentTile(nextState);
-  nextState = endTurn(nextState);
+
+  // End turn unless doubles
+  if (!isDouble) {
+    nextState = endTurn(nextState);
+    doublesCount = 0;
+  }
 
   return {
     ...nextState,
-    events,
+    doublesCount,
   };
 }

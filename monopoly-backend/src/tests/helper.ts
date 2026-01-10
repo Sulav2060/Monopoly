@@ -10,6 +10,7 @@ export function baseGameState(): GameState {
         money: 1500,
         inJail: true,
         jailTurns: 0,
+        isBankrupt:false
       },
       {
         id: "p2",
@@ -18,6 +19,7 @@ export function baseGameState(): GameState {
         money: 1500,
         inJail: false,
         jailTurns: 0,
+        isBankrupt:false
       },
     ],
     currentTurnIndex: 0,

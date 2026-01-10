@@ -12,6 +12,7 @@ export function createBaseState(): GameState {
         money: 1500,
         inJail: false,
         jailTurns: 0,
+        isBankrupt:false
       },
       {
         id: "p2",
@@ -20,11 +21,12 @@ export function createBaseState(): GameState {
         money: 1500,
         inJail: false,
         jailTurns: 0,
+        isBankrupt:false
       },
     ],
     properties: [
       {
-        propertyId: "1",
+        tileIndex: 1,
         ownerId: "p2",
       },
     ],

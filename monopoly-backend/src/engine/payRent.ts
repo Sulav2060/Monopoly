@@ -1,33 +1,33 @@
-// engine/payRent.ts
-import { GameState } from "../types/game";
 import { PropertyTile } from "../types/board";
-import { getPropertyOwner } from "./propertyHelpers";
+import { GameState } from "../types/game";
 import { getCurrentPlayerSafe } from "./assertions";
+import { bankruptPlayer } from "./bankruptPlayer";
+import { getPropertyOwner } from "./propertyHelpers";
 
 export function payRent(state: GameState, tile: PropertyTile): GameState {
-  const index = state.currentTurnIndex;
   const player = getCurrentPlayerSafe(state);
-  const ownership = getPropertyOwner(state, tile.id);
-  if (!ownership) return state;
-  if (ownership.ownerId === player.id) return state;
+  const ownership = getPropertyOwner(state, tile.tileIndex);
+  if (!ownership) return state; //no owner
+  if (ownership.ownerId === player.id) return state; //own property
 
   const rent = tile.baseRent;
+  const newMoney = player.money - rent;
 
-  const ownerIndex = state.players.findIndex((p) => p.id === ownership.ownerId);
-
-  const players = state.players.map((p, i) => {
-    if (i === index) {
-      return { ...p, money: p.money - rent };
-    }
-    if (p.id === ownership.ownerId) {
-      return { ...p, money: p.money + rent };
-    }
-    return p;
-  });
+  if (newMoney < 0) {
+    return bankruptPlayer(state, player.id, ownership.ownerId);
+  }
 
   return {
     ...state,
-    players,
+    players: state.players.map((p) => {
+      if (p.id === player.id) {
+        return { ...p, money: p.money - rent };
+      }
+      if (p.id === ownership.ownerId) {
+        return { ...p, money: p.money + rent };
+      }
+      return p;
+    }),
     events: [
       ...state.events,
       {

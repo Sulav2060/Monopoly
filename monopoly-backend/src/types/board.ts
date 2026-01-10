@@ -13,15 +13,16 @@ export type PropertyTile = {
   id: string;
   name: string;
   price: number;
+  tileIndex: number;
   baseRent: number;
 };
 
 export type Tile =
-  | { type: "GO" }
+  | { type: "GO"; tileIndex: number }
   | PropertyTile
-  | { type: "GO_TO_JAIL" }
-  | { type: "JAIL" }
-  | { type: "FREE_PARKING" }
-  | { type: "CHANCE" }
-  | { type: "COMMUNITY_CHEST" }
-  | { type: "TAX" };
+  | { type: "GO_TO_JAIL"; tileIndex: number }
+  | { type: "JAIL"; tileIndex: number }
+  | { type: "FREE_PARKING"; tileIndex: number }
+  | { type: "CHANCE"; tileIndex: number }
+  | { type: "COMMUNITY_CHEST"; tileIndex: number }
+  | { type: "TAX"; amount: number; tileIndex: number };

@@ -7,7 +7,8 @@ export type PlayerState = {
   position: number; // 0–39 board positions
   money: number;
   inJail: boolean;
-  jailTurns: number; //TODO: learn about this jailTurns what it is?
+  jailTurns: number; //TODO: learn about this jailTurns what it is?->how many times the person is in jail
+  isBankrupt: boolean;
 };
 
 export type DiceRoll = {
@@ -30,7 +31,13 @@ export type GameEvent =
   //jail regarding events
   | { type: "PLAYER_SENT_TO_JAIL"; playerId: PlayerId }
   | { type: "JAIL_TURN_FAILED"; attempt: number }
-  | { type: "JAIL_EXITED"; reason: "DOUBLES" | "MAX_TURNS" };
+  | { type: "JAIL_EXITED"; reason: "DOUBLES" | "MAX_TURNS" }
+  //bankruptcy regarding events
+  | {
+      type: "PLAYER_BANKRUPT";
+      playerId: PlayerId;
+      causedBy?: PlayerId; // rent owner, optional TODO: still unclear about this
+    };
 
 export type GameState = {
   players: PlayerState[];
@@ -38,9 +45,10 @@ export type GameState = {
   lastDice?: DiceRoll;
   events: GameEvent[];
   properties: PropertyOwnership[];
+  doublesCount?: number; // to see if 3 doubles player gets and to take him to jail
 };
 
 export type PropertyOwnership = {
-  propertyId: string;
+  tileIndex: number;
   ownerId: PlayerId;
 };

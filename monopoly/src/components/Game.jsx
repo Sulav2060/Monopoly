@@ -63,6 +63,11 @@ const Game = () => {
   const [_gameLog, setGameLog] = useState([]);
   const lastEventCountRef = useRef(0);
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(true);
+  const [moneyAnimations, setMoneyAnimations] = useState({}); // Track money animations per player
+  const [animatedMoney, setAnimatedMoney] = useState({}); // Track animated money display values
+  const prevMoneyRef = useRef({}); // Track previous money amounts
+  const moneyAnimationTimeoutRef = useRef({}); // Store animation timeouts per player
 
   // Get all property tiles for carousel
   const allPropertyTiles = [
@@ -88,7 +93,15 @@ const Game = () => {
   useEffect(() => {
     if (!_showPropertyCard) {
       const interval = setInterval(() => {
-        setCarouselIndex((prev) => (prev + 1) % allPropertyTiles.length);
+        setCarouselIndex((prev) => {
+          const next = (prev + 1) % allPropertyTiles.length;
+          // Enable transition for normal slides, disable for wrap-around
+          if (next === 0) {
+            setIsTransitioning(false);
+            setTimeout(() => setIsTransitioning(true), 50);
+          }
+          return next;
+        });
       }, 3000); // Change every 3 seconds
       return () => clearInterval(interval);
     }
@@ -235,6 +248,83 @@ const Game = () => {
       setHasRolled(false);
     }
   }, [currentGame?.currentTurnIndex]);
+
+  // Monitor money changes and animate the number
+  useEffect(() => {
+    if (!currentGame?.players) return;
+
+    currentGame.players.forEach((player) => {
+      const prevMoney = prevMoneyRef.current[player.id];
+      
+      if (prevMoney !== undefined && prevMoney !== player.money) {
+        const isDecrease = player.money < prevMoney;
+        const startValue = prevMoney;
+        const endValue = player.money;
+        const difference = Math.abs(endValue - startValue);
+        const duration = 600; // ms
+        const steps = 30;
+        const stepDuration = duration / steps;
+        let currentStep = 0;
+
+        // Clear any existing timeout for this player
+        if (moneyAnimationTimeoutRef.current[player.id]) {
+          clearInterval(moneyAnimationTimeoutRef.current[player.id]);
+        }
+
+        // Set initial animated value
+        setAnimatedMoney(prev => ({
+          ...prev,
+          [player.id]: startValue
+        }));
+
+        // Trigger color animation
+        setMoneyAnimations(prev => ({
+          ...prev,
+          [player.id]: isDecrease ? 'decrease' : 'increase'
+        }));
+
+        // Animate the number
+        const interval = setInterval(() => {
+          currentStep++;
+          const progress = Math.min(currentStep / steps, 1);
+          const easeProgress = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress; // easeInOutQuad
+          const currentValue = startValue + (endValue - startValue) * easeProgress;
+
+          setAnimatedMoney(prev => ({
+            ...prev,
+            [player.id]: Math.round(currentValue)
+          }));
+
+          if (progress >= 1) {
+            clearInterval(interval);
+            setAnimatedMoney(prev => ({
+              ...prev,
+              [player.id]: endValue
+            }));
+            moneyAnimationTimeoutRef.current[player.id] = null;
+
+            // Remove color animation after 600ms
+            setTimeout(() => {
+              setMoneyAnimations(prev => ({
+                ...prev,
+                [player.id]: null
+              }));
+            }, 100);
+          }
+        }, stepDuration);
+
+        moneyAnimationTimeoutRef.current[player.id] = interval;
+      }
+
+      prevMoneyRef.current[player.id] = player.money;
+    });
+
+    return () => {
+      Object.values(moneyAnimationTimeoutRef.current).forEach(timeout => {
+        if (timeout) clearInterval(timeout);
+      });
+    };
+  }, [currentGame?.players]);
 
   // Stream events into the local game log whenever the events array grows
   useEffect(() => {
@@ -613,10 +703,18 @@ const Game = () => {
                   </div>
 
                   {/* Right: Balance */}
-                  <div className="flex flex-col items-end rounded-lg bg-white/5 px-3 py-2 border border-white/10">
+                  <div className={`flex flex-col items-end rounded-lg bg-white/5 px-3 py-2 border border-white/10 transition-all duration-300 ${
+                    moneyAnimations[p.id] === 'decrease' ? 'border-red-500/80 bg-red-500/20 shadow-[0_0_20px_-5px_rgba(239,68,68,0.8)]' :
+                    moneyAnimations[p.id] === 'increase' ? 'border-green-500/80 bg-green-500/20 shadow-[0_0_20px_-5px_rgba(34,197,94,0.8)]' :
+                    'border-white/10'
+                  }`}>
                     <span className="text-[11px] text-gray-400">Balance</span>
-                    <span className="font-semibold text-emerald-300 text-sm">
-                      ${p.money.toLocaleString()}
+                    <span className={`font-semibold text-sm transition-all duration-300 ${
+                      moneyAnimations[p.id] === 'decrease' ? 'text-red-300' :
+                      moneyAnimations[p.id] === 'increase' ? 'text-green-300' :
+                      'text-emerald-300'
+                    }`}>
+                      ${(animatedMoney[p.id] ?? p.money).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -881,7 +979,7 @@ const Game = () => {
               // Slideshow carousel
               <div className="relative h-48 rounded-xl overflow-hidden">
                 <div
-                  className="flex transition-transform duration-700 ease-in-out h-full"
+                  className={`flex h-full w-full ${isTransitioning ? 'transition-transform duration-700 ease-in-out' : ''}`}
                   style={{
                     transform: `translateX(-${carouselIndex * 100}%)`,
                   }}
@@ -889,7 +987,7 @@ const Game = () => {
                   {allPropertyTiles.map((tile, idx) => (
                     <div
                       key={idx}
-                      className="min-w-full h-full relative flex-shrink-0"
+                      className="w-full h-full relative flex-shrink-0"
                     >
                       <img
                         src={tile.image}

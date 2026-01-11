@@ -5,6 +5,7 @@ import { buyProperty } from "./buyProperty";
 import { drawCommunityChest } from "./drawCommunityChest";
 import { goToJail } from "./goToJail";
 import { handleFreeParking } from "./handleFreeParking";
+import { handleTax } from "./handleTax";
 import { payRent } from "./payRent";
 import { getPropertyOwner } from "./propertyHelpers";
 
@@ -35,8 +36,7 @@ export function resolveCurrentTile(state: GameState): GameState {
     }
 
     case "TAX":
-      // return handleTax(state, tile.amount);
-      return state;
+      return handleTax(state, tile.amount);
 
     case "FREE_PARKING":
       return handleFreeParking(state);

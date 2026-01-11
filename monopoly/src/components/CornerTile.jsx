@@ -4,7 +4,7 @@ const CornerTile = ({ id, title, rotation }) => {
   return (
     <div
       id={id}
-      className="border-2 border-black bg-gradient-to-br from-red-400 to-red-600 overflow-hidden flex items-center justify-center w-full h-full relative"
+      className="border-2 border-black bg-[#097099] overflow-hidden flex items-center justify-center w-full h-full relative rounded-xl"
     >
       <div
         style={{ transform: `rotate(${rotation}deg)` }}

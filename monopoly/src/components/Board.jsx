@@ -223,83 +223,72 @@ const Board = ({
   });
 
   return (
-    <div
-      className="w-full h-full flex items-center justify-center"
-      style={{ perspective: "2000px", perspectiveOrigin: "center center" }}
-    >
-      <div
-        className="transition-all duration-800 ease-in-out"
-        style={{ transformStyle: "preserve-3d" }}
-      >
+    <div className="w-full h-full flex items-center justify-center overflow-hidden">
+      <div className="relative w-full h-full aspect-square">
         <div
-          className="w-full h-full min-w-[92vmin] min-h-[92vmin] aspect-square relative"
-          style={{ transformStyle: "preserve-3d" }}
+          ref={gridRef}
+          className="w-full h-full grid relative"
+          style={{
+            gridTemplateRows: "1.6fr repeat(9, 1fr) 1.6fr",
+            gridTemplateColumns: "1.6fr repeat(9, 1fr) 1.6fr",
+          }}
         >
-          <div
-            ref={gridRef}
-            className={`w-full h-full grid relative`}
-            style={{
-              gridTemplateRows: "1.6fr repeat(9, 1fr) 1.6fr",
-              gridTemplateColumns: "1.6fr repeat(9, 1fr) 1.6fr",
-            }}
-          >
-            {tileElements}
-            {popoverPos && activeIndex !== null && (
-              <div
-                className="absolute z-70"
-                style={{
-                  left: popoverPos.left,
-                  top: popoverPos.top,
-                  transform: popoverPos.transform,
-                }}
-              >
-                <PopoverCard
-                  tile={allTilesInOrder[activeIndex]}
-                  side={popoverPos.side}
-                  onClose={() => setActiveIndex(null)}
-                />
-              </div>
-            )}
-            <CenterComponent
-              currentDice={currentDice}
-              isRolling={animationStep === "rotating"}
-              onRollComplete={onRollComplete}
-              showDice={true}
-              currentPlayerIndex={currentPlayerIndex}
-              totalPlayers={players.length}
-              hasRolled={hasRolled}
-              isMyTurn={isMyTurn}
-              isAnimating={isAnimating}
-              onRollDice={onRollDice}
-              onEndTurn={onEndTurn}
-              currentPlayer={players[currentPlayerIndex]}
-            />
-          </div>
-
-          {players?.map((player, index) => {
-            const prevPos = prevPositions?.[player.id] ?? player.position ?? 0;
-            const steps = (player.position - prevPos + tilesCount) % tilesCount;
-            const isAnimatingPlayer =
-              (animationStep === "rotating" || animationStep === "waving") &&
-              steps > 0;
-
-            return (
-              <PlayerToken
-                key={player.id}
-                position={player.position}
-                color={player.color}
-                isAnimatingPlayer={isAnimatingPlayer}
-                isCurrentPlayer={index === currentPlayerIndex}
-                playerCount={players.length}
-                playerIndex={index}
-                animationStep={animationStep}
-                startPosition={prevPos}
-                moveSteps={steps}
-                tilesCount={tilesCount}
+          {tileElements}
+          {popoverPos && activeIndex !== null && (
+            <div
+              className="absolute z-70"
+              style={{
+                left: popoverPos.left,
+                top: popoverPos.top,
+                transform: popoverPos.transform,
+              }}
+            >
+              <PopoverCard
+                tile={allTilesInOrder[activeIndex]}
+                side={popoverPos.side}
+                onClose={() => setActiveIndex(null)}
               />
-            );
-          })}
+            </div>
+          )}
+          <CenterComponent
+            currentDice={currentDice}
+            isRolling={animationStep === "rotating"}
+            onRollComplete={onRollComplete}
+            showDice={true}
+            currentPlayerIndex={currentPlayerIndex}
+            totalPlayers={players.length}
+            hasRolled={hasRolled}
+            isMyTurn={isMyTurn}
+            isAnimating={isAnimating}
+            onRollDice={onRollDice}
+            onEndTurn={onEndTurn}
+            currentPlayer={players[currentPlayerIndex]}
+          />
         </div>
+
+        {players?.map((player, index) => {
+          const prevPos = prevPositions?.[player.id] ?? player.position ?? 0;
+          const steps = (player.position - prevPos + tilesCount) % tilesCount;
+          const isAnimatingPlayer =
+            (animationStep === "rotating" || animationStep === "waving") &&
+            steps > 0;
+
+          return (
+            <PlayerToken
+              key={player.id}
+              position={player.position}
+              color={player.color}
+              isAnimatingPlayer={isAnimatingPlayer}
+              isCurrentPlayer={index === currentPlayerIndex}
+              playerCount={players.length}
+              playerIndex={index}
+              animationStep={animationStep}
+              startPosition={prevPos}
+              moveSteps={steps}
+              tilesCount={tilesCount}
+            />
+          );
+        })}
       </div>
     </div>
   );

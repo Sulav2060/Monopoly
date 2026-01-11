@@ -19,7 +19,7 @@ const CenterComponent = ({
   const showControls = !!isMyTurn;
 
   return (
-    <div className="col-span-9 row-span-9 border border-black flex flex-col items-center justify-center relative overflow-hidden bg-linear-to-br from-slate-50 to-slate-100">
+    <div className="col-span-9 row-span-9 bg-[#1D1D1D] flex flex-col items-center justify-center relative overflow-hidden ">
       {showDice && (
         <div className="absolute w-full h-full inset-0 aspect-square flex items-center justify-center z-50">
           <div className="w-full h-full">

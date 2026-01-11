@@ -398,7 +398,7 @@ const Game = () => {
 
   // Main Game UI
   return (
-    <div className="w-screen h-screen flex items-center justify-center p-4 bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="w-screen h-screen flex items-center justify-center p-4 bg-[#1D1D1D]">
       {/* Notification Toast */}
       {notification && (
         <div
@@ -414,10 +414,10 @@ const Game = () => {
         </div>
       )}
 
-      <div className="w-full h-full  flex gap-4">
+      <div className="w-full h-full flex gap-4">
         {/* Left Sidebar - Players */}
-        <div className="w-64 bg-white rounded-xl shadow-xl p-4 overflow-y-auto flex flex-col gap-3">
-          <h2 className="text-2xl font-bold text-gray-800 border-b pb-2">
+        <div className="w-56 bg-[#3C4848] rounded-xl shadow-xl p-4 overflow-y-auto flex flex-col gap-3">
+          <h2 className="text-xl font-bold text-gray-800 border-b pb-2">
             Players
           </h2>
 
@@ -463,7 +463,7 @@ const Game = () => {
         </div>
 
         {/* Game Board */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 ">
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 overflow-hidden ">
           <Board
             isAnimating={isAnimating}
             animationStep={animationStep}

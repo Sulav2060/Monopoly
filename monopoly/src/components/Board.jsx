@@ -10,7 +10,7 @@ const Board = ({
   isAnimating,
   animationStep,
   players,
-  currentPlayerIndex,
+  currentTurnIndex,
   currentDice,
   isMyTurn,
   onRollComplete,
@@ -40,8 +40,8 @@ const Board = ({
   ].map((tile, index) => ({ ...tile, id: `tile-${index}` }));
 
   const currentPosition =
-    players && players[currentPlayerIndex]
-      ? players[currentPlayerIndex].position
+    players && players[currentTurnIndex]
+      ? players[currentTurnIndex].position
       : 0;
 
   const tilesCount = allTilesInOrder.length;
@@ -91,7 +91,7 @@ const Board = ({
     currentPosition,
     tilesCount,
     players,
-    currentPlayerIndex,
+    currentTurnIndex,
     prevPositions,
   ]);
 
@@ -255,14 +255,14 @@ const Board = ({
             isRolling={animationStep === "rotating"}
             onRollComplete={onRollComplete}
             showDice={true}
-            currentPlayerIndex={currentPlayerIndex}
+            currentTurnIndex={currentTurnIndex}
             totalPlayers={players.length}
             hasRolled={hasRolled}
             isMyTurn={isMyTurn}
             isAnimating={isAnimating}
             onRollDice={onRollDice}
             onEndTurn={onEndTurn}
-            currentPlayer={players[currentPlayerIndex]}
+            currentPlayer={players[currentTurnIndex]}
           />
         </div>
 
@@ -279,7 +279,7 @@ const Board = ({
               position={player.position}
               color={player.color}
               isAnimatingPlayer={isAnimatingPlayer}
-              isCurrentPlayer={index === currentPlayerIndex}
+              isCurrentPlayer={index === currentTurnIndex}
               playerCount={players.length}
               playerIndex={index}
               animationStep={animationStep}

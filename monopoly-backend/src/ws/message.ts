@@ -15,6 +15,11 @@ export type ClientMessage =
   | {
       type: "START_GAME";
       gameId: string;
+    }
+  | {
+      type: "END_TURN";
+      gameId: string;
+      playerId: string;
     };
 
 export type ServerMessage =

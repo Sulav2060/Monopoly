@@ -6,7 +6,7 @@ const CenterComponent = ({
   isRolling,
   onRollComplete,
   showDice = true,
-  currentPlayerIndex,
+  currentTurnIndex,
   totalPlayers,
   hasRolled,
   isMyTurn,
@@ -28,7 +28,7 @@ const CenterComponent = ({
               dice2={currentDice.d2}
               isRolling={isRolling}
               onRollComplete={onRollComplete}
-              currentPlayerIndex={currentPlayerIndex}
+              currentTurnIndex={currentTurnIndex}
               totalPlayers={totalPlayers}
             />
           </div>
@@ -37,7 +37,13 @@ const CenterComponent = ({
 
       {/* Control Panel at Bottom */}
       {showControls && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-60 bg-white rounded-xl shadow-2xl p-4 flex items-center gap-4 max-w-sm">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-60 bg-white rounded-xl shadow-2xl p-6 flex flex-col items-center gap-4 max-w-sm">
+          {/* Turn Status Message */}
+          <div className="text-center">
+            <p className="text-sm font-semibold text-gray-600">Your Turn</p>
+            <p className="text-xs text-gray-500">{currentPlayer?.name}</p>
+          </div>
+
           {/* Dice Display */}
           {/* <div className="flex gap-2">
             <div className="w-12 h-12 bg-white border-4 border-gray-800 rounded-lg flex items-center justify-center text-xl font-bold shadow-md">
@@ -49,23 +55,27 @@ const CenterComponent = ({
           </div> */}
 
           {/* Buttons */}
-          <div className="flex flex-row gap-2">
+          <div className="flex flex-row gap-2 w-full">
             <button
               onClick={onRollDice}
               disabled={isAnimating || hasRolled}
-              className={`px-5 py-2 font-bold text-sm rounded-lg shadow-lg transition-all whitespace-nowrap ${
+              className={`flex-1 px-5 py-3 font-bold text-sm rounded-lg shadow-lg transition-all whitespace-nowrap ${
                 isAnimating || hasRolled
                   ? "bg-gray-400 text-gray-700 cursor-not-allowed"
                   : `${rollBg} text-white hover:opacity-90 transform hover:scale-105`
               }`}
             >
-              {isAnimating ? "Moving..." : hasRolled ? "Rolled" : "🎲 Roll"}
+              {isAnimating
+                ? "Moving..."
+                : hasRolled
+                ? "Rolled ✓"
+                : "🎲 Roll Dice"}
             </button>
 
             <button
               onClick={onEndTurn}
               disabled={!hasRolled || isAnimating}
-              className={`px-5 py-2 font-bold text-sm rounded-lg shadow-lg transition-all whitespace-nowrap ${
+              className={`flex-1 px-5 py-3 font-bold text-sm rounded-lg shadow-lg transition-all whitespace-nowrap ${
                 !hasRolled || isAnimating
                   ? "bg-gray-400 text-gray-700 cursor-not-allowed"
                   : "bg-blue-600 text-white hover:bg-blue-700 transform hover:scale-105"
@@ -74,6 +84,18 @@ const CenterComponent = ({
               End Turn
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Waiting for turn message */}
+      {!showControls && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-60 bg-white rounded-xl shadow-2xl p-6 text-center max-w-sm">
+          <p className="text-sm font-semibold text-gray-700 mb-2">
+            Waiting for your turn...
+          </p>
+          <p className="text-xs text-gray-500">
+            {currentPlayer?.name} is playing
+          </p>
         </div>
       )}
     </div>

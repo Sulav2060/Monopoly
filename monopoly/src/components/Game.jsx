@@ -29,6 +29,7 @@ const Game = () => {
     rollDice: contextRollDice,
     buyProperty: contextBuyProperty,
     endTurn: contextEndTurn,
+    startGame: contextStartGame,
     syncGameFromSocket,
   } = useGame();
 
@@ -40,6 +41,7 @@ const Game = () => {
   const [hasRolled, setHasRolled] = useState(false);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [prevPositions, setPrevPositions] = useState({});
+  const [isStartingGame, setIsStartingGame] = useState(false);
 
   // UI States
   const [_showPropertyCard, setShowPropertyCard] = useState(null);
@@ -64,6 +66,22 @@ const Game = () => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
   };
+
+  // Start Game Function
+  const handleStartGame = useCallback(async () => {
+    if (isStartingGame || !currentGame) return;
+
+    try {
+      setIsStartingGame(true);
+      await contextStartGame();
+      showNotification("Game started! 🎮", "success");
+    } catch (error) {
+      showNotification(error.message, "error");
+      console.error("Failed to start game:", error);
+    } finally {
+      setIsStartingGame(false);
+    }
+  }, [isStartingGame, currentGame, contextStartGame]);
 
   // WebSocket connection for real-time updates
   useEffect(() => {
@@ -122,11 +140,11 @@ const Game = () => {
 
   // Reset hasRolled when turn changes
   useEffect(() => {
-    const currentPlayerIndex = currentGame?.currentPlayerIndex;
-    if (currentPlayerIndex !== undefined) {
+    const currentTurnIndex = currentGame?.currentTurnIndex;
+    if (currentTurnIndex !== undefined) {
       setHasRolled(false);
     }
-  }, [currentGame?.currentPlayerIndex]);
+  }, [currentGame?.currentTurnIndex]);
 
   // Roll Dice + Start Animation
   // Roll Dice - CAPTURE POSITION BEFORE ROLLING
@@ -161,7 +179,15 @@ const Game = () => {
       setCurrentDice(diceRoll);
       setAnimationStep("rotating");
       setIsAnimating(true);
-      setHasRolled(true);
+      // If doubles, allow another roll; otherwise mark as rolled
+      if (
+        currentGame.lastDice &&
+        currentGame.lastDice.die1 === currentGame.lastDice.die2
+      ) {
+        setHasRolled(false);
+      } else {
+        setHasRolled(true);
+      }
     } catch (error) {
       showNotification(error.message, "error");
       console.error("Dice roll failed:", error);
@@ -179,7 +205,7 @@ const Game = () => {
       await contextEndTurn();
       addLog(
         `${
-          currentGame.players[currentGame.currentPlayerIndex]?.name
+          currentGame.players[currentGame.currentTurnIndex]?.name
         }'s turn ended.`
       );
       setHasRolled(false);
@@ -210,7 +236,7 @@ const Game = () => {
   const canBuyProperty = () => {
     if (!currentGame || !isMyTurn || !hasRolled) return false;
 
-    const player = currentGame.players?.[currentGame.currentPlayerIndex];
+    const player = currentGame.players?.[currentGame.currentTurnIndex];
     if (!player) return false;
 
     const tileIndex = player.position;
@@ -241,7 +267,7 @@ const Game = () => {
   const buyProperty = useCallback(async () => {
     if (!currentGame) return;
 
-    const player = currentGame.players?.[currentGame.currentPlayerIndex];
+    const player = currentGame.players?.[currentGame.currentTurnIndex];
     if (!player) return;
 
     const tileIndex = player.position;
@@ -285,24 +311,24 @@ const Game = () => {
   // Bot auto-play removed to prevent unintended rolls on other players' turns
   // Sync dice animation across all players in room
   useEffect(() => {
-    if (!currentGame || !currentGame.lastDiceRoll) return;
+    if (!currentGame || !currentGame.lastDice) return;
 
     // Check if we already displayed this dice roll
     if (
-      currentDice.d1 === currentGame.lastDiceRoll.d1 &&
-      currentDice.d2 === currentGame.lastDiceRoll.d2
+      currentDice.d1 === currentGame.lastDice.die1 &&
+      currentDice.d2 === currentGame.lastDice.die2
     ) {
       return; // Already displayed
     }
 
     // New dice roll detected - show it for all players
     setCurrentDice({
-      d1: currentGame.lastDiceRoll.d1,
-      d2: currentGame.lastDiceRoll.d2,
+      d1: currentGame.lastDice.die1,
+      d2: currentGame.lastDice.die2,
     });
     setAnimationStep("rotating");
     setIsAnimating(true);
-  }, [currentGame?.lastDiceRoll]);
+  }, [currentGame?.lastDice]);
 
   // Sync player position changes from backend -> drive animation with previous positions
   useEffect(() => {
@@ -338,10 +364,10 @@ const Game = () => {
       setPrevPositions(prevPositionsMap);
 
       // Use latest dice from game if present
-      if (currentGame.lastDiceRoll) {
+      if (currentGame.lastDice) {
         setCurrentDice({
-          d1: currentGame.lastDiceRoll.d1,
-          d2: currentGame.lastDiceRoll.d2,
+          d1: currentGame.lastDice.die1,
+          d2: currentGame.lastDice.die2,
         });
       }
 
@@ -391,8 +417,12 @@ const Game = () => {
   }, [animationStep, currentDice, isAnimating, currentGame, currentPlayerId]);
 
   // Determine current player and turn state
-  const currentPlayer = currentGame?.players?.[currentGame?.currentPlayerIndex];
+  const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];
   const isMyTurn = currentPlayer?.id === currentPlayerId;
+
+  // Check if current player is the first player (host/game starter)
+  const isFirstPlayer = currentGame?.players?.[0]?.id === currentPlayerId;
+  const gameHasStarted = currentGame?.hasStarted;
 
   // Loading state or not in game
   if (!currentRoom || !currentGame) {
@@ -480,7 +510,7 @@ const Game = () => {
             isAnimating={isAnimating}
             animationStep={animationStep}
             players={currentGame.players}
-            currentPlayerIndex={currentGame.currentPlayerIndex}
+            currentTurnIndex={currentGame.currentTurnIndex}
             currentDice={currentDice}
             isMyTurn={isMyTurn}
             hasRolled={hasRolled}
@@ -505,6 +535,43 @@ const Game = () => {
           <div className="border-b pb-2">
             <h3 className="font-bold text-xl text-gray-800">Actions</h3>
           </div>
+
+          {/* Start Game Button - Only for first player before game starts */}
+          {!gameHasStarted && isFirstPlayer && (
+            <div className="space-y-2 bg-yellow-50 p-3 rounded-lg border-2 border-yellow-300">
+              <p className="text-xs font-semibold text-yellow-700 mb-2">
+                You are the first player. Start the game when ready!
+              </p>
+              <button
+                onClick={handleStartGame}
+                disabled={isStartingGame || currentGame.players.length < 2}
+                className={`w-full py-3 rounded-lg font-semibold transition-all ${
+                  !isStartingGame && currentGame.players.length >= 2
+                    ? "bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:scale-105"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
+              >
+                {isStartingGame ? "Starting..." : "🎮 Start Game"}
+              </button>
+              {currentGame.players.length < 2 && (
+                <p className="text-xs text-gray-600">
+                  ⏳ Waiting for {2 - currentGame.players.length} more player(s)
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Game Status for other players */}
+          {!gameHasStarted && !isFirstPlayer && (
+            <div className="space-y-2 bg-blue-50 p-3 rounded-lg border-2 border-blue-300">
+              <p className="text-xs font-semibold text-blue-700">
+                ⏳ Waiting for the first player to start the game...
+              </p>
+              <p className="text-xs text-gray-600">
+                {currentGame.players.length} player(s) ready
+              </p>
+            </div>
+          )}
 
           {/* Property Actions */}
           <div className="space-y-2">

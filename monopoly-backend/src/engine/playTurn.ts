@@ -80,11 +80,8 @@ export function playTurn(state: GameState, dice: DiceRoll): GameState {
   // Resolve tile effects
   nextState = resolveCurrentTile(nextState);
 
-  // End turn unless doubles
-  if (!isDouble) {
-    nextState = endTurn(nextState);
-    doublesCount = 0;
-  }
-
+  // Do NOT auto-advance turn here.
+  // Leave turn index unchanged; frontend will call END_TURN explicitly.
+  // Maintain doublesCount so rules can allow extra rolls for doubles.
   return checkGameOver({ ...nextState, doublesCount }); //TODO: check once
 }

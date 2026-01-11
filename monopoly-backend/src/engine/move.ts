@@ -28,7 +28,7 @@ export function movePlayer(state: GameState, dice: DiceRoll): GameState {
 
   const events: GameEvent[] = [
     ...state.events,
-    { type: "DICE_ROLLED", dice },
+    // { type: "DICE_ROLLED", dice },
     { type: "PLAYER_MOVED", from, to },
   ];
 

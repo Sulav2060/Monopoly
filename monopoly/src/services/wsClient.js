@@ -123,6 +123,35 @@ class GameSocketManager {
   }
 
   /**
+   * Start game (sends START_GAME message)
+   */
+  startGame() {
+    if (!this.gameId) {
+      throw new Error("Game ID not set");
+    }
+
+    this.send({
+      type: "START_GAME",
+      gameId: this.gameId,
+    });
+  }
+
+  /**
+   * End turn (sends END_TURN message)
+   */
+  endTurn() {
+    if (!this.gameId || !this.playerId) {
+      throw new Error("Game or player not set");
+    }
+
+    this.send({
+      type: "END_TURN",
+      gameId: this.gameId,
+      playerId: this.playerId,
+    });
+  }
+
+  /**
    * Roll dice (sends ROLL_DICE message)
    */
   rollDice() {

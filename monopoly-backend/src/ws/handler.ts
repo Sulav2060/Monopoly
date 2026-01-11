@@ -5,6 +5,7 @@ import { getGame, updateGame } from "./gameStore";
 import { rollDice } from "./dice";
 import { playTurn } from "../engine/playTurn";
 import { getCurrentPlayerSafe } from "../engine/assertions";
+import { endTurn } from "../engine/endTurn";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -146,6 +147,13 @@ export function setupWebSocket(wss: WebSocketServer) {
           }
 
           const currentPlayer = getCurrentPlayerSafe(game.state);
+          console.log(
+            "Current player:",
+            currentPlayer.id,
+            "Message player:",
+            msg.playerId
+          );
+
           if (currentPlayer.id !== msg.playerId) {
             safeSend(socket, {
               type: "ERROR",
@@ -168,6 +176,48 @@ export function setupWebSocket(wss: WebSocketServer) {
           console.log(
             `🎲 ${currentPlayer.name} rolled dice in game ${msg.gameId}`
           );
+          return;
+        }
+
+        /* =======================
+           END TURN
+        ======================= */
+        if (msg.type === "END_TURN") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const currentPlayer = getCurrentPlayerSafe(game.state);
+          if (currentPlayer.id !== msg.playerId) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Not your turn",
+            });
+            return;
+          }
+          const gameState = endTurn(game.state);
+
+          // // Move to next player's turn
+          // const nextTurnIndex =
+          //   (game.state.currentTurnIndex + 1) % game.state.players.length;
+          // game.state.currentTurnIndex = nextTurnIndex;
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: gameState,
+          });
+
+          const currentTurnIndex = gameState.currentTurnIndex;
+
+          const nextPlayer = gameState.players[currentTurnIndex];
+          if (nextPlayer) {
+            console.log(
+              `⏭️ Turn changed to ${nextPlayer.name} in game ${msg.gameId}`
+            );
+          }
           return;
         }
 

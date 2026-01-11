@@ -52,8 +52,46 @@ export const GameProvider = ({ children }) => {
    * Start game in current room
    */
   const startGame = useCallback(async () => {
-    throw new Error("Room API disabled (WebSocket-only mode)");
-  }, []);
+    try {
+      setGameError(null);
+
+      if (!currentGame) {
+        throw new Error("Game not found");
+      }
+
+      // WebSocket-only path
+      if (!wsClient.isConnected()) {
+        throw new Error("WebSocket not connected");
+      }
+
+      return new Promise((resolve, reject) => {
+        const handleGameStateUpdate = (newState) => {
+          //console.log("🎮 Game started via WebSocket");
+          setCurrentGame(newState);
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          resolve(newState);
+        };
+
+        wsClient.on("gameStateUpdate", handleGameStateUpdate);
+
+        try {
+          wsClient.startGame();
+        } catch (error) {
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          reject(error);
+        }
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          reject(new Error("Start game request timeout"));
+        }, 10000);
+      });
+    } catch (error) {
+      setGameError(error.message);
+      throw error;
+    }
+  }, [currentGame]);
 
   /**
    * Roll dice in current game
@@ -76,7 +114,11 @@ export const GameProvider = ({ children }) => {
           //console.log("🎲 Game state updated via WebSocket");
           setCurrentGame(newState);
           wsClient.off("gameStateUpdate", handleGameStateUpdate);
-          resolve(newState.lastDiceRoll);
+          // Convert die1/die2 to d1/d2 for compatibility
+          const diceRoll = newState.lastDice
+            ? { d1: newState.lastDice.die1, d2: newState.lastDice.die2 }
+            : null;
+          resolve(diceRoll);
         };
 
         wsClient.on("gameStateUpdate", handleGameStateUpdate);
@@ -132,8 +174,46 @@ export const GameProvider = ({ children }) => {
    * End turn
    */
   const endTurn = useCallback(async () => {
-    throw new Error("endTurn not implemented over WebSocket yet");
-  }, []);
+    try {
+      setGameError(null);
+
+      if (!currentGame || !currentPlayerId) {
+        throw new Error("Game not started or player not found");
+      }
+
+      // WebSocket-only path
+      if (!wsClient.isConnected()) {
+        throw new Error("WebSocket not connected");
+      }
+
+      return new Promise((resolve, reject) => {
+        const handleGameStateUpdate = (newState) => {
+          //console.log("⏭️ Turn ended via WebSocket");
+          setCurrentGame(newState);
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          resolve(newState);
+        };
+
+        wsClient.on("gameStateUpdate", handleGameStateUpdate);
+
+        try {
+          wsClient.endTurn();
+        } catch (error) {
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          reject(error);
+        }
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          reject(new Error("End turn request timeout"));
+        }, 10000);
+      });
+    } catch (error) {
+      setGameError(error.message);
+      throw error;
+    }
+  }, [currentGame, currentPlayerId]);
 
   /**
    * Refresh current room data

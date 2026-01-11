@@ -48,6 +48,8 @@ export type GameState = {
   events: GameEvent[];
   properties: PropertyOwnership[];
   doublesCount?: number; // to see if 3 doubles player gets and to take him to jail
+  hasStarted?: boolean;
+  maxPlayers?: number;
 };
 
 export type PropertyOwnership = {

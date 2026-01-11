@@ -21,6 +21,7 @@ const initialState: GameState = {
 };
 
 createGame("game-1", initialState);
+console.log("Created game with ID 'game-1'");
 
 const PORT = process.env.PORT || 4000;
 

@@ -37,7 +37,9 @@ export type GameEvent =
       type: "PLAYER_BANKRUPT";
       playerId: PlayerId;
       causedBy?: PlayerId; // rent owner, optional TODO: still unclear about this
-    };
+    }
+  //game ends
+  | { type: "GAME_OVER"; winnerId: PlayerId };
 
 export type GameState = {
   players: PlayerState[];

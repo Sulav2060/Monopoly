@@ -4,7 +4,6 @@ import Tile from "./Tile";
 import CornerTile from "./CornerTile";
 import CenterComponent from "./CenterComponent.jsx";
 import PlayerToken from "./PlayerToken.jsx";
-import PopoverCard from "./PopoverCard.jsx";
 
 const Board = ({
   isAnimating,
@@ -19,6 +18,7 @@ const Board = ({
   onEndTurn,
   onTileClick,
   prevPositions = {},
+  currentGame,
 }) => {
   const [activeIndex, setActiveIndex] = React.useState(null);
   const gridRef = useRef(null);
@@ -48,11 +48,127 @@ const Board = ({
 
   const diceSum = currentDice.d1 + currentDice.d2;
 
+  // Get properties array from game state for direct ownership check
+  const propertiesFromGame = currentGame?.properties || [];
+
+  // Get the current player's position (where they're landing)
+  const currentPlayer = players && players[currentTurnIndex];
+  const currentPlayerPosition = currentPlayer ? currentPlayer.position : -1;
+
   const getOwnerColorForTile = (tileIndex) => {
-    if (!players) return null;
-    for (const player of players) {
-      if (player.ownedTiles?.includes(tileIndex)) return player.color;
+    // Don't show ownership colors for the currently moving player's position
+    // until the animation is complete (animationStep === "idle")
+    if (
+      isAnimating &&
+      animationStep !== "idle" &&
+      tileIndex === currentPlayerPosition
+    ) {
+      return null;
     }
+
+    // First check the properties array directly from game state
+    const propertyEntry = propertiesFromGame.find(
+      (prop) => prop.tileIndex === tileIndex || prop.propertyId === tileIndex
+    );
+
+    if (propertyEntry && players) {
+      const ownerId =
+        propertyEntry.ownerId || propertyEntry.owner || propertyEntry.playerId;
+      const ownerPlayer = players.find((p) => p.id === ownerId);
+
+      if (ownerPlayer) {
+        // Find player's index in the players array
+        const playerIndex = players.indexOf(ownerPlayer);
+
+        // Get color from palette based on player index (not from player object)
+        const PLAYER_COLORS = [
+          {
+            name: "Red",
+            color: "bg-red-500",
+            borderColor: "border-red-700",
+            glow: "rgba(239,68,68,0.6)",
+          },
+          {
+            name: "Blue",
+            color: "bg-blue-500",
+            borderColor: "border-blue-700",
+            glow: "rgba(59,130,246,0.6)",
+          },
+          {
+            name: "Green",
+            color: "bg-green-500",
+            borderColor: "border-green-700",
+            glow: "rgba(34,197,94,0.6)",
+          },
+          {
+            name: "Yellow",
+            color: "bg-yellow-400",
+            borderColor: "border-yellow-600",
+            glow: "rgba(245,158,11,0.65)",
+          },
+        ];
+
+        const playerColor = PLAYER_COLORS[playerIndex % PLAYER_COLORS.length];
+        return playerColor;
+      }
+    }
+
+    // Fallback: check ownedTiles array on players
+    for (const player of players) {
+      if (player.ownedTiles?.includes(tileIndex)) {
+        const playerIndex = players.indexOf(player);
+        const PLAYER_COLORS = [
+          {
+            color: "bg-red-500",
+            borderColor: "border-red-700",
+            glow: "rgba(239,68,68,0.6)",
+          },
+          {
+            color: "bg-blue-500",
+            borderColor: "border-blue-700",
+            glow: "rgba(59,130,246,0.6)",
+          },
+          {
+            color: "bg-green-500",
+            borderColor: "border-green-700",
+            glow: "rgba(34,197,94,0.6)",
+          },
+          {
+            color: "bg-yellow-400",
+            borderColor: "border-yellow-600",
+            glow: "rgba(245,158,11,0.65)",
+          },
+        ];
+        return PLAYER_COLORS[playerIndex % PLAYER_COLORS.length];
+      }
+      if (player.properties?.includes(tileIndex)) {
+        const playerIndex = players.indexOf(player);
+        const PLAYER_COLORS = [
+          {
+            color: "bg-red-500",
+            borderColor: "border-red-700",
+            glow: "rgba(239,68,68,0.6)",
+          },
+          {
+            color: "bg-blue-500",
+            borderColor: "border-blue-700",
+            glow: "rgba(59,130,246,0.6)",
+          },
+          {
+            color: "bg-green-500",
+            borderColor: "border-green-700",
+            glow: "rgba(34,197,94,0.6)",
+          },
+          {
+            color: "bg-yellow-400",
+            borderColor: "border-yellow-600",
+            glow: "rgba(245,158,11,0.65)",
+          },
+        ];
+        return PLAYER_COLORS[playerIndex % PLAYER_COLORS.length];
+      }
+    }
+
     return null;
   };
 
@@ -96,34 +212,6 @@ const Board = ({
   ]);
 
   // ────────────────────────────────
-  // Close popover on outside click
-  // ────────────────────────────────
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (activeIndex === null) return;
-
-      // Check if the click is on a popover or within the board
-      const popoverElement = document.querySelector(".popover-card");
-      const boardElement = gridRef.current;
-
-      // If popover exists and click is outside both popover and tiles, close it
-      if (
-        popoverElement &&
-        !popoverElement.contains(event.target) &&
-        boardElement &&
-        !boardElement.contains(event.target)
-      ) {
-        setActiveIndex(null);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [activeIndex]);
-
-  // ────────────────────────────────
   // Dynamic tile positions (rotated 180°: GO at top-left)
   // ────────────────────────────────
   const boardSize = 11; // 11×11 grid for full Monopoly board
@@ -148,62 +236,15 @@ const Board = ({
     }
     // Left column
     else {
-      row = index - 30 + 1;
+      row = boardSize - (index - 30);
       col = 1;
     }
 
     const Component = tile.type === "corner" ? CornerTile : Tile;
-    const ownerColor = getOwnerColorForTile(index)?.color;
+    const ownerColor = getOwnerColorForTile(index);
 
     const handleClick = (e) => {
       setActiveIndex(index);
-
-      // Calculate popover position based on tile location
-      const tileElement = e.currentTarget;
-      const boardElement = gridRef.current;
-
-      if (tileElement && boardElement) {
-        const tileRect = tileElement.getBoundingClientRect();
-        const boardRect = boardElement.getBoundingClientRect();
-
-        // Calculate relative position within the board
-        const relativeLeft = tileRect.left - boardRect.left;
-        const relativeTop = tileRect.top - boardRect.top;
-
-        // Determine which side of the board the tile is on
-        let side, left, top, transform;
-
-        // Top row
-        if (index <= 10) {
-          side = "bottom";
-          left = relativeLeft + tileRect.width / 2;
-          top = relativeTop + tileRect.height;
-          transform = "translate(-50%, 8px)";
-        }
-        // Right column
-        else if (index <= 20) {
-          side = "left";
-          left = relativeLeft;
-          top = relativeTop + tileRect.height / 2;
-          transform = "translate(-100%, -50%) translateX(-8px)";
-        }
-        // Bottom row
-        else if (index <= 30) {
-          side = "top";
-          left = relativeLeft + tileRect.width / 2;
-          top = relativeTop;
-          transform = "translate(-50%, -100%) translateY(-8px)";
-        }
-        // Left column
-        else {
-          side = "right";
-          left = relativeLeft + tileRect.width;
-          top = relativeTop + tileRect.height / 2;
-          transform = "translate(8px, -50%)";
-        }
-
-        setPopoverPos({ left, top, side, transform });
-      }
 
       if (typeof onTileClick === "function") {
         onTileClick({ tile: allTilesInOrder[index], index });
@@ -234,22 +275,7 @@ const Board = ({
           }}
         >
           {tileElements}
-          {popoverPos && activeIndex !== null && (
-            <div
-              className="absolute z-70"
-              style={{
-                left: popoverPos.left,
-                top: popoverPos.top,
-                transform: popoverPos.transform,
-              }}
-            >
-              <PopoverCard
-                tile={allTilesInOrder[activeIndex]}
-                side={popoverPos.side}
-                onClose={() => setActiveIndex(null)}
-              />
-            </div>
-          )}
+
           <CenterComponent
             currentDice={currentDice}
             isRolling={animationStep === "rotating"}

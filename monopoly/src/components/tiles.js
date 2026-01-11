@@ -279,86 +279,85 @@ export const tiles = {
       image: "https://images.unsplash.com/photo-1613483514414-954b02368d79?auto=format&fit=crop&w=800&q=80" // Himalayan panorama
     },
   ],
-  left: [
-    // Group 8: PEAKS (Dark Blue) – Most expensive
-    {
-      type: "property",
-      group: "dark-blue",
-      title: "Everest",
-      price: 400,
-      rent: [50, 200, 600, 1400, 1700, 2000],
-      houseCost: 200,
-      rotation: -90,
-      image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80" // Mount Everest
-    },
-    {
-      type: "tax",
-      title: "Luxury Tax",
-      price: 100,
-      rotation: -90,
-      image: "https://images.unsplash.com/photo-1579621970588-a35d0e7ab9b6?auto=format&fit=crop&w=800&q=80" // Luxury items
-    },
-    {
-      type: "property",
-      group: "dark-blue",
-      title: "Makalu",
-      price: 350,
-      rent: [35, 175, 500, 1100, 1300, 1500],
-      houseCost: 200,
-      rotation: -90,
-      image: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?auto=format&fit=crop&w=800&q=80" // Mountain peak
-    },
-    {
-      type: "chance",
-      title: "Chance",
-      rotation: -90,
-     image: "https://images.unsplash.com/photo-1628260412297-a3377e45006f?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Question mark/mystery
-    },
-    {
-      type: "railroad",
-      title: "North Railway",
-      price: 200,
-      rent: [25, 50, 100, 200],
-      houseCost: 0,
-      rotation: -90,
-      image: "https://images.unsplash.com/photo-1600002415506-dd06090d3480?auto=format&fit=crop&w=800&q=80" // Mountain railway
-    },
-    // Group 7: TREKS (Green)
-    {
-      type: "property",
-      group: "green",
-      title: "Manaslu",
-      price: 320,
-      rent: [28, 150, 450, 1000, 1200, 1400],
-      houseCost: 200,
-      rotation: -90,
-      image: "https://images.unsplash.com/photo-1545243424-0ce743321e11?auto=format&fit=crop&w=800&q=80" // Manaslu circuit
-    },
-    {
-      type: "community-chest",
-      title: "Community",
-      rotation: -90,
-    image: "https://images.unsplash.com/photo-1642211841112-2beeda7bfc07?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Community/helping hands
-    },
-    {
-      type: "property",
-      group: "green",
-      title: "Langtang",
-      price: 300,
-      rent: [26, 130, 390, 900, 1100, 1275],
-      houseCost: 200,
-      rotation: -90,
-      image: "https://images.unsplash.com/photo-1608908761160-14a98a27ba97?auto=format&fit=crop&w=800&q=80" // Langtang valley
-    },
-    {
-      type: "property",
-      group: "green",
-      title: "Annapurna",
-      price: 300,
-      rent: [26, 130, 390, 900, 1100, 1275],
-      houseCost: 200,
-      rotation: -90,
-      image: "https://images.unsplash.com/photo-1544739313-6fadacdd227f?auto=format&fit=crop&w=800&q=80" // Annapurna range
-    },
-  ],
+ left: [
+  {
+    type: "property",
+    group: "green",
+    title: "Annapurna",
+    price: 300,
+    rent: [26, 130, 390, 900, 1100, 1275],
+    houseCost: 200,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1544739313-6fadacdd227f?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "property",
+    group: "green",
+    title: "Langtang",
+    price: 300,
+    rent: [26, 130, 390, 900, 1100, 1275],
+    houseCost: 200,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1608908761160-14a98a27ba97?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "community-chest",
+    title: "Community",
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1642211841112-2beeda7bfc07?q=80&w=2670&auto=format&fit=crop"
+  },
+  {
+    type: "property",
+    group: "green",
+    title: "Manaslu",
+    price: 320,
+    rent: [28, 150, 450, 1000, 1200, 1400],
+    houseCost: 200,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1545243424-0ce743321e11?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "railroad",
+    title: "North Railway",
+    price: 200,
+    rent: [25, 50, 100, 200],
+    houseCost: 0,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1600002415506-dd06090d3480?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "chance",
+    title: "Chance",
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1628260412297-a3377e45006f?q=80&w=2148&auto=format&fit=crop"
+  },
+  {
+    type: "property",
+    group: "dark-blue",
+    title: "Makalu",
+    price: 350,
+    rent: [35, 175, 500, 1100, 1300, 1500],
+    houseCost: 200,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "tax",
+    title: "Luxury Tax",
+    price: 100,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1579621970588-a35d0e7ab9b6?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "property",
+    group: "dark-blue",
+    title: "Everest",
+    price: 400,
+    rent: [50, 200, 600, 1400, 1700, 2000],
+    houseCost: 200,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80"
+  }
+],
+
 };

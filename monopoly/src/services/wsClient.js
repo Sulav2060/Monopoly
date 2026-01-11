@@ -167,6 +167,22 @@ class GameSocketManager {
   }
 
   /**
+   * Buy property (sends BUY_PROPERTY message)
+   */
+  buyProperty(propertyIndex) {
+    if (!this.gameId || !this.playerId) {
+      throw new Error("Game or player not set");
+    }
+
+    this.send({
+      type: "BUY_PROPERTY",
+      gameId: this.gameId,
+      playerId: this.playerId,
+      propertyIndex: propertyIndex,
+    });
+  }
+
+  /**
    * Listen for events
    * @param {string} event - Event name ('gameStateUpdate', 'error', 'connect', etc.)
    * @param {function} callback - Handler function

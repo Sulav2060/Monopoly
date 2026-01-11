@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Board from "./Board";
-import { tiles } from "./tiles";
+import { tiles, corners } from "./tiles";
 import { useGame } from "../context/GameContext";
 import { wsClient } from "../services/wsClient";
 
@@ -10,6 +10,21 @@ const TILES_ON_BOARD =
   tiles.top.length +
   tiles.right.length +
   4; // four corners
+
+// Helper function to get tile by index (matches Board.jsx tile ordering)
+const getTileAtIndex = (index) => {
+  const allTiles = [
+    corners["top-left"],
+    ...tiles.bottom,
+    corners["top-right"],
+    ...tiles.right,
+    corners["bottom-right"],
+    ...tiles.top,
+    corners["bottom-left"],
+    ...tiles.left,
+  ];
+  return allTiles[index];
+};
 
 const PLAYER_COLORS = [
   { name: "Red", color: "bg-red-500", borderColor: "border-red-600" },
@@ -47,6 +62,35 @@ const Game = () => {
   const [notification, setNotification] = useState(null);
   const [_gameLog, setGameLog] = useState([]);
   const lastEventCountRef = useRef(0);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+
+  // Get all property tiles for carousel
+  const allPropertyTiles = [
+    ...tiles.bottom.filter((t) => t.type === "property" || t.type === "railroad" || t.type === "utility"),
+    ...tiles.right.filter((t) => t.type === "property" || t.type === "railroad" || t.type === "utility"),
+    ...tiles.top.filter((t) => t.type === "property" || t.type === "railroad" || t.type === "utility"),
+    ...tiles.left.filter((t) => t.type === "property" || t.type === "railroad" || t.type === "utility"),
+  ];
+
+  // Auto-rotate carousel when no tile is clicked
+  useEffect(() => {
+    if (!_showPropertyCard) {
+      const interval = setInterval(() => {
+        setCarouselIndex((prev) => (prev + 1) % allPropertyTiles.length);
+      }, 3000); // Change every 3 seconds
+      return () => clearInterval(interval);
+    }
+  }, [_showPropertyCard, allPropertyTiles.length]);
+
+  // Auto-hide tile details after 5 seconds
+  useEffect(() => {
+    if (_showPropertyCard) {
+      const timeout = setTimeout(() => {
+        setShowPropertyCard(null);
+      }, 5000); // Hide after 5 seconds
+      return () => clearTimeout(timeout);
+    }
+  }, [_showPropertyCard]);
 
   const botTimerRef = useRef(null);
   const socketRef = useRef(null);
@@ -121,6 +165,7 @@ const Game = () => {
         // Listen for game state updates
         wsClient.on("gameStateUpdate", (newState) => {
           console.log("📨 Game state update received:", newState);
+          console.log("📦 Properties in received state:", newState.properties);
           console.log("Current turn index:", newState.currentTurnIndex);
           console.log(
             "Current player:",
@@ -609,6 +654,7 @@ const Game = () => {
               setShowPropertyCard({ tile, index })
             }
             prevPositions={prevPositions}
+            currentGame={currentGame}
           />
 
           {/* Dice + Controls Panel - Now inside Board center component */}
@@ -616,40 +662,41 @@ const Game = () => {
 
         {/* Right Sidebar - Actions & Info */}
         <div className="w-80 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-5 flex flex-col gap-4 backdrop-blur-lg">
+          {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <h3 className="font-semibold text-lg text-gray-100">Actions</h3>
-            <span className="text-[11px] text-gray-400">Turn tools</span>
+            <h3 className="font-semibold text-lg text-gray-100">Game Panel</h3>
+            <span className="text-[11px] text-gray-400">Tools & Info</span>
           </div>
 
-          {/* Property Actions */}
-          <div className="space-y-2">
+          {/* Action Buttons - 2x2 Grid */}
+          <div className="grid grid-cols-2 gap-3">
             <button
               onClick={buyProperty}
               disabled={!canBuyProperty() || isLoadingAction}
-              className={`w-full py-3 rounded-xl font-semibold transition-all border ${
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
                 canBuyProperty() && !isLoadingAction
                   ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
                   : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
               }`}
             >
-              {isLoadingAction ? "Processing..." : "🏠 Buy Property"}
+              🏠 Buy
             </button>
 
             <button
               disabled={!isMyTurn}
-              className={`w-full py-3 rounded-xl font-semibold transition-all border ${
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
                 isMyTurn
                   ? "bg-orange-500/80 border-orange-400/70 text-white shadow-[0_10px_30px_-15px_rgba(249,115,22,0.8)] hover:-translate-y-0.5"
                   : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
               }`}
             >
-              🏗️ Build House
+              🏗️ Build
             </button>
 
             <button
               onClick={() => setShowTradeModal(true)}
               disabled={!isMyTurn}
-              className={`w-full py-3 rounded-xl font-semibold transition-all border ${
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
                 isMyTurn
                   ? "bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5"
                   : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
@@ -660,7 +707,7 @@ const Game = () => {
 
             <button
               disabled={!isMyTurn}
-              className={`w-full py-3 rounded-xl font-semibold transition-all border ${
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
                 isMyTurn
                   ? "bg-amber-500/80 border-amber-400/70 text-white shadow-[0_10px_30px_-15px_rgba(251,191,36,0.8)] hover:-translate-y-0.5"
                   : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
@@ -670,50 +717,197 @@ const Game = () => {
             </button>
           </div>
 
-          {/* Current Player Info */}
-          <div className="border-t border-white/10 pt-3 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="font-semibold text-gray-100">Current Property</h4>
-              <span className="text-xs text-gray-400">Tile info</span>
-            </div>
-            <div className="bg-white/5 p-3 rounded-xl border border-white/10 text-sm text-gray-200">
-              <p className="font-semibold">
-                Position: {currentPlayer?.position}
-              </p>
-              <p className="text-gray-400 mt-1">
-                {currentPlayer?.properties?.includes(currentPlayer?.position)
-                  ? "✅ You own this!"
-                  : currentGame.players.some((p) =>
-                      p.properties?.includes(currentPlayer?.position)
-                    )
-                  ? "❌ Owned by another player"
-                  : "Available for purchase"}
-              </p>
-            </div>
-          </div>
-
           {/* Player Portfolio */}
-          <div className="border-t border-white/10 pt-3 flex-1 overflow-y-auto">
+          <div className="border-t border-white/10 pt-3">
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-semibold text-gray-100">Your Properties</h4>
               <span className="text-xs text-gray-400">Portfolio</span>
             </div>
-            <div className="space-y-2">
-              {currentPlayer?.properties?.length > 0 ? (
-                currentPlayer.properties.map((tile) => (
-                  <div
-                    key={tile}
-                    className="bg-indigo-500/10 border border-indigo-400/30 text-indigo-100 p-2 rounded-lg text-sm"
-                  >
-                    <span className="font-semibold">Property #{tile}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-sm italic">
-                  No properties yet
-                </p>
-              )}
+            <div className="space-y-2 max-h-40 overflow-y-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-white/5 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-white/30">
+              {(() => {
+                // Get all properties owned by current player from backend
+                const myProperties =
+                  currentGame?.properties?.filter(
+                    (prop) =>
+                      prop.ownerId === currentPlayerId ||
+                      prop.owner === currentPlayerId ||
+                      prop.playerId === currentPlayerId
+                  ) || [];
+
+                if (myProperties.length > 0) {
+                  return myProperties.map((prop) => {
+                    const tileIndex =
+                      prop.tileIndex ?? prop.propertyId ?? prop.tile;
+                    const tile = getTileAtIndex(tileIndex);
+                    const tileName = tile?.title || `Tile #${tileIndex}`;
+
+                    return (
+                      <div
+                        key={`${prop.tileIndex}-${prop.ownerId}`}
+                        className="bg-indigo-500/10 border border-indigo-400/30 text-indigo-100 p-2 rounded-lg text-sm"
+                      >
+                        <span className="font-semibold">{tileName}</span>
+                      </div>
+                    );
+                  });
+                } else {
+                  return (
+                    <p className="text-gray-500 text-sm italic">
+                      No properties yet
+                    </p>
+                  );
+                }
+              })()}
             </div>
+          </div>
+
+          {/* Tile Details / Creative Space */}
+          <div className="border-t border-white/10 pt-3 flex-1 flex flex-col">
+            {_showPropertyCard ? (
+              // Show tile details
+              <div>
+                <h4 className="font-semibold text-gray-100 mb-3">
+                  {_showPropertyCard.tile.title}
+                </h4>
+                <div className="space-y-2 text-sm">
+                  {_showPropertyCard.tile.price && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Price</span>
+                      <span className="text-white font-semibold">
+                        ${_showPropertyCard.tile.price}
+                      </span>
+                    </div>
+                  )}
+                  {_showPropertyCard.tile.price && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Mortgage</span>
+                      <span className="text-white font-semibold">
+                        ${Math.floor(_showPropertyCard.tile.price / 2)}
+                      </span>
+                    </div>
+                  )}
+                  {_showPropertyCard.tile.houseCost && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">House Cost</span>
+                      <span className="text-white font-semibold">
+                        ${_showPropertyCard.tile.houseCost}
+                      </span>
+                    </div>
+                  )}
+                  {Array.isArray(_showPropertyCard.tile.rent) && (
+                    <div className="pt-2 border-t border-white/10">
+                      <div className="text-gray-300 font-semibold mb-2">
+                        Rent Schedule
+                      </div>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Base</span>
+                          <span className="text-white">
+                            ${_showPropertyCard.tile.rent[0]}
+                          </span>
+                        </div>
+                        {_showPropertyCard.tile.rent.slice(1).map((r, i) => (
+                          <div key={`rent-${i}`} className="flex justify-between">
+                            <span className="text-gray-400">
+                              {i < _showPropertyCard.tile.rent.length - 2
+                                ? `${i + 1} House${i === 0 ? "" : "s"}`
+                                : "Hotel"}
+                            </span>
+                            <span className="text-white">${r}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              // Creative placeholder
+              <div className="flex flex-col items-center justify-center flex-1 text-center">
+                <div className="text-5xl mb-3">🎲</div>
+                <h4 className="font-semibold text-gray-200 mb-2">
+                  Click a Tile
+                </h4>
+                <p className="text-gray-400 text-sm">
+                  Select any property on the board to view its details and rent information
+                </p>
+                <div className="mt-6 pt-6 border-t border-white/10 w-full">
+                  <p className="text-xs text-gray-500">
+                    💡 Tip: Gather properties of the same color to build houses!
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Image Display Section */}
+          <div className="border-t border-white/10 pt-3">
+            {_showPropertyCard ? (
+              // Show clicked tile's image
+              <div className="relative h-48 rounded-xl overflow-hidden group">
+                <img
+                  src={_showPropertyCard.tile.image}
+                  alt={_showPropertyCard.tile.title}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-4">
+                  <div>
+                    <h5 className="text-white font-bold text-lg drop-shadow-lg">
+                      {_showPropertyCard.tile.title}
+                    </h5>
+                    <p className="text-white/80 text-xs">
+                      {_showPropertyCard.tile.type?.toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Slideshow carousel
+              <div className="relative h-48 rounded-xl overflow-hidden">
+                <div
+                  className="flex transition-transform duration-700 ease-in-out h-full"
+                  style={{
+                    transform: `translateX(-${carouselIndex * 100}%)`,
+                  }}
+                >
+                  {allPropertyTiles.map((tile, idx) => (
+                    <div
+                      key={idx}
+                      className="min-w-full h-full relative flex-shrink-0"
+                    >
+                      <img
+                        src={tile.image}
+                        alt={tile.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-4">
+                        <div className="w-full">
+                          <h5 className="text-white font-bold text-lg drop-shadow-lg mb-1">
+                            {tile.title}
+                          </h5>
+                          <p className="text-white/80 text-xs">
+                            {tile.type?.toUpperCase()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Carousel indicators */}
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1.5">
+                  {allPropertyTiles.slice(0, 10).map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === carouselIndex % 10
+                          ? "w-6 bg-white"
+                          : "w-1.5 bg-white/40"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

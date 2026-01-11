@@ -30,6 +30,10 @@ const Tile = ({
 
   const bgColor = group ? colorMap[group] || "bg-gray-300" : "bg-slate-200";
   const isVertical = rotation === 90 || rotation === -90;
+  const ownerBgClass =
+    typeof ownedBy === "string" ? ownedBy : ownedBy?.color || null;
+  const ownerGlow =
+    typeof ownedBy === "object" && ownedBy?.glow ? ownedBy.glow : null;
 
   // Icon / content renderer with better styling
   const renderIcon = () => {
@@ -121,7 +125,7 @@ const Tile = ({
       {/* Dark overlay for contrast */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-900/40 to-slate-900/20 rounded-lg " />
 
-      {/* Color accent bar - neon style */}
+      {/* Color accent bar - neon style - for properties */}
       {group && (
         <div
           className={`
@@ -148,58 +152,53 @@ const Tile = ({
         />
       )}
 
-      {/* Content wrapper with better text styling */}
-      <div className="absolute inset-0 flex items-center justify-center p-1.5 z-20">
-        <div className="text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-          {renderIcon()}
-        </div>
-      </div>
-
-      {/* Content wrapper with better text styling */}
-      <div className="absolute inset-0 flex items-center justify-center p-1.5 z-20">
-        <div className="text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
-          {renderIcon()}
-        </div>
-      </div>
-
-      {/* Owner indicator - premium glow effect */}
-      {ownedBy && (
+      {/* Owner bar for railroads and utilities */}
+      {ownerBgClass && (type === "railroad" || type === "utility") && (
         <div
-          className={`absolute ${ownedBy} shadow-[0_0_15px_-3px] border-2 border-white/60 opacity-95 rounded-sm`}
+          className={`absolute ${ownerBgClass} opacity-90 rounded-sm`}
           style={{
             zIndex: 20,
-            ...(rotation === 0 && {
-              bottom: 2,
-              left: 2,
-              right: 2,
-              height: "14%",
-            }),
             ...(rotation === 180 && {
-              top: 2,
-              left: 2,
-              right: 2,
+              bottom: 0,
+              left: 0,
+              right: 0,
               height: "14%",
             }),
-            ...(rotation === 90 && {
-              right: 2,
-              top: 2,
-              bottom: 2,
-              width: "14%",
+            ...(rotation === 0 && {
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "14%",
             }),
             ...(rotation === -90 && {
-              left: 2,
-              top: 2,
-              bottom: 2,
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: "14%",
+            }),
+            ...(rotation === 90 && {
+              right: 0,
+              top: 0,
+              bottom: 0,
               width: "14%",
             }),
           }}
         />
       )}
 
+      {/* Content wrapper with better text styling */}
+      <div className="absolute inset-0 flex items-center justify-center p-1.5 z-20">
+        <div className="text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+          {renderIcon()}
+        </div>
+      </div>
+
       {/* House/Hotel Display - bottom space opposite of group bar */}
       {group && (
         <div
-          className="absolute bg-white/10 border border-white/20 rounded-sm flex items-center justify-center gap-0.5"
+          className={`absolute ${
+            ownerBgClass || "bg-white/10"
+          } border border-white/20 rounded-sm flex items-center justify-center gap-0.5`}
           style={{
             zIndex: 15,
             ...(rotation === 0 && {

@@ -14,19 +14,18 @@ export function setupWebSocket(wss: WebSocketServer) {
     console.log("🔌 WebSocket client connected");
 
     socket.on("message", (raw) => {
-      //listen for messages from client
       let msg: ClientMessage;
 
       try {
         msg = JSON.parse(raw.toString());
       } catch {
-        send(socket, { type: "ERROR", message: "Invalid JSON" }); //why socket here though??
+        send(socket, { type: "ERROR", message: "Invalid JSON" });
         return;
       }
 
-      console.log("📨 Received message:", msg.type);
-
-      // Handle JOIN_GAME - register player and send current state
+      /* =======================
+         JOIN GAME
+      ======================= */
       if (msg.type === "JOIN_GAME") {
         const game = getGame(msg.gameId);
         if (!game) {
@@ -34,34 +33,57 @@ export function setupWebSocket(wss: WebSocketServer) {
           return;
         }
 
-        const existing = game.state.players.find((p) => p.id === msg.playerId);
-
-        if (!existing) {
-          if (!msg.player) {
-            send(socket, { type: "ERROR", message: "Player payload missing" });
-            return;
-          }
-
-          if (game.state.players.length >= 4) {
-            send(socket, { type: "ERROR", message: "Game full (max 4 players)" });
-            return;
-          }
-
-          game.state.players.push({ ...msg.player });
-          console.log(`✅ Player ${msg.player.name} joined game ${msg.gameId}`);
+        if (game.state.hasStarted) {
+          send(socket, { type: "ERROR", message: "Game already started" });
+          return;
         }
 
-        // Track socket -> player for cleanup on disconnect
-        socketMeta.set(socket, { gameId: msg.gameId, playerId: msg.playerId });
+        const maxPlayers = game.state.maxPlayers ?? 4;
+        if (game.state.players.length >= maxPlayers) {
+          send(socket, { type: "ERROR", message: "Game is full" });
+          return;
+        }
 
-        // Send current game state to the joining player
-        send(socket, {
+        const newPlayer = {
+          id: crypto.randomUUID(),
+          name: msg.playerName,
+          position: 0,
+          money: 1500,
+          inJail: false,
+          jailTurns: 0,
+          isBankrupt: false,
+        };
+
+        game.state.players.push(newPlayer);
+
+        broadcast(wss, {
           type: "GAME_STATE_UPDATE",
           gameId: msg.gameId,
           state: game.state,
         });
+        console.log(`Player ${newPlayer.name} joined game ${msg.gameId}`);
 
-        // Broadcast to all clients that a player joined
+        return;
+      }
+
+      /* =======================
+         START GAME
+      ======================= */
+      if (msg.type === "START_GAME") {
+        const game = getGame(msg.gameId);
+        if (!game) return;
+
+        if (game.state.players.length < 2) {
+          send(socket, {
+            type: "ERROR",
+            message: "Need at least 2 players",
+          });
+          return;
+        }
+
+        game.state.hasStarted = true;
+        game.state.currentTurnIndex = 0;
+
         broadcast(wss, {
           type: "GAME_STATE_UPDATE",
           gameId: msg.gameId,
@@ -71,6 +93,9 @@ export function setupWebSocket(wss: WebSocketServer) {
         return;
       }
 
+      /* =======================
+         ROLL DICE
+      ======================= */
       if (msg.type === "ROLL_DICE") {
         const game = getGame(msg.gameId);
         if (!game) {
@@ -80,7 +105,6 @@ export function setupWebSocket(wss: WebSocketServer) {
 
         const currentPlayer = getCurrentPlayerSafe(game.state);
         if (currentPlayer.id !== msg.playerId) {
-          //checks if its that players turn or frontend is messing things up
           send(socket, { type: "ERROR", message: "Not your turn" });
           return;
         }
@@ -95,31 +119,38 @@ export function setupWebSocket(wss: WebSocketServer) {
           gameId: msg.gameId,
           state: newState,
         });
+        console.log(
+          `Player ${currentPlayer.name} rolled in game ${
+            msg.gameId
+          }.New State is ${JSON.stringify(newState)}`
+        );
+
+        return;
       }
+
+      /* =======================
+         LEAVE GAME-->DON'T IMPLEMENT FOR NOW,IT NEEDS TO BE COLLABORATED WITH PROPERTIES LEAVING
+      ======================= */
+      // if (msg.type === "LEAVE_GAME") {
+      //   const game = getGame(msg.gameId);
+      //   if (!game) return;
+
+      //   game.state.players = game.state.players.filter(
+      //     (p) => p.id !== msg.playerId
+      //   );
+
+      //   // Fix turn index if needed
+      //   if (game.state.currentTurnIndex >= game.state.players.length) {
+      //     game.state.currentTurnIndex = 0;
+      //   }
+
+      //   broadcast(wss, {
+      //     type: "GAME_STATE_UPDATE",
+      //     gameId: msg.gameId,
+      //     state: game.state,
+      //   });
+      // }
     });
-
-      socket.on("close", () => {
-        const meta = socketMeta.get(socket);
-        if (!meta) return;
-
-        const game = getGame(meta.gameId);
-        if (!game) return;
-
-        const before = game.state.players.length;
-        game.state.players = game.state.players.filter((p) => p.id !== meta.playerId);
-        if (game.state.currentTurnIndex >= game.state.players.length) {
-          game.state.currentTurnIndex = 0;
-        }
-        if (game.state.players.length !== before) {
-          updateGame(meta.gameId, game.state);
-          broadcast(wss, {
-            type: "GAME_STATE_UPDATE",
-            gameId: meta.gameId,
-            state: game.state,
-          });
-          console.log(`👋 Player ${meta.playerId} disconnected and was removed`);
-        }
-      });
   });
 }
 

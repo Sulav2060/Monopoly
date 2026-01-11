@@ -1,6 +1,6 @@
 import { GameState, PlayerState } from "../types/game";
 
-export type ClientMessage = 
+export type ClientMessage =
   | {
       type: "ROLL_DICE";
       gameId: string;
@@ -9,8 +9,11 @@ export type ClientMessage =
   | {
       type: "JOIN_GAME";
       gameId: string;
-      playerId: string;
-      player?: PlayerState;
+      playerName: string;
+    }
+  | {
+      type: "START_GAME";
+      gameId: string;
     };
 
 export type ServerMessage =

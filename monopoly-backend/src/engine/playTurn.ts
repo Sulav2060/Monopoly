@@ -2,6 +2,7 @@
 import { DiceRoll, GameState } from "../types/game";
 import { getCurrentPlayerSafe } from "./assertions";
 import { endTurn } from "./endTurn";
+import { checkGameOver } from "./gameOver";
 import { goToJail } from "./goToJail";
 import { movePlayer } from "./move";
 import { resolveCurrentTile } from "./resolveTile";
@@ -85,8 +86,5 @@ export function playTurn(state: GameState, dice: DiceRoll): GameState {
     doublesCount = 0;
   }
 
-  return {
-    ...nextState,
-    doublesCount,
-  };
+  return checkGameOver({ ...nextState, doublesCount }); //TODO: check once
 }

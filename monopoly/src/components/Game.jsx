@@ -66,10 +66,22 @@ const Game = () => {
 
   // Get all property tiles for carousel
   const allPropertyTiles = [
-    ...tiles.bottom.filter((t) => t.type === "property" || t.type === "railroad" || t.type === "utility"),
-    ...tiles.right.filter((t) => t.type === "property" || t.type === "railroad" || t.type === "utility"),
-    ...tiles.top.filter((t) => t.type === "property" || t.type === "railroad" || t.type === "utility"),
-    ...tiles.left.filter((t) => t.type === "property" || t.type === "railroad" || t.type === "utility"),
+    ...tiles.bottom.filter(
+      (t) =>
+        t.type === "property" || t.type === "railroad" || t.type === "utility"
+    ),
+    ...tiles.right.filter(
+      (t) =>
+        t.type === "property" || t.type === "railroad" || t.type === "utility"
+    ),
+    ...tiles.top.filter(
+      (t) =>
+        t.type === "property" || t.type === "railroad" || t.type === "utility"
+    ),
+    ...tiles.left.filter(
+      (t) =>
+        t.type === "property" || t.type === "railroad" || t.type === "utility"
+    ),
   ];
 
   // Auto-rotate carousel when no tile is clicked
@@ -807,7 +819,10 @@ const Game = () => {
                           </span>
                         </div>
                         {_showPropertyCard.tile.rent.slice(1).map((r, i) => (
-                          <div key={`rent-${i}`} className="flex justify-between">
+                          <div
+                            key={`rent-${i}`}
+                            className="flex justify-between"
+                          >
                             <span className="text-gray-400">
                               {i < _showPropertyCard.tile.rent.length - 2
                                 ? `${i + 1} House${i === 0 ? "" : "s"}`
@@ -829,7 +844,8 @@ const Game = () => {
                   Click a Tile
                 </h4>
                 <p className="text-gray-400 text-sm">
-                  Select any property on the board to view its details and rent information
+                  Select any property on the board to view its details and rent
+                  information
                 </p>
                 <div className="mt-6 pt-6 border-t border-white/10 w-full">
                   <p className="text-xs text-gray-500">

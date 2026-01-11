@@ -148,7 +148,7 @@ const Board = ({
     }
     // Left column
     else {
-      row = boardSize - (index - 30);
+      row = index - 30 + 1;
       col = 1;
     }
 
@@ -223,8 +223,8 @@ const Board = ({
   });
 
   return (
-    <div className="w-full h-full flex items-center justify-center overflow-hidden">
-      <div className="relative w-full h-full aspect-square">
+    <div className="w-full h-full flex items-center justify-center">
+      <div className="relative w-full h-full aspect-square overflow-hidden">
         <div
           ref={gridRef}
           className="w-full h-full grid relative"

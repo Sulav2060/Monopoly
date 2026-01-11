@@ -199,10 +199,8 @@ export function setupWebSocket(wss: WebSocketServer) {
           }
           const gameState = endTurn(game.state);
 
-          // // Move to next player's turn
-          // const nextTurnIndex =
-          //   (game.state.currentTurnIndex + 1) % game.state.players.length;
-          // game.state.currentTurnIndex = nextTurnIndex;
+          // Persist the turn change to game store
+          updateGame(msg.gameId, gameState);
 
           safeBroadcast(wss, {
             type: "GAME_STATE_UPDATE",

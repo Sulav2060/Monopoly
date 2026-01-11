@@ -269,6 +269,7 @@ export const GameProvider = ({ children }) => {
     currentPlayerId,
     setCurrentPlayerId,
     currentPlayerName,
+    setCurrentPlayerName,
 
     // UI State
     loading,

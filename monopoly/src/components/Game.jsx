@@ -29,7 +29,6 @@ const Game = () => {
     rollDice: contextRollDice,
     buyProperty: contextBuyProperty,
     endTurn: contextEndTurn,
-    startGame: contextStartGame,
     syncGameFromSocket,
   } = useGame();
 
@@ -41,13 +40,13 @@ const Game = () => {
   const [hasRolled, setHasRolled] = useState(false);
   const [isLoadingAction, setIsLoadingAction] = useState(false);
   const [prevPositions, setPrevPositions] = useState({});
-  const [isStartingGame, setIsStartingGame] = useState(false);
 
   // UI States
   const [_showPropertyCard, setShowPropertyCard] = useState(null);
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [notification, setNotification] = useState(null);
   const [_gameLog, setGameLog] = useState([]);
+  const lastEventCountRef = useRef(0);
 
   const botTimerRef = useRef(null);
   const socketRef = useRef(null);
@@ -62,26 +61,42 @@ const Game = () => {
     ]);
   };
 
+  const formatEventMessage = (event, game) => {
+    const players = game?.players || [];
+    const current = players[game?.currentTurnIndex || 0];
+
+    switch (event.type) {
+      case "DICE_ROLLED": {
+        const name = current?.name || "Player";
+        const d1 = event.dice?.die1 ?? "?";
+        const d2 = event.dice?.die2 ?? "?";
+        return `${name} rolled ${d1} + ${d2}`;
+      }
+      case "TURN_ENDED": {
+        const next = players.find((p) => p.id === event.nextPlayerId);
+        return `Turn ended → ${next?.name || "Next player"}`;
+      }
+      case "JAIL_EXITED":
+        return "Released from jail";
+      case "JAIL_TURN_FAILED":
+        return "Failed to roll out of jail";
+      case "JAIL_ENTERED":
+        return "Sent to jail";
+      case "GO_PASSED":
+        return "Passed GO and collected $200";
+      case "PLAYER_BANKRUPT": {
+        const who = players.find((p) => p.id === event.playerId);
+        return `${who?.name || "A player"} is bankrupt`;
+      }
+      default:
+        return event.type || "Game event";
+    }
+  };
+
   const showNotification = (message, type = "info") => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
   };
-
-  // Start Game Function
-  const handleStartGame = useCallback(async () => {
-    if (isStartingGame || !currentGame) return;
-
-    try {
-      setIsStartingGame(true);
-      await contextStartGame();
-      showNotification("Game started! 🎮", "success");
-    } catch (error) {
-      showNotification(error.message, "error");
-      console.error("Failed to start game:", error);
-    } finally {
-      setIsStartingGame(false);
-    }
-  }, [isStartingGame, currentGame, contextStartGame]);
 
   // WebSocket connection for real-time updates
   useEffect(() => {
@@ -105,8 +120,26 @@ const Game = () => {
 
         // Listen for game state updates
         wsClient.on("gameStateUpdate", (newState) => {
-          //console.log("🔄 Game updated from WebSocket:", newState);
+          console.log("📨 Game state update received:", newState);
+          console.log("Current turn index:", newState.currentTurnIndex);
+          console.log(
+            "Current player:",
+            newState.players?.[newState.currentTurnIndex]?.name
+          );
           syncGameFromSocket(newState);
+
+          // Log any new events that arrived with this update
+          if (Array.isArray(newState.events)) {
+            const prevCount = lastEventCountRef.current;
+            const total = newState.events.length;
+            if (total < prevCount) {
+              lastEventCountRef.current = total;
+            } else if (total > prevCount) {
+              const fresh = newState.events.slice(prevCount);
+              fresh.forEach((evt) => addLog(formatEventMessage(evt, newState)));
+              lastEventCountRef.current = total;
+            }
+          }
         });
 
         // Listen for errors
@@ -145,6 +178,25 @@ const Game = () => {
       setHasRolled(false);
     }
   }, [currentGame?.currentTurnIndex]);
+
+  // Stream events into the local game log whenever the events array grows
+  useEffect(() => {
+    if (!currentGame?.events) return;
+
+    const prevCount = lastEventCountRef.current;
+    const total = currentGame.events.length;
+
+    if (total < prevCount) {
+      lastEventCountRef.current = total;
+      return;
+    }
+
+    if (total > prevCount) {
+      const fresh = currentGame.events.slice(prevCount);
+      fresh.forEach((evt) => addLog(formatEventMessage(evt, currentGame)));
+      lastEventCountRef.current = total;
+    }
+  }, [currentGame?.events, currentGame]);
 
   // Roll Dice + Start Animation
   // Roll Dice - CAPTURE POSITION BEFORE ROLLING
@@ -420,12 +472,17 @@ const Game = () => {
   const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];
   const isMyTurn = currentPlayer?.id === currentPlayerId;
 
-  // Check if current player is the first player (host/game starter)
-  const isFirstPlayer = currentGame?.players?.[0]?.id === currentPlayerId;
-  const gameHasStarted = currentGame?.hasStarted;
+  console.log("🎮 Turn Info:", {
+    currentTurnIndex: currentGame?.currentTurnIndex,
+    currentPlayerName: currentPlayer?.name,
+    currentPlayerId: currentPlayer?.id,
+    myPlayerId: currentPlayerId,
+    isMyTurn,
+  });
 
+  console.log(currentDice);
   // Loading state or not in game
-  if (!currentRoom || !currentGame) {
+  if (!currentGame) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100">
         <div className="text-center">
@@ -440,66 +497,93 @@ const Game = () => {
 
   // Main Game UI
   return (
-    <div className="w-screen h-screen flex items-center justify-center p-4 bg-[#1D1D1D]">
+    <div className="w-screen h-screen flex items-center justify-center p-6 bg-gradient-to-br from-[#0f172a] via-[#0b1221] to-[#05070d] text-gray-100">
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-semibold animate-pulse ${
+          className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-xl shadow-2xl border border-white/10 backdrop-blur-md bg-white/10 text-white font-semibold ${
             notification.type === "success"
-              ? "bg-green-500"
+              ? "shadow-green-500/30"
               : notification.type === "error"
-              ? "bg-red-500"
-              : "bg-blue-500"
+              ? "shadow-red-500/30"
+              : "shadow-blue-500/30"
           }`}
         >
           {notification.message}
         </div>
       )}
 
-      <div className="w-full h-full flex gap-4">
+      <div className="w-full h-full flex gap-5">
         {/* Left Sidebar - Players */}
-        <div className="w-56 bg-[#3C4848] rounded-xl shadow-xl p-4 overflow-y-auto flex flex-col gap-3">
-          <h2 className="text-xl font-bold text-gray-800 border-b pb-2">
-            Players
-          </h2>
+        <div className="w-64 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-5 overflow-y-auto flex flex-col gap-4 backdrop-blur-lg">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold tracking-wide text-gray-100">
+              Players
+            </h2>
+            <span className="text-xs px-3 py-1 rounded-full bg-white/10 text-gray-300 border border-white/10">
+              {currentGame.players.length} joined
+            </span>
+          </div>
 
-          {currentGame.players.map((p, index) => (
-            <div
-              key={p.id}
-              className={`p-3 rounded-lg border-2 transition-all ${
-                index === currentGame.currentPlayerIndex
-                  ? "bg-yellow-50 border-yellow-400 shadow-md scale-105"
-                  : "bg-gray-50 border-gray-200"
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div
-                  className={`w-6 h-6 rounded-full ${p.color} border-2 border-gray-800`}
-                />
-                <span className="font-bold text-lg">
-                  {p.name}
-                  {p.id === currentPlayerId ? " (You)" : ""}
-                </span>
-              </div>
+          {currentGame.players.map((p, index) => {
+            const isCurrentTurn = index === currentGame.currentTurnIndex;
+            const isYou = p.id === currentPlayerId;
 
-              <div className="text-sm text-gray-700 space-y-1">
-                <p className="font-semibold text-green-700">💰 ${p.money}</p>
-                <p>📍 Position {p.position}</p>
-                <p>🏠 Properties: {p.properties?.length || 0}</p>
+            return (
+              <div
+                key={p.id}
+                className={`p-4 rounded-xl border transition-all duration-300 bg-gradient-to-br ${
+                  isCurrentTurn
+                    ? "from-yellow-500/20 via-amber-400/10 to-amber-300/5 border-amber-300/60 shadow-[0_8px_30px_-12px_rgba(251,191,36,0.7)] scale-[1.01]"
+                    : "from-white/5 via-white/2 to-white/0 border-white/10 hover:border-white/20"
+                }`}
+              >
+                {/* Top row */}
+                <div className="flex items-center justify-between">
+                  {/* Left: Name + status */}
+                  <div className="flex flex-col leading-tight">
+                    <span className="font-semibold text-gray-100 text-sm">
+                      {p.name}
+                      {isYou && <span className="text-amber-300"> (You)</span>}
+                    </span>
+                    <span
+                      className={`text-xs ${
+                        isCurrentTurn ? "text-amber-300" : "text-gray-400"
+                      }`}
+                    >
+                      {isCurrentTurn ? "On turn" : "Waiting"}
+                    </span>
+                  </div>
+
+                  {/* Right: Balance */}
+                  <div className="flex flex-col items-end rounded-lg bg-white/5 px-3 py-2 border border-white/10">
+                    <span className="text-[11px] text-gray-400">Balance</span>
+                    <span className="font-semibold text-emerald-300 text-sm">
+                      ${p.money.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Game Log */}
-          <div className="mt-4 border-t pt-3">
-            <h3 className="font-bold text-sm text-gray-700 mb-2">Game Log</h3>
-            <div className="space-y-1 max-h-40 overflow-y-auto text-xs">
+          <div className="mt-2 pt-3 border-t border-white/10 relative">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-sm text-gray-200">Game Log</h3>
+              <span className="text-[10px] text-gray-400">live</span>
+            </div>
+            <div className="space-y-1.5 max-h-44 overflow-hidden text-xs pr-1 relative">
               {_gameLog.map((log) => (
-                <div key={log.id} className="text-gray-600">
-                  <span className="text-gray-400">{log.time}</span> -{" "}
+                <div
+                  key={log.id}
+                  className="text-gray-300 bg-white/5 border border-white/5 rounded-md px-2 py-1"
+                >
+                  <span className="text-gray-400 mr-1">{log.time}</span>
                   {log.message}
                 </div>
               ))}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0b1221] via-[#0b1221]/80 to-transparent" />
             </div>
           </div>
         </div>
@@ -531,57 +615,21 @@ const Game = () => {
         </div>
 
         {/* Right Sidebar - Actions & Info */}
-        <div className="w-72 bg-white rounded-xl shadow-xl p-4 flex flex-col gap-4">
-          <div className="border-b pb-2">
-            <h3 className="font-bold text-xl text-gray-800">Actions</h3>
+        <div className="w-80 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-5 flex flex-col gap-4 backdrop-blur-lg">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <h3 className="font-semibold text-lg text-gray-100">Actions</h3>
+            <span className="text-[11px] text-gray-400">Turn tools</span>
           </div>
-
-          {/* Start Game Button - Only for first player before game starts */}
-          {!gameHasStarted && isFirstPlayer && (
-            <div className="space-y-2 bg-yellow-50 p-3 rounded-lg border-2 border-yellow-300">
-              <p className="text-xs font-semibold text-yellow-700 mb-2">
-                You are the first player. Start the game when ready!
-              </p>
-              <button
-                onClick={handleStartGame}
-                disabled={isStartingGame || currentGame.players.length < 2}
-                className={`w-full py-3 rounded-lg font-semibold transition-all ${
-                  !isStartingGame && currentGame.players.length >= 2
-                    ? "bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:scale-105"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
-              >
-                {isStartingGame ? "Starting..." : "🎮 Start Game"}
-              </button>
-              {currentGame.players.length < 2 && (
-                <p className="text-xs text-gray-600">
-                  ⏳ Waiting for {2 - currentGame.players.length} more player(s)
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Game Status for other players */}
-          {!gameHasStarted && !isFirstPlayer && (
-            <div className="space-y-2 bg-blue-50 p-3 rounded-lg border-2 border-blue-300">
-              <p className="text-xs font-semibold text-blue-700">
-                ⏳ Waiting for the first player to start the game...
-              </p>
-              <p className="text-xs text-gray-600">
-                {currentGame.players.length} player(s) ready
-              </p>
-            </div>
-          )}
 
           {/* Property Actions */}
           <div className="space-y-2">
             <button
               onClick={buyProperty}
               disabled={!canBuyProperty() || isLoadingAction}
-              className={`w-full py-3 rounded-lg font-semibold transition-all ${
+              className={`w-full py-3 rounded-xl font-semibold transition-all border ${
                 canBuyProperty() && !isLoadingAction
-                  ? "bg-green-500 hover:bg-green-600 text-white shadow-md hover:scale-105"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
+                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
               }`}
             >
               {isLoadingAction ? "Processing..." : "🏠 Buy Property"}
@@ -589,10 +637,10 @@ const Game = () => {
 
             <button
               disabled={!isMyTurn}
-              className={`w-full py-3 rounded-lg font-semibold transition-all ${
+              className={`w-full py-3 rounded-xl font-semibold transition-all border ${
                 isMyTurn
-                  ? "bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:scale-105"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  ? "bg-orange-500/80 border-orange-400/70 text-white shadow-[0_10px_30px_-15px_rgba(249,115,22,0.8)] hover:-translate-y-0.5"
+                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
               }`}
             >
               🏗️ Build House
@@ -601,10 +649,10 @@ const Game = () => {
             <button
               onClick={() => setShowTradeModal(true)}
               disabled={!isMyTurn}
-              className={`w-full py-3 rounded-lg font-semibold transition-all ${
+              className={`w-full py-3 rounded-xl font-semibold transition-all border ${
                 isMyTurn
-                  ? "bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:scale-105"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  ? "bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5"
+                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
               }`}
             >
               🤝 Trade
@@ -612,10 +660,10 @@ const Game = () => {
 
             <button
               disabled={!isMyTurn}
-              className={`w-full py-3 rounded-lg font-semibold transition-all ${
+              className={`w-full py-3 rounded-xl font-semibold transition-all border ${
                 isMyTurn
-                  ? "bg-yellow-500 hover:bg-yellow-600 text-white shadow-md hover:scale-105"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  ? "bg-amber-500/80 border-amber-400/70 text-white shadow-[0_10px_30px_-15px_rgba(251,191,36,0.8)] hover:-translate-y-0.5"
+                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
               }`}
             >
               💰 Mortgage
@@ -623,13 +671,16 @@ const Game = () => {
           </div>
 
           {/* Current Player Info */}
-          <div className="border-t pt-3 space-y-3">
-            <h4 className="font-bold text-gray-700">Current Property</h4>
-            <div className="bg-gray-50 p-3 rounded-lg text-sm">
+          <div className="border-t border-white/10 pt-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-gray-100">Current Property</h4>
+              <span className="text-xs text-gray-400">Tile info</span>
+            </div>
+            <div className="bg-white/5 p-3 rounded-xl border border-white/10 text-sm text-gray-200">
               <p className="font-semibold">
                 Position: {currentPlayer?.position}
               </p>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-400 mt-1">
                 {currentPlayer?.properties?.includes(currentPlayer?.position)
                   ? "✅ You own this!"
                   : currentGame.players.some((p) =>
@@ -642,20 +693,23 @@ const Game = () => {
           </div>
 
           {/* Player Portfolio */}
-          <div className="border-t pt-3 flex-1 overflow-y-auto">
-            <h4 className="font-bold text-gray-700 mb-2">Your Properties</h4>
+          <div className="border-t border-white/10 pt-3 flex-1 overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-semibold text-gray-100">Your Properties</h4>
+              <span className="text-xs text-gray-400">Portfolio</span>
+            </div>
             <div className="space-y-2">
               {currentPlayer?.properties?.length > 0 ? (
                 currentPlayer.properties.map((tile) => (
                   <div
                     key={tile}
-                    className="bg-blue-50 p-2 rounded border border-blue-200 text-sm"
+                    className="bg-indigo-500/10 border border-indigo-400/30 text-indigo-100 p-2 rounded-lg text-sm"
                   >
                     <span className="font-semibold">Property #{tile}</span>
                   </div>
                 ))
               ) : (
-                <p className="text-gray-400 text-sm italic">
+                <p className="text-gray-500 text-sm italic">
                   No properties yet
                 </p>
               )}

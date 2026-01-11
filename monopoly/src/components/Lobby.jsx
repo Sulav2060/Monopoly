@@ -1,348 +1,119 @@
-import React, { useState, useEffect } from "react";
-import { useGame } from "../context/GameContext";
+import React, { useState } from "react";
 
-const Lobby = ({ onGameStart }) => {
-  const {
-    createRoom,
-    loadAvailableRooms,
-    joinRoom,
-    leaveRoom,
-    startGame,
-    refreshRoom,
-    currentRoom,
-    availableRooms,
-    _currentPlayerName,
-    currentPlayerId,
-    roomError,
-    loading,
-  } = useGame();
-
-  const [view, setView] = useState("menu"); // "menu" | "create" | "join" | "room"
-  const [roomName, setRoomName] = useState("");
-  const [playerName, setPlayerName] = useState("");
-  const [selectedRoomId, setSelectedRoomId] = useState(null);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => {
-    if (currentRoom) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setView("room");
-    }
-  }, [currentRoom]);
-
-  // Auto-refresh room data every second when in room view
-  useEffect(() => {
-    if (view !== "room" || !currentRoom) return;
-
-    const interval = setInterval(async () => {
-      await refreshRoom();
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [view, currentRoom, refreshRoom]);
-
-  const handleCreateRoom = async () => {
-    if (!roomName.trim() || !playerName.trim()) {
-      alert("Please fill in all fields");
-      return;
-    }
-
-    try {
-      await createRoom(roomName, playerName);
-      setRoomName("");
-    } catch (error) {
-      console.error("Failed to create room:", error);
-    }
-  };
-
-  const handleJoinRoom = async () => {
-    if (!playerName.trim() || !selectedRoomId) {
-      alert("Please select a room and enter your name");
-      return;
-    }
-
-    try {
-      await joinRoom(selectedRoomId, playerName);
-      setPlayerName("");
-    } catch (error) {
-      console.error("Failed to join room:", error);
-    }
-  };
+const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
+  const [loading, setLoading] = useState(false);
 
   const handleStartGame = async () => {
+    setLoading(true);
     try {
-      const game = await startGame();
-      onGameStart(game);
+      await onStartGame();
     } catch (error) {
       console.error("Failed to start game:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLeaveRoom = async () => {
-    try {
-      await leaveRoom();
-      setView("menu");
-    } catch (error) {
-      console.error("Failed to leave room:", error);
-    }
-  };
-
-  const loadRooms = async () => {
-    try {
-      await loadAvailableRooms();
-      setView("join");
-    } catch (error) {
-      console.error("Failed to load rooms:", error);
-    }
-  };
-
-  // Main Menu View
-  if (view === "menu") {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100">
-        <div className="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full">
-          <h1 className="text-4xl font-bold text-center mb-8 text-green-800">
-            🎲 Monopoly Game
-          </h1>
-
-          <div className="space-y-4">
-            <button
-              onClick={() => setView("create")}
-              className="w-full py-4 bg-green-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-green-700 transition-all transform hover:scale-105"
-            >
-              ➕ Create Room
-            </button>
-
-            <button
-              onClick={loadRooms}
-              disabled={loading}
-              className="w-full py-4 bg-blue-600 text-white font-bold text-lg rounded-lg shadow-lg hover:bg-blue-700 transition-all transform hover:scale-105 disabled:opacity-50"
-            >
-              {loading ? "Loading..." : "🔗 Join Room"}
-            </button>
-          </div>
+  return (
+    <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">🎲 Monopoly</h1>
+          <p className="text-gray-600">Game Lobby</p>
         </div>
-      </div>
-    );
-  }
 
-  // Create Room View
-  if (view === "create") {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100">
-        <div className="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full">
-          <h1 className="text-3xl font-bold text-center mb-8 text-green-800">
-            Create Room
-          </h1>
-
-          {roomError && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
-              {roomError}
-            </div>
-          )}
-
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="block text-lg font-semibold mb-2 text-gray-700">
-                Room Name:
-              </label>
-              <input
-                type="text"
-                value={roomName}
-                onChange={(e) => setRoomName(e.target.value)}
-                placeholder="e.g., Epic Game Session"
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-green-600 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-lg font-semibold mb-2 text-gray-700">
-                Your Name:
-              </label>
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-green-600 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <button
-              onClick={handleCreateRoom}
-              disabled={loading}
-              className="w-full py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
-            >
-              {loading ? "Creating..." : "Create Room"}
-            </button>
-
-            <button
-              onClick={() => setView("menu")}
-              className="w-full py-3 bg-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-400 transition-all"
-            >
-              Back
-            </button>
-          </div>
+        {/* Player Count */}
+        <div className="bg-blue-50 rounded-lg p-4 mb-6 text-center">
+          <p className="text-sm text-gray-600 mb-1">Players Joined</p>
+          <p className="text-3xl font-bold text-blue-600">
+            {currentGame?.players?.length || 0}/4
+          </p>
         </div>
-      </div>
-    );
-  }
 
-  // Join Room View
-  if (view === "join") {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100">
-        <div className="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full">
-          <h1 className="text-3xl font-bold text-center mb-8 text-blue-800">
-            Join Room
-          </h1>
-
-          {roomError && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
-              {roomError}
-            </div>
-          )}
-
-          <div className="space-y-4 mb-6">
-            <div>
-              <label className="block text-lg font-semibold mb-2 text-gray-700">
-                Your Name:
-              </label>
-              <input
-                type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-lg font-semibold mb-2 text-gray-700">
-                Select Room:
-              </label>
-              <select
-                value={selectedRoomId || ""}
-                onChange={(e) => setSelectedRoomId(e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none"
-              >
-                <option value="">Choose a room...</option>
-                {availableRooms.map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.name} ({room.players.length}/{room.maxPlayers})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <button
-              onClick={handleJoinRoom}
-              disabled={loading || !selectedRoomId}
-              className="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-all disabled:opacity-50"
-            >
-              {loading ? "Joining..." : "Join Room"}
-            </button>
-
-            <button
-              onClick={() => setView("menu")}
-              className="w-full py-3 bg-gray-300 text-gray-700 font-bold rounded-lg hover:bg-gray-400 transition-all"
-            >
-              Back
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Room Lobby View
-  if (view === "room" && currentRoom) {
-    const isHost = currentRoom.host === currentPlayerId;
-    const canStart = currentRoom.players.length >= 2;
-
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100">
-        <div className="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full">
-          <h1 className="text-3xl font-bold text-center mb-4 text-gray-800">
-            {currentRoom.name}
-          </h1>
-
-          <div className="text-center mb-6">
-            <p className="text-gray-600">
-              Room ID:{" "}
-              <span className="font-mono text-sm">{currentRoom.id}</span>
-            </p>
-            <p className="text-gray-600">
-              Players: {currentRoom.players.length}/{currentRoom.maxPlayers}
-            </p>
-          </div>
-
-          <div className="bg-gray-50 rounded-lg p-4 mb-6 max-h-48 overflow-y-auto">
-            <h3 className="font-bold mb-3 text-gray-800">Players:</h3>
-            <div className="space-y-2">
-              {currentRoom.players.map((player) => (
+        {/* Player List */}
+        <div className="mb-6">
+          <h2 className="text-lg font-bold text-gray-800 mb-3">Players</h2>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {currentGame?.players && currentGame.players.length > 0 ? (
+              currentGame.players.map((player, index) => (
                 <div
                   key={player.id}
-                  className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200"
+                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200"
                 >
                   <div
                     className={`w-4 h-4 rounded-full ${
-                      player.color.startsWith("bg-")
-                        ? player.color
-                        : "bg-gray-400"
+                      player.color || "bg-gray-400"
                     }`}
                   />
-                  <span className="font-semibold">{player.name}</span>
-                  {currentRoom.host === player.id && (
-                    <span className="text-xs bg-yellow-200 px-2 py-1 rounded">
-                      Host
-                    </span>
-                  )}
+                  <span className="flex-1 font-semibold text-gray-800">
+                    {player.name}
+                    {index === 0 && (
+                      <span className="text-xs text-blue-600 ml-2">(Host)</span>
+                    )}
+                    {player.id === currentPlayerId && (
+                      <span className="text-xs text-green-600 ml-2">(You)</span>
+                    )}
+                  </span>
+                  <span className="text-sm text-gray-500">#{index + 1}</span>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {roomError && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-              {roomError}
-            </div>
-          )}
-
-          <div className="space-y-2">
-            {isHost && (
-              <button
-                onClick={handleStartGame}
-                disabled={loading || !canStart}
-                className="w-full py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-all disabled:opacity-50"
-              >
-                {loading ? "Starting..." : "🎮 Start Game"}
-              </button>
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">
+                Waiting for players...
+              </p>
             )}
-
-            <button
-              onClick={handleLeaveRoom}
-              className="w-full py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-all"
-            >
-              Leave Room
-            </button>
           </div>
+        </div>
 
-          {!isHost && (
-            <p className="text-center text-sm text-gray-600 mt-4">
+        {/* Waiting for more players message */}
+        {currentGame?.players?.length < 2 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6 text-center">
+            <p className="text-sm text-yellow-800">
+              Waiting for at least 2 players to start...
+            </p>
+          </div>
+        )}
+
+        {/* Start Game Button (only for host) */}
+        {isHost && (
+          <button
+            onClick={handleStartGame}
+            disabled={
+              !currentGame?.players || currentGame.players.length < 2 || loading
+            }
+            className={`w-full py-3 rounded-lg font-bold text-white transition-all ${
+              !currentGame?.players || currentGame.players.length < 2 || loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700 shadow-lg hover:scale-105"
+            }`}
+          >
+            {loading ? "Starting..." : "🎮 Start Game"}
+          </button>
+        )}
+
+        {/* Waiting message (for non-host) */}
+        {!isHost && (
+          <div className="text-center py-3">
+            <p className="text-gray-600">
               Waiting for host to start the game...
             </p>
-          )}
-        </div>
+            <div className="mt-3 flex justify-center gap-1">
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" />
+              <div
+                className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
+                style={{ animationDelay: "0.1s" }}
+              />
+              <div
+                className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
+                style={{ animationDelay: "0.2s" }}
+              />
+            </div>
+          </div>
+        )}
       </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 };
 
 export default Lobby;

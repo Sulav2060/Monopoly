@@ -71,14 +71,19 @@ const Game = () => {
 
     const setupWebSocket = async () => {
       try {
-        const wsUrl =
-          import.meta.env.VITE_WS_URL || "ws://localhost:4000";
+        const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:4000";
 
         const me = currentGame.players.find((p) => p.id === currentPlayerId);
-        const playerName = me?.name || `Player ${currentPlayerId?.split("-").pop()}`;
+        const playerName =
+          me?.name || `Player ${currentPlayerId?.split("-").pop()}`;
 
         // Connect to WebSocket
-        await wsClient.connect(wsUrl, currentGame.id, currentPlayerId, playerName);
+        await wsClient.connect(
+          wsUrl,
+          currentGame.id,
+          currentPlayerId,
+          playerName
+        );
 
         // Listen for game state updates
         wsClient.on("gameStateUpdate", (newState) => {

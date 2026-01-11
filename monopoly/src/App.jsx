@@ -5,7 +5,13 @@ import { useGame } from "./context/GameContext";
 import { useEffect } from "react";
 
 function App() {
-  const { currentGame, setCurrentGame, currentPlayerId, setCurrentPlayerId, setCurrentRoom } = useGame();
+  const {
+    currentGame,
+    setCurrentGame,
+    currentPlayerId,
+    setCurrentPlayerId,
+    setCurrentRoom,
+  } = useGame();
 
   // Initialize game on mount (skip lobby)
   useEffect(() => {
@@ -78,7 +84,11 @@ function App() {
 
   // Show Game component when a game is active
   if (!currentGame) {
-    return <div className="w-screen h-screen flex items-center justify-center bg-gray-900 text-white text-2xl">Initializing game...</div>;
+    return (
+      <div className="w-screen h-screen flex items-center justify-center bg-gray-900 text-white text-2xl">
+        Initializing game...
+      </div>
+    );
   }
 
   return (

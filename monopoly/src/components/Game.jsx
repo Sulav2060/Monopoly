@@ -255,7 +255,7 @@ const Game = () => {
 
     currentGame.players.forEach((player) => {
       const prevMoney = prevMoneyRef.current[player.id];
-      
+
       if (prevMoney !== undefined && prevMoney !== player.money) {
         const isDecrease = player.money < prevMoney;
         const startValue = prevMoney;
@@ -272,42 +272,46 @@ const Game = () => {
         }
 
         // Set initial animated value
-        setAnimatedMoney(prev => ({
+        setAnimatedMoney((prev) => ({
           ...prev,
-          [player.id]: startValue
+          [player.id]: startValue,
         }));
 
         // Trigger color animation
-        setMoneyAnimations(prev => ({
+        setMoneyAnimations((prev) => ({
           ...prev,
-          [player.id]: isDecrease ? 'decrease' : 'increase'
+          [player.id]: isDecrease ? "decrease" : "increase",
         }));
 
         // Animate the number
         const interval = setInterval(() => {
           currentStep++;
           const progress = Math.min(currentStep / steps, 1);
-          const easeProgress = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress; // easeInOutQuad
-          const currentValue = startValue + (endValue - startValue) * easeProgress;
+          const easeProgress =
+            progress < 0.5
+              ? 2 * progress * progress
+              : -1 + (4 - 2 * progress) * progress; // easeInOutQuad
+          const currentValue =
+            startValue + (endValue - startValue) * easeProgress;
 
-          setAnimatedMoney(prev => ({
+          setAnimatedMoney((prev) => ({
             ...prev,
-            [player.id]: Math.round(currentValue)
+            [player.id]: Math.round(currentValue),
           }));
 
           if (progress >= 1) {
             clearInterval(interval);
-            setAnimatedMoney(prev => ({
+            setAnimatedMoney((prev) => ({
               ...prev,
-              [player.id]: endValue
+              [player.id]: endValue,
             }));
             moneyAnimationTimeoutRef.current[player.id] = null;
 
             // Remove color animation after 600ms
             setTimeout(() => {
-              setMoneyAnimations(prev => ({
+              setMoneyAnimations((prev) => ({
                 ...prev,
-                [player.id]: null
+                [player.id]: null,
               }));
             }, 100);
           }
@@ -320,7 +324,7 @@ const Game = () => {
     });
 
     return () => {
-      Object.values(moneyAnimationTimeoutRef.current).forEach(timeout => {
+      Object.values(moneyAnimationTimeoutRef.current).forEach((timeout) => {
         if (timeout) clearInterval(timeout);
       });
     };
@@ -703,17 +707,25 @@ const Game = () => {
                   </div>
 
                   {/* Right: Balance */}
-                  <div className={`flex flex-col items-end rounded-lg bg-white/5 px-3 py-2 border border-white/10 transition-all duration-300 ${
-                    moneyAnimations[p.id] === 'decrease' ? 'border-red-500/80 bg-red-500/20 shadow-[0_0_20px_-5px_rgba(239,68,68,0.8)]' :
-                    moneyAnimations[p.id] === 'increase' ? 'border-green-500/80 bg-green-500/20 shadow-[0_0_20px_-5px_rgba(34,197,94,0.8)]' :
-                    'border-white/10'
-                  }`}>
+                  <div
+                    className={`flex flex-col items-end rounded-lg bg-white/5 px-3 py-2 border border-white/10 transition-all duration-300 ${
+                      moneyAnimations[p.id] === "decrease"
+                        ? "border-red-500/80 bg-red-500/20 shadow-[0_0_20px_-5px_rgba(239,68,68,0.8)]"
+                        : moneyAnimations[p.id] === "increase"
+                        ? "border-green-500/80 bg-green-500/20 shadow-[0_0_20px_-5px_rgba(34,197,94,0.8)]"
+                        : "border-white/10"
+                    }`}
+                  >
                     <span className="text-[11px] text-gray-400">Balance</span>
-                    <span className={`font-semibold text-sm transition-all duration-300 ${
-                      moneyAnimations[p.id] === 'decrease' ? 'text-red-300' :
-                      moneyAnimations[p.id] === 'increase' ? 'text-green-300' :
-                      'text-emerald-300'
-                    }`}>
+                    <span
+                      className={`font-semibold text-sm transition-all duration-300 ${
+                        moneyAnimations[p.id] === "decrease"
+                          ? "text-red-300"
+                          : moneyAnimations[p.id] === "increase"
+                          ? "text-green-300"
+                          : "text-emerald-300"
+                      }`}
+                    >
                       ${(animatedMoney[p.id] ?? p.money).toLocaleString()}
                     </span>
                   </div>
@@ -979,7 +991,11 @@ const Game = () => {
               // Slideshow carousel
               <div className="relative h-48 rounded-xl overflow-hidden">
                 <div
-                  className={`flex h-full w-full ${isTransitioning ? 'transition-transform duration-700 ease-in-out' : ''}`}
+                  className={`flex h-full w-full ${
+                    isTransitioning
+                      ? "transition-transform duration-700 ease-in-out"
+                      : ""
+                  }`}
                   style={{
                     transform: `translateX(-${carouselIndex * 100}%)`,
                   }}

@@ -88,6 +88,13 @@ export function setupWebSocket(wss: WebSocketServer) {
             inJail: false,
             jailTurns: 0,
             isBankrupt: false,
+            communityChestDeck: [
+              { type: "MONEY", amount: 200 },
+              { type: "GO_TO_JAIL" },
+              { type: "MOVE", position: 12 },
+            ],
+            communityChestIndex: 0,
+            freeParkingPot: 0,
           };
 
           game.state.players.push(newPlayer);

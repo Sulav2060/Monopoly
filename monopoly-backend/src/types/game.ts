@@ -16,6 +16,11 @@ export type DiceRoll = {
   die2: number;
 };
 
+export type CommunityChestCard =
+  | { type: "MONEY"; amount: 200 }
+  | { type: "GO_TO_JAIL" }
+  | { type: "MOVE"; position: 12 };
+
 export type GameEvent =
   | { type: "DICE_ROLLED"; dice: DiceRoll }
   | { type: "PLAYER_MOVED"; from: number; to: number }
@@ -39,7 +44,14 @@ export type GameEvent =
       causedBy?: PlayerId; // rent owner, optional TODO: still unclear about this
     }
   //game ends
-  | { type: "GAME_OVER"; winnerId: PlayerId };
+  | { type: "GAME_OVER"; winnerId: PlayerId }
+  //tax regarding event
+  | { type: "TAX_PAID"; playerId: PlayerId; amount: number }
+  | { type: "FREE_PARKING_COLLECTED"; playerId: PlayerId; amount: number }
+  | {
+      type: "COMMUNITY_CHEST";
+      card: CommunityChestCard;
+    };
 
 export type GameState = {
   players: PlayerState[];
@@ -50,6 +62,9 @@ export type GameState = {
   doublesCount?: number; // to see if 3 doubles player gets and to take him to jail
   hasStarted?: boolean;
   maxPlayers?: number;
+  freeParkingPot?: number;
+  communityChestDeck: CommunityChestCard[];
+  communityChestIndex: number;
 };
 
 export type PropertyOwnership = {

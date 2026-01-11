@@ -13,6 +13,7 @@ const wss = new WebSocketServer({ server });
 
 setupWebSocket(wss);
 
+// Initialize game-1 with empty players - they join via WebSocket
 const initialState: GameState = {
   players: [],
   currentTurnIndex: 0,
@@ -21,6 +22,7 @@ const initialState: GameState = {
 };
 
 createGame("game-1", initialState);
+console.log("✅ Game 'game-1' initialized and ready for players");
 
 const PORT = process.env.PORT || 4000;
 

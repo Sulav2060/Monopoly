@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import io from "socket.io-client";
 import Board from "./Board";
 import { tiles } from "./tiles";
 import { useGame } from "../context/GameContext";
+import { wsClient } from "../services/wsClient";
 
 const TILES_ON_BOARD =
   tiles.bottom.length +
@@ -65,46 +65,53 @@ const Game = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Socket connection for real-time updates
+  // WebSocket connection for real-time updates
   useEffect(() => {
     if (!currentGame || !currentPlayerId) return;
 
-    // Use mock socket if available, otherwise use real socket.io
-    const socket = window.__mockIO
-      ? window.__mockIO(
-          import.meta.env.VITE_BACKEND_URL || "http://localhost:4000",
-          { transports: ["websocket"] }
-        )
-      : io(import.meta.env.VITE_BACKEND_URL || "http://localhost:4000", {
-          transports: ["websocket"],
+    const setupWebSocket = async () => {
+      try {
+        const wsUrl =
+          import.meta.env.VITE_WS_URL || "ws://localhost:4000";
+
+        const me = currentGame.players.find((p) => p.id === currentPlayerId);
+        const playerName = me?.name || `Player ${currentPlayerId?.split("-").pop()}`;
+
+        // Connect to WebSocket
+        await wsClient.connect(wsUrl, currentGame.id, currentPlayerId, playerName);
+
+        // Listen for game state updates
+        wsClient.on("gameStateUpdate", (newState) => {
+          console.log("🔄 Game updated from WebSocket:", newState);
+          syncGameFromSocket(newState);
         });
 
-    socketRef.current = socket;
+        // Listen for errors
+        wsClient.on("error", (error) => {
+          console.error("❌ WebSocket error:", error);
+          showNotification("Connection error: " + error.message, "error");
+        });
 
-    socket.emit("join-game", currentGame.id, currentPlayerId);
+        // Listen for disconnect
+        wsClient.on("disconnect", () => {
+          console.log("👋 WebSocket disconnected");
+          showNotification("Disconnected from server", "error");
+        });
 
-    socket.on("game-updated", (game) => {
-      if (game) {
-        console.log("🔄 Game updated from socket:", game);
-        syncGameFromSocket(game);
+        showNotification("Connected to game server ✅", "success");
+      } catch (error) {
+        console.error("Failed to connect WebSocket:", error);
+        showNotification(
+          "Failed to connect to server: " + error.message,
+          "error"
+        );
       }
-    });
+    };
 
-    socket.on("turn-changed", () => {
-      setHasRolled(false);
-    });
-
-    socket.on("connect", () => {
-      console.log("✅ Socket connected");
-    });
-
-    socket.on("disconnect", () => {
-      console.log("❌ Socket disconnected");
-    });
+    setupWebSocket();
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      wsClient.disconnect();
     };
   }, [currentGame?.id, currentPlayerId, syncGameFromSocket]);
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
-import { roomAPI, gameAPI } from "../services/api";
+import { wsClient } from "../services/wsClient";
 
 const GameContext = createContext();
 
@@ -23,112 +23,37 @@ export const GameProvider = ({ children }) => {
   /**
    * Create a new room
    */
-  const createRoom = useCallback(async (roomName, playerName) => {
-    try {
-      setLoading(true);
-      setRoomError(null);
-      const playerId = `player-${Date.now()}`;
-      setCurrentPlayerId(playerId);
-      setCurrentPlayerName(playerName);
-
-      const response = await roomAPI.createRoom(roomName, playerId, playerName);
-      setCurrentRoom(response.data);
-      return response.data;
-    } catch (error) {
-      setRoomError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+  const createRoom = useCallback(async () => {
+    throw new Error("Room API disabled (WebSocket-only mode)");
   }, []);
 
   /**
    * List available rooms
    */
   const loadAvailableRooms = useCallback(async () => {
-    try {
-      setLoading(true);
-      setRoomError(null);
-      const response = await roomAPI.getAvailableRooms();
-      setAvailableRooms(response.data);
-      return response.data;
-    } catch (error) {
-      setRoomError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+    throw new Error("Room API disabled (WebSocket-only mode)");
   }, []);
 
   /**
    * Join a room
    */
-  const joinRoom = useCallback(async (roomId, playerName) => {
-    try {
-      setLoading(true);
-      setRoomError(null);
-      const playerId = `player-${Date.now()}`;
-      setCurrentPlayerId(playerId);
-      setCurrentPlayerName(playerName);
-
-      const response = await roomAPI.joinRoom(roomId, playerId, playerName);
-      setCurrentRoom(response.data);
-      return response.data;
-    } catch (error) {
-      setRoomError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
+  const joinRoom = useCallback(async () => {
+    throw new Error("Room API disabled (WebSocket-only mode)");
   }, []);
 
   /**
    * Leave current room
    */
   const leaveRoom = useCallback(async () => {
-    try {
-      setLoading(true);
-      setRoomError(null);
-
-      if (!currentRoom || !currentPlayerId) {
-        throw new Error("Not in a room");
-      }
-
-      await roomAPI.leaveRoom(currentRoom.id, currentPlayerId);
-      setCurrentRoom(null);
-      setCurrentGame(null);
-      setCurrentPlayerId(null);
-      setCurrentPlayerName(null);
-    } catch (error) {
-      setRoomError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  }, [currentRoom, currentPlayerId]);
+    throw new Error("Room API disabled (WebSocket-only mode)");
+  }, []);
 
   /**
    * Start game in current room
    */
   const startGame = useCallback(async () => {
-    try {
-      setLoading(true);
-      setGameError(null);
-
-      if (!currentRoom) {
-        throw new Error("Not in a room");
-      }
-
-      const response = await roomAPI.startGame(currentRoom.id);
-      setCurrentGame(response.data);
-      return response.data;
-    } catch (error) {
-      setGameError(error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  }, [currentRoom]);
+    throw new Error("Room API disabled (WebSocket-only mode)");
+  }, []);
 
   /**
    * Roll dice in current game
@@ -141,10 +66,34 @@ export const GameProvider = ({ children }) => {
         throw new Error("Game not started or player not found");
       }
 
-      const response = await gameAPI.rollDice(currentGame.id, currentPlayerId);
-      console.log(response);
-      setCurrentGame(response.data);
-      return response.data.lastDiceRoll;
+      // WebSocket-only path
+      if (!wsClient.isConnected()) {
+        throw new Error("WebSocket not connected");
+      }
+
+      return new Promise((resolve, reject) => {
+        const handleGameStateUpdate = (newState) => {
+          console.log("🎲 Game state updated via WebSocket");
+          setCurrentGame(newState);
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          resolve(newState.lastDiceRoll);
+        };
+
+        wsClient.on("gameStateUpdate", handleGameStateUpdate);
+
+        try {
+          wsClient.rollDice();
+        } catch (error) {
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          reject(error);
+        }
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          reject(new Error("Roll dice request timeout"));
+        }, 10000);
+      });
     } catch (error) {
       setGameError(error.message);
       throw error;
@@ -154,174 +103,51 @@ export const GameProvider = ({ children }) => {
   /**
    * Buy property
    */
-  const buyProperty = useCallback(
-    async (propertyId) => {
-      try {
-        setGameError(null);
-
-        if (!currentGame || !currentPlayerId) {
-          throw new Error("Game not started or player not found");
-        }
-
-        const response = await gameAPI.buyProperty(
-          currentGame.id,
-          currentPlayerId,
-          propertyId
-        );
-        setCurrentGame(response.data);
-        return response.data;
-      } catch (error) {
-        setGameError(error.message);
-        throw error;
-      }
-    },
-    [currentGame, currentPlayerId]
-  );
+  const buyProperty = useCallback(async () => {
+    throw new Error("buyProperty not implemented over WebSocket yet");
+  }, []);
 
   /**
    * Pay rent
    */
-  const payRent = useCallback(
-    async (propertyId) => {
-      try {
-        setGameError(null);
-
-        if (!currentGame || !currentPlayerId) {
-          throw new Error("Game not started or player not found");
-        }
-
-        const response = await gameAPI.payRent(
-          currentGame.id,
-          currentPlayerId,
-          propertyId
-        );
-        setCurrentGame(response.data);
-        return response.data.lastRentPaid;
-      } catch (error) {
-        setGameError(error.message);
-        throw error;
-      }
-    },
-    [currentGame, currentPlayerId]
-  );
+  const payRent = useCallback(async () => {
+    throw new Error("payRent not implemented over WebSocket yet");
+  }, []);
 
   /**
    * Buy house
    */
-  const buyHouse = useCallback(
-    async (propertyId) => {
-      try {
-        setGameError(null);
-
-        if (!currentGame || !currentPlayerId) {
-          throw new Error("Game not started or player not found");
-        }
-
-        const response = await gameAPI.buyHouse(
-          currentGame.id,
-          currentPlayerId,
-          propertyId
-        );
-        setCurrentGame(response.data);
-        return response.data;
-      } catch (error) {
-        setGameError(error.message);
-        throw error;
-      }
-    },
-    [currentGame, currentPlayerId]
-  );
+  const buyHouse = useCallback(async () => {
+    throw new Error("buyHouse not implemented over WebSocket yet");
+  }, []);
 
   /**
    * Buy hotel
    */
-  const buyHotel = useCallback(
-    async (propertyId) => {
-      try {
-        setGameError(null);
-
-        if (!currentGame || !currentPlayerId) {
-          throw new Error("Game not started or player not found");
-        }
-
-        const response = await gameAPI.buyHotel(
-          currentGame.id,
-          currentPlayerId,
-          propertyId
-        );
-        setCurrentGame(response.data);
-        return response.data;
-      } catch (error) {
-        setGameError(error.message);
-        throw error;
-      }
-    },
-    [currentGame, currentPlayerId]
-  );
+  const buyHotel = useCallback(async () => {
+    throw new Error("buyHotel not implemented over WebSocket yet");
+  }, []);
 
   /**
    * End turn
    */
   const endTurn = useCallback(async () => {
-    try {
-      setGameError(null);
-
-      if (!currentGame || !currentPlayerId) {
-        throw new Error("Game not started or player not found");
-      }
-
-      const response = await gameAPI.endTurn(currentGame.id, currentPlayerId);
-      setCurrentGame(response.data);
-      return response.data;
-    } catch (error) {
-      setGameError(error.message);
-      throw error;
-    }
-  }, [currentGame, currentPlayerId]);
+    throw new Error("endTurn not implemented over WebSocket yet");
+  }, []);
 
   /**
    * Refresh current room data
    */
   const refreshRoom = useCallback(async () => {
-    try {
-      if (!currentRoom) {
-        return null;
-      }
-
-      const response = await roomAPI.getRoom(currentRoom.id);
-      setCurrentRoom(response.data);
-
-      // If game exists, always update currentGame (for host and joining players)
-      if (response.data.game) {
-        setCurrentGame(response.data.game);
-      }
-
-      return response.data;
-    } catch (error) {
-      console.error("Failed to refresh room:", error);
-      return null;
-    }
-  }, [currentRoom]);
+    throw new Error("Room API disabled (WebSocket-only mode)");
+  }, []);
 
   /**
    * Get current game state
    */
   const getGameState = useCallback(async () => {
-    try {
-      setGameError(null);
-
-      if (!currentGame) {
-        throw new Error("Game not started");
-      }
-
-      const response = await gameAPI.getGameState(currentGame.id);
-      setCurrentGame(response.data);
-      return response.data;
-    } catch (error) {
-      setGameError(error.message);
-      throw error;
-    }
-  }, [currentGame]);
+    throw new Error("getGameState not implemented over WebSocket yet");
+  }, []);
 
   /**
    * Sync game state from realtime events (sockets)
@@ -343,9 +169,11 @@ export const GameProvider = ({ children }) => {
     joinRoom,
     leaveRoom,
     refreshRoom,
+    setCurrentRoom,
 
     // Game State & Actions
     currentGame,
+    setCurrentGame,
     gameError,
     startGame,
     rollDice,
@@ -359,6 +187,7 @@ export const GameProvider = ({ children }) => {
 
     // Player State
     currentPlayerId,
+    setCurrentPlayerId,
     currentPlayerName,
 
     // UI State

@@ -1,7 +1,7 @@
 /**
  * WebSocket Client for Monopoly Game
  * Handles real-time game communication with backend
- * 
+ *
  * Message Contract:
  * Client → Server: { type: "ROLL_DICE", gameId, playerId }
  * Server → Client: { type: "GAME_STATE_UPDATE", gameId, state }
@@ -10,7 +10,7 @@
 class GameSocketManager {
   constructor() {
     this.socket = null;
-    this.gameId = null;
+    this.gameId = "game-1";
     this.playerId = null;
     this.listeners = new Map();
     this.reconnectAttempts = 0;
@@ -43,20 +43,14 @@ class GameSocketManager {
 
           // Send JOIN_GAME message with player data
           console.log("📤 Sending: JOIN_GAME");
-          this.socket.send(JSON.stringify({
-            type: "JOIN_GAME",
-            gameId,
-            playerId,
-            player: {
-              id: playerId,
-              name: this.playerName,
-              position: 0,
-              money: 1500,
-              inJail: false,
-              jailTurns: 0,
-              isBankrupt: false,
-            },
-          }));
+          this.socket.send(
+            JSON.stringify({
+              type: "JOIN_GAME",
+              gameId,
+              playerId: this.playerId,
+              playerName: this.playerName,
+            })
+          );
 
           this._trigger("connect");
           resolve();

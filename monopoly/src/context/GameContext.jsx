@@ -73,7 +73,7 @@ export const GameProvider = ({ children }) => {
 
       return new Promise((resolve, reject) => {
         const handleGameStateUpdate = (newState) => {
-          console.log("🎲 Game state updated via WebSocket");
+          //console.log("🎲 Game state updated via WebSocket");
           setCurrentGame(newState);
           wsClient.off("gameStateUpdate", handleGameStateUpdate);
           resolve(newState.lastDiceRoll);

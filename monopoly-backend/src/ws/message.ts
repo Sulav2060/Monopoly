@@ -9,6 +9,7 @@ export type ClientMessage =
   | {
       type: "JOIN_GAME";
       gameId: string;
+      playerId?: string;
       playerName: string;
     }
   | {

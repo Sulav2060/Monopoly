@@ -87,7 +87,7 @@ const Game = () => {
 
         // Listen for game state updates
         wsClient.on("gameStateUpdate", (newState) => {
-          console.log("🔄 Game updated from WebSocket:", newState);
+          //console.log("🔄 Game updated from WebSocket:", newState);
           syncGameFromSocket(newState);
         });
 
@@ -99,7 +99,7 @@ const Game = () => {
 
         // Listen for disconnect
         wsClient.on("disconnect", () => {
-          console.log("👋 WebSocket disconnected");
+          //console.log("👋 WebSocket disconnected");
           showNotification("Disconnected from server", "error");
         });
 
@@ -142,20 +142,20 @@ const Game = () => {
         positionsBeforeRoll[p.id] = p.position;
       });
 
-      console.log("Positions BEFORE roll:", positionsBeforeRoll);
+      //console.log("Positions BEFORE roll:", positionsBeforeRoll);
       setPrevPositions(positionsBeforeRoll);
 
       // Now roll the dice (this will update positions on backend)
       const diceRoll = await contextRollDice();
 
-      console.log(
-        "Rolled:",
-        diceRoll.d1,
-        "+",
-        diceRoll.d2,
-        "=",
-        diceRoll.d1 + diceRoll.d2
-      );
+      // //console.log(
+      //   "Rolled:",
+      //   diceRoll.d1,
+      //   "+",
+      //   diceRoll.d2,
+      //   "=",
+      //   diceRoll.d1 + diceRoll.d2
+      // );
       // ... rest of your code
 
       setCurrentDice(diceRoll);
@@ -359,7 +359,7 @@ const Game = () => {
     let timeout;
     const diceSum = currentDice.d1 + currentDice.d2;
 
-    console.log("Animation step:", animationStep, "Dice sum:", diceSum);
+    //console.log("Animation step:", animationStep, "Dice sum:", diceSum);
 
     // 1. Dice Rotate Stage
     if (animationStep === "rotating") {

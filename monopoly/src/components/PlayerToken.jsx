@@ -64,17 +64,17 @@ const PlayerToken = ({
   // Key insight: If moveSteps > 0, this player is moving!
   const isMoving = steps > 0;
 
-  console.log(
-    `[Player ${playerIndex}] animationStep: ${animationStep}, isMoving: ${isMoving}, steps: ${steps}, start: ${normalizedStart}, end: ${normalizedEnd}`
-  );
+  //console.log(
+  //   `[Player ${playerIndex}] animationStep: ${animationStep}, isMoving: ${isMoving}, steps: ${steps}, start: ${normalizedStart}, end: ${normalizedEnd}`
+  // );
 
   // When animation phase changes, handle position locking
   useEffect(() => {
     if (animationStep === "rotating" && isMoving) {
       // Lock at start position when dice starts rolling
-      console.log(
-        `[Player ${playerIndex}] ROTATING - Locking at position ${normalizedStart}`
-      );
+      //console.log(
+      //   `[Player ${playerIndex}] ROTATING - Locking at position ${normalizedStart}`
+      // );
       setCurrentDisplayPosition(normalizedStart);
       setJumpStep(0);
     } else if (animationStep === "zooming" && isMoving) {
@@ -82,9 +82,9 @@ const PlayerToken = ({
       setCurrentDisplayPosition(normalizedEnd);
     } else if (animationStep === "idle") {
       // Animation complete - update to final position
-      console.log(
-        `[Player ${playerIndex}] IDLE - Moving to final position ${normalizedEnd}`
-      );
+      //console.log(
+      //   `[Player ${playerIndex}] IDLE - Moving to final position ${normalizedEnd}`
+      // );
       setCurrentDisplayPosition(normalizedEnd);
       setJumpStep(0);
       lastAnimationKeyRef.current = null;
@@ -112,18 +112,18 @@ const PlayerToken = ({
     }
 
     lastAnimationKeyRef.current = animKey;
-    console.log(
-      `[Player ${playerIndex}] WAVING - Animating ${steps} steps from ${normalizedStart}`
-    );
+    //console.log(
+    //   `[Player ${playerIndex}] WAVING - Animating ${steps} steps from ${normalizedStart}`
+    // );
 
     // Schedule each step of the wave animation
     for (let i = 1; i <= steps; i++) {
       const t = setTimeout(() => {
-        console.log(
-          `[Player ${playerIndex}] Wave step ${i}/${steps} - position ${
-            (normalizedStart + i) % normalizedTilesCount
-          }`
-        );
+        //console.log(
+        //   `[Player ${playerIndex}] Wave step ${i}/${steps} - position ${
+        //     (normalizedStart + i) % normalizedTilesCount
+        //   }`
+        // );
         setJumpStep(i);
       }, i * 100);
       timeoutsRef.current.push(t);

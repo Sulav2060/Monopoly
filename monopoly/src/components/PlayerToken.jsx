@@ -188,30 +188,96 @@ const PlayerToken = ({
   // Show hop animation during waving
   const shouldShowHop = animationStep === "waving" && isMoving && jumpStep > 0;
 
+  // Add pulse animation style
+  const pulseStyle = isCurrentPlayer
+    ? {
+        animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+      }
+    : {};
+
   return (
-    <div
-      className="absolute w-full h-full top-0 left-0 grid pointer-events-none"
-      style={{
-        gridTemplateRows: "1.6fr repeat(9, 1fr) 1.6fr",
-        gridTemplateColumns: "1.6fr repeat(9, 1fr) 1.6fr",
-      }}
-    >
+    <>
+      <style>{`
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.7;
+            transform: scale(1.15);
+          }
+        }
+      `}</style>
       <div
-        style={getPositionStyle(displayPosition)}
-        className="flex items-center justify-center relative"
+        className="absolute w-full h-full top-0 left-0 grid pointer-events-none"
+        style={{
+          gridTemplateRows: "1.6fr repeat(9, 1fr) 1.6fr",
+          gridTemplateColumns: "1.6fr repeat(9, 1fr) 1.6fr",
+        }}
       >
         <div
-          className={`w-8 h-8 rounded-full border-2 shadow-lg transition-all duration-300 ease-out ${
-            resolvedColor.color
-          } ${resolvedColor.borderColor} ${
-            shouldShowHop ? "player-token--jump" : ""
-          } ${isCurrentPlayer ? "scale-105" : ""}`}
-          style={{
-            transform: `translate(${offset.x}px, ${offset.y}px)`,
-          }}
-        />
+          style={getPositionStyle(displayPosition)}
+          className="flex items-center justify-center relative"
+        >
+          <div
+            className={`w-8 h-8 rounded-full border-2 shadow-lg transition-all duration-300 ease-out ${
+              resolvedColor.color
+            } ${resolvedColor.borderColor} ${
+              shouldShowHop ? "player-token--jump" : ""
+            }`}
+            style={{
+              transform: `translate(${offset.x}px, ${offset.y}px)`,
+              ...pulseStyle,
+            }}
+          >
+            {/* Cute bubbly water-drop eyes */}
+            <div className="absolute inset-0 flex items-center justify-center gap-1">
+              {/* Left eye */}
+              <div 
+                className="w-3 h-3 bg-white rounded-full shadow-md flex items-center justify-center relative"
+                style={{
+                  background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.7))',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3), inset -1px -1px 2px rgba(0,0,0,0.1)'
+                }}
+              >
+                {/* Pupil */}
+                <div className="w-1.5 h-1.5 bg-black rounded-full"></div>
+                {/* Shine spot */}
+                <div 
+                  className="absolute w-0.5 h-0.5 bg-white rounded-full"
+                  style={{
+                    top: '3px',
+                    left: '3px',
+                    opacity: 0.9
+                  }}
+                ></div>
+              </div>
+              {/* Right eye */}
+              <div 
+                className="w-3 h-3 bg-white rounded-full shadow-md flex items-center justify-center relative"
+                style={{
+                  background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.7))',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.3), inset -1px -1px 2px rgba(0,0,0,0.1)'
+                }}
+              >
+                {/* Pupil */}
+                <div className="w-1.5 h-1.5 bg-black rounded-full"></div>
+                {/* Shine spot */}
+                <div 
+                  className="absolute w-0.5 h-0.5 bg-white rounded-full"
+                  style={{
+                    top: '3px',
+                    left: '3px',
+                    opacity: 0.9
+                  }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

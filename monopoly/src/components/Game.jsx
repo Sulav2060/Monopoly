@@ -123,7 +123,11 @@ const Game = () => {
   const addLog = (message) => {
     logIdCounterRef.current += 1;
     setGameLog((prev) => [
-      { id: `log-${Date.now()}-${logIdCounterRef.current}`, message, time: new Date().toLocaleTimeString() },
+      {
+        id: `log-${Date.now()}-${logIdCounterRef.current}`,
+        message,
+        time: new Date().toLocaleTimeString(),
+      },
       ...prev.slice(0, 19), // Keep last 20 logs
     ]);
   };
@@ -283,28 +287,31 @@ const Game = () => {
             } else if (total > prevCount) {
               const fresh = newState.events.slice(prevCount);
               // Filter out dice rolls, player moved, and turn ended - only log important events
-              const importantEvents = fresh.filter(evt => 
-                evt.type !== 'DICE_ROLLED' && 
-                evt.type !== 'PLAYER_MOVED' && 
-                evt.type !== 'TURN_ENDED'
+              const importantEvents = fresh.filter(
+                (evt) =>
+                  evt.type !== "DICE_ROLLED" &&
+                  evt.type !== "PLAYER_MOVED" &&
+                  evt.type !== "TURN_ENDED"
               );
-              
+
               if (importantEvents.length > 0) {
                 const newLogs = importantEvents.map((evt, idx) => {
                   const eventIndex = prevCount + idx;
                   const message = formatEventMessage(evt, newState);
                   logIdCounterRef.current += 1;
                   return {
-                    id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${logIdCounterRef.current}`,
+                    id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${
+                      logIdCounterRef.current
+                    }`,
                     message,
-                    time: new Date().toLocaleTimeString()
+                    time: new Date().toLocaleTimeString(),
                   };
                 });
-                
+
                 // Batch update all logs at once
                 setGameLog((prev) => [...newLogs, ...prev].slice(0, 20));
               }
-              
+
               lastEventCountRef.current = total;
             }
           }
@@ -362,28 +369,31 @@ const Game = () => {
     if (total > prevCount) {
       const fresh = currentGame.events.slice(prevCount);
       // Filter out dice rolls, player moved, and turn ended - only log important events
-      const importantEvents = fresh.filter(evt => 
-        evt.type !== 'DICE_ROLLED' && 
-        evt.type !== 'PLAYER_MOVED' && 
-        evt.type !== 'TURN_ENDED'
+      const importantEvents = fresh.filter(
+        (evt) =>
+          evt.type !== "DICE_ROLLED" &&
+          evt.type !== "PLAYER_MOVED" &&
+          evt.type !== "TURN_ENDED"
       );
-      
+
       if (importantEvents.length > 0) {
         const newLogs = importantEvents.map((evt, idx) => {
           const eventIndex = prevCount + idx;
           const message = formatEventMessage(evt, currentGame);
           logIdCounterRef.current += 1;
           return {
-            id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${logIdCounterRef.current}`,
+            id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${
+              logIdCounterRef.current
+            }`,
             message,
-            time: new Date().toLocaleTimeString()
+            time: new Date().toLocaleTimeString(),
           };
         });
-        
+
         // Batch update all logs at once
         setGameLog((prev) => [...newLogs, ...prev].slice(0, 20));
       }
-      
+
       lastEventCountRef.current = total;
     }
   }, [currentGame?.events, currentGame]);

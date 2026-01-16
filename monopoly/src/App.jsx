@@ -148,7 +148,7 @@ function App() {
                 value={nameInput}
                 onChange={(e) => setNameInput(e.target.value)}
                 placeholder="Enter your player name..."
-                maxLength="20"
+                maxLength="30"
                 autoFocus
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
               />

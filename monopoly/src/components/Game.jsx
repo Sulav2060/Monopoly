@@ -62,6 +62,7 @@ const Game = () => {
   const [notification, setNotification] = useState(null);
   const [_gameLog, setGameLog] = useState([]);
   const lastEventCountRef = useRef(0);
+  const logIdCounterRef = useRef(0);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
 
@@ -120,8 +121,9 @@ const Game = () => {
 
   // Helper Functions
   const addLog = (message) => {
+    logIdCounterRef.current += 1;
     setGameLog((prev) => [
-      { id: Date.now(), message, time: new Date().toLocaleTimeString() },
+      { id: `log-${Date.now()}-${logIdCounterRef.current}`, message, time: new Date().toLocaleTimeString() },
       ...prev.slice(0, 19), // Keep last 20 logs
     ]);
   };
@@ -135,26 +137,104 @@ const Game = () => {
         const name = current?.name || "Player";
         const d1 = event.dice?.die1 ?? "?";
         const d2 = event.dice?.die2 ?? "?";
-        return `${name} rolled ${d1} + ${d2}`;
+        const total = d1 + d2;
+        const isDoubles = d1 === d2;
+        return `🎲 ${name} rolled ${d1} + ${d2} = ${total}${
+          isDoubles ? " (Doubles!)" : ""
+        }`;
       }
+
+      case "PLAYER_MOVED": {
+        const name = current?.name || "Player";
+        const tile = getTileAtPosition(event.to);
+        const tileName = tile?.title || `Position ${event.to}`;
+        return `🚶 ${name} moved to ${tileName}`;
+      }
+
+      case "PROPERTY_BOUGHT": {
+        const name = current?.name || "Player";
+        const tile = getTileAtPosition(current?.position);
+        const propertyName = tile?.title || event.tile || "a property";
+        const price = tile?.price || "?";
+        return `🏠 ${name} bought ${propertyName} for $${price}`;
+      }
+
+      case "RENT_PAID": {
+        const payer = players.find((p) => p.id === event.from);
+        const receiver = players.find((p) => p.id === event.to);
+        const amount = event.amount || 0;
+        return `💸 ${payer?.name || "Player"} paid $${amount} rent to ${
+          receiver?.name || "Player"
+        }`;
+      }
+
       case "TURN_ENDED": {
         const next = players.find((p) => p.id === event.nextPlayerId);
-        return `Turn ended → ${next?.name || "Next player"}`;
+        return `⏭️ ${next?.name || "Next player"}'s turn`;
       }
-      case "JAIL_EXITED":
-        return "Released from jail";
-      case "JAIL_TURN_FAILED":
-        return "Failed to roll out of jail";
-      case "JAIL_ENTERED":
-        return "Sent to jail";
-      case "GO_PASSED":
-        return "Passed GO and collected $200";
+
+      case "PASSED_GO": {
+        const name = current?.name || "Player";
+        const amount = event.amount || 200;
+        return `✨ ${name} passed GO and collected $${amount}`;
+      }
+
+      case "PLAYER_SENT_TO_JAIL": {
+        const player = players.find((p) => p.id === event.playerId);
+        return `🚔 ${player?.name || "Player"} was sent to jail!`;
+      }
+
+      case "JAIL_EXITED": {
+        const name = current?.name || "Player";
+        const reason =
+          event.reason === "DOUBLES"
+            ? "by rolling doubles"
+            : "after serving time";
+        return `🔓 ${name} got out of jail ${reason}`;
+      }
+
+      case "JAIL_TURN_FAILED": {
+        const name = current?.name || "Player";
+        const attempt = event.attempt || 0;
+        return `🔒 ${name} failed to roll doubles (Attempt ${attempt}/3)`;
+      }
+
+      case "TAX_PAID": {
+        const player = players.find((p) => p.id === event.playerId);
+        const amount = event.amount || 0;
+        return `💰 ${player?.name || "Player"} paid $${amount} in taxes`;
+      }
+
+      case "FREE_PARKING_COLLECTED": {
+        const player = players.find((p) => p.id === event.playerId);
+        const amount = event.amount || 0;
+        return `🅿️ ${
+          player?.name || "Player"
+        } collected $${amount} from Free Parking!`;
+      }
+
       case "PLAYER_BANKRUPT": {
-        const who = players.find((p) => p.id === event.playerId);
-        return `${who?.name || "A player"} is bankrupt`;
+        const player = players.find((p) => p.id === event.playerId);
+        const causedBy = event.causedBy
+          ? players.find((p) => p.id === event.causedBy)
+          : null;
+        if (causedBy) {
+          return `💔 ${player?.name || "Player"} went bankrupt to ${
+            causedBy.name
+          }`;
+        }
+        return `💔 ${player?.name || "Player"} went bankrupt`;
       }
+
+      case "GAME_OVER": {
+        const winner = players.find((p) => p.id === event.winnerId);
+        return `🏆 Game Over! ${winner?.name || "Player"} wins!`;
+      }
+
       default:
-        return event.type || "Game event";
+        return `📋 ${
+          event.type?.replace(/_/g, " ").toLowerCase() || "Game event"
+        }`;
     }
   };
 
@@ -202,7 +282,29 @@ const Game = () => {
               lastEventCountRef.current = total;
             } else if (total > prevCount) {
               const fresh = newState.events.slice(prevCount);
-              fresh.forEach((evt) => addLog(formatEventMessage(evt, newState)));
+              // Filter out dice rolls, player moved, and turn ended - only log important events
+              const importantEvents = fresh.filter(evt => 
+                evt.type !== 'DICE_ROLLED' && 
+                evt.type !== 'PLAYER_MOVED' && 
+                evt.type !== 'TURN_ENDED'
+              );
+              
+              if (importantEvents.length > 0) {
+                const newLogs = importantEvents.map((evt, idx) => {
+                  const eventIndex = prevCount + idx;
+                  const message = formatEventMessage(evt, newState);
+                  logIdCounterRef.current += 1;
+                  return {
+                    id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${logIdCounterRef.current}`,
+                    message,
+                    time: new Date().toLocaleTimeString()
+                  };
+                });
+                
+                // Batch update all logs at once
+                setGameLog((prev) => [...newLogs, ...prev].slice(0, 20));
+              }
+              
               lastEventCountRef.current = total;
             }
           }
@@ -259,7 +361,29 @@ const Game = () => {
 
     if (total > prevCount) {
       const fresh = currentGame.events.slice(prevCount);
-      fresh.forEach((evt) => addLog(formatEventMessage(evt, currentGame)));
+      // Filter out dice rolls, player moved, and turn ended - only log important events
+      const importantEvents = fresh.filter(evt => 
+        evt.type !== 'DICE_ROLLED' && 
+        evt.type !== 'PLAYER_MOVED' && 
+        evt.type !== 'TURN_ENDED'
+      );
+      
+      if (importantEvents.length > 0) {
+        const newLogs = importantEvents.map((evt, idx) => {
+          const eventIndex = prevCount + idx;
+          const message = formatEventMessage(evt, currentGame);
+          logIdCounterRef.current += 1;
+          return {
+            id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${logIdCounterRef.current}`,
+            message,
+            time: new Date().toLocaleTimeString()
+          };
+        });
+        
+        // Batch update all logs at once
+        setGameLog((prev) => [...newLogs, ...prev].slice(0, 20));
+      }
+      
       lastEventCountRef.current = total;
     }
   }, [currentGame?.events, currentGame]);

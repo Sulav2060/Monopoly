@@ -110,7 +110,7 @@ const Tile = ({
   return (
     <div
       id={id}
-      className="relative border border-white/20 overflow-visible w-full h-full flex flex-col rounded-lg shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] bg-gradient-to-br from-white/8 via-white/5 to-white/2 backdrop-blur-md"
+      className="relative  border border-white/20 overflow-visible w-full h-full flex flex-col rounded-lg shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] bg-gradient-to-br from-white/8 via-white/5 to-white/2 backdrop-blur-md"
     >
       {/* Background image with dark overlay */}
       <div

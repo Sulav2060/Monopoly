@@ -18,9 +18,26 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
     <div className="w-screen h-screen flex items-center justify-center bg-linear-to-br from-green-100 to-blue-100 p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">🎲 Monopoly</h1>
           <p className="text-gray-600">Game Lobby</p>
+        </div>
+
+        {/* Game ID Display */}
+        <div className="bg-gray-100 rounded-lg p-3 mb-6 flex items-center justify-between border border-gray-200">
+           <div className="flex flex-col text-left overflow-hidden">
+              <span className="text-xs text-gray-500 font-semibold uppercase">Game ID</span>
+              <span className="text-sm font-mono text-gray-800 select-all truncate">{currentGame?.id}</span>
+           </div>
+           <button 
+             onClick={() => {
+                navigator.clipboard.writeText(currentGame?.id);
+                // alert("Game ID copied!");
+             }}
+             className="ml-2 px-3 py-1 bg-white border border-gray-300 rounded text-xs font-semibold hover:bg-gray-50 text-gray-700 whitespace-nowrap"
+           >
+             Copy ID
+           </button>
         </div>
 
         {/* Player Count */}

@@ -13,11 +13,14 @@ function App() {
     setCurrentPlayerId,
     currentPlayerName,
     setCurrentPlayerName,
-    setCurrentRoom,
+    createGame,
+    joinGame,
   } = useGame();
 
   const [nameInput, setNameInput] = useState("");
+  const [joinGameId, setJoinGameId] = useState("");
   const [gameStarted, setGameStarted] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Step 1: Initialize player ID on mount
   useEffect(() => {
@@ -50,17 +53,12 @@ function App() {
 
         // Listen for game state updates
         wsClient.on("gameStateUpdate", (newState) => {
-          console.log("📨 Game state update received:", newState);
-
           // Check if game has started
           if (newState.hasStarted && !gameStarted) {
-            console.log("✅ Game has started! Showing board...");
             setGameStarted(true);
           }
-
-          // Update game state directly from server payload
-          // Server already provides the authoritative shape (currentTurnIndex, lastDice, etc.)
-          setCurrentGame(newState);
+          // Merge new state with existing game ID validation
+          setCurrentGame(prev => ({ ...newState, id: prev?.id || currentGame.id }));
         });
 
         console.log("✅ WebSocket connected");
@@ -76,47 +74,26 @@ function App() {
     };
   }, [currentGame?.id, currentPlayerId, currentPlayerName, gameStarted]);
 
-  // Step 3: Create initial game after player enters name
-  useEffect(() => {
-    if (currentGame || !currentPlayerName || !currentPlayerId) {
-      console.log("Game init check:", {
-        currentGame: !!currentGame,
-        currentPlayerName,
-        currentPlayerId,
-      });
-      return;
+  const handleCreateGame = async () => {
+    try {
+      setIsProcessing(true);
+      await createGame(currentPlayerName);
+    } catch (err) {
+      alert("Failed to create game");
+    } finally {
+      setIsProcessing(false);
     }
+  };
 
-    console.log("🎮 Creating initial game for:", currentPlayerName);
-
-    // Initialize game with current player
-    const initialGame = {
-      id: "game-1",
-      roomId: "room-1",
-      players: [
-        {
-          id: currentPlayerId,
-          name: currentPlayerName,
-          position: 0,
-          money: 1500,
-          inJail: false,
-          jailTurns: 0,
-          isBankrupt: false,
-          properties: [],
-          color: "bg-red-500",
-        },
-      ],
-      currentTurnIndex: 0,
-      properties: [],
-      turnNumber: 1,
-      lastDiceRoll: null,
-      gameOver: false,
-      hasStarted: false,
-    };
-
-    setCurrentGame(initialGame);
-    setGameStarted(false);
-  }, [currentPlayerName, currentPlayerId, currentGame, setCurrentGame]);
+  const handleJoinGame = async (e) => {
+    e.preventDefault();
+    if (!joinGameId.trim()) return;
+    try {
+      await joinGame(joinGameId.trim());
+    } catch (err) {
+      alert("Failed to join game");
+    }
+  };
 
   // Show name input screen
   if (!currentPlayerName) {
@@ -171,11 +148,51 @@ function App() {
     );
   }
 
-  // Show loading state
+  // Show Menu (Create or Join)
   if (!currentGame) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gray-900 text-white text-2xl">
-        Initializing game...
+      <div className="w-screen h-screen flex items-center justify-center bg-linear-to-br from-green-100 to-blue-100 p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              Welcome, {currentPlayerName}!
+            </h1>
+            <p className="text-gray-600">Choose how to play</p>
+          </div>
+
+          <div className="space-y-6">
+            <button
+              onClick={handleCreateGame}
+              disabled={isProcessing}
+              className="w-full py-4 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg font-bold transition-all hover:scale-105 flex items-center justify-center gap-2"
+            >
+              {isProcessing ? "Creating..." : "✨ Create New Game"}
+            </button>
+
+            <div className="relative flex items-center">
+              <div className="flex-grow border-t border-gray-300"></div>
+              <span className="flex-shrink-0 mx-4 text-gray-400 text-sm">Or join existing</span>
+              <div className="flex-grow border-t border-gray-300"></div>
+            </div>
+
+            <form onSubmit={handleJoinGame} className="flex gap-2">
+              <input
+                type="text"
+                value={joinGameId}
+                onChange={(e) => setJoinGameId(e.target.value)}
+                placeholder="Enter Game ID"
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600"
+              />
+              <button
+                type="submit"
+                disabled={!joinGameId.trim()}
+                className="px-6 py-3 bg-gray-800 hover:bg-gray-900 text-white rounded-lg font-bold shadow-md transition-all"
+              >
+                Join
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
     );
   }

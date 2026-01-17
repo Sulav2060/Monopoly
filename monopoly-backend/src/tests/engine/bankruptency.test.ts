@@ -6,6 +6,8 @@ import { endTurn } from "../../engine/endTurn";
 
 test("player goes bankrupt if cannot pay rent", () => {
   const state: GameState = {
+    communityChestDeck: [],
+    communityChestIndex: 0,
     players: [
       {
         id: "p1",
@@ -56,6 +58,8 @@ test("player goes bankrupt if cannot pay rent", () => {
 });
 test("skips bankrupt players when ending turn", () => {
   const state: GameState = {
+    communityChestDeck: [],
+    communityChestIndex: 0,
     players: [
       {
         id: "p1",

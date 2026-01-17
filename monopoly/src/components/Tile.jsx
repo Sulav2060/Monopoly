@@ -1,84 +1,235 @@
 import React from "react";
+import lakeside from "../assets/lakeside-pkr.webp";
 
-const Tile = ({ id, title, price, rotation, group, type }) => {
-  // Color mapping for property groups
+const Tile = ({
+  id,
+  title,
+  price,
+  rotation,
+  group,
+  type,
+  ownedBy,
+  image,
+  icon, // emoji icon for the property
+}) => {
+  const tileImage = image || lakeside;
+
+  // Modern color palette with better contrast
   const colorMap = {
-    "dark-purple": "bg-purple-900",
-    "light-blue": "bg-sky-400",
-    pink: "bg-pink-500",
+    "dark-purple": "bg-purple-600",
+    "light-blue": "bg-cyan-400",
+    pink: "bg-rose-500",
     orange: "bg-orange-500",
     red: "bg-red-500",
-    yellow: "bg-yellow-400",
-    green: "bg-green-600",
-    "dark-blue": "bg-blue-900",
-    railroad: "bg-black",
-    utility: "bg-gray-400",
+    yellow: "bg-amber-400",
+    green: "bg-emerald-500",
+    "dark-blue": "bg-blue-600",
+    railroad: "bg-slate-800",
+    utility: "bg-gray-500",
   };
 
-  const bgColor = group ? colorMap[group] || "bg-gray-300" : "bg-green-100";
+  const bgColor = group ? colorMap[group] || "bg-gray-300" : "bg-slate-200";
   const isVertical = rotation === 90 || rotation === -90;
+  const ownerBgClass =
+    typeof ownedBy === "string" ? ownedBy : ownedBy?.color || null;
+  const ownerGlow =
+    typeof ownedBy === "object" && ownedBy?.glow ? ownedBy.glow : null;
 
-  // Render icon based on tile type
+  // Icon / content renderer with better styling
   const renderIcon = () => {
-    // This part remains the same as your code
     if (type === "community-chest") {
       return (
         <div className="flex flex-col items-center gap-1">
-          <svg
-            className="w-8 h-8"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <rect x="3" y="8" width="18" height="12" rx="2" />
-            <path d="M12 8V4M8 4h8M12 12h.01" />
-          </svg>
-          <div className="font-semibold text-xs">{title}</div>
+          <div className="font-bold text-xs tracking-tight">{title}</div>
         </div>
       );
     }
-    // ... all other icon types
+
+    if (type === "chance") {
+      return (
+        <div className="flex flex-col items-center gap-1">
+          <div className="font-bold text-xs tracking-tight">{title}</div>
+        </div>
+      );
+    }
+
+    if (type === "tax") {
+      return (
+        <div className="flex flex-col items-center gap-1">
+          <div className="font-bold text-xs tracking-tight">{title}</div>
+          {price && (
+            <div className="text-xs font-semibold bg-black/40 px-2 py-0.5 rounded-full text-white">
+              ${price}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (type === "railroad" || type === "utility") {
+      return (
+        <div className="flex flex-col items-center gap-1">
+          <div className="font-bold text-xs text-center leading-tight px-1">
+            {title}
+          </div>
+          {price && (
+            <div className="text-xs font-semibold bg-black/40 px-2 py-0.5 rounded-full text-white">
+              ${price}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Property tiles
     return (
-      <>
-        <div className="font-semibold text-xs">{title}</div>
-        {price && <div className="text-xs font-medium">${price}</div>}
-      </>
+      <div className="flex flex-col items-center gap-1">
+        <div className="font-bold text-xs text-center leading-tight px-1">
+          {title}
+        </div>
+        {price && (
+          <div className="text-xs font-semibold bg-black/50 px-2 py-0.5 rounded-full text-white">
+            ${price}
+          </div>
+        )}
+      </div>
     );
   };
 
+  // Get the emoji icon for a property
+  const getPropertyIcon = () => {
+    if (icon) return icon;
+    if (type === "community-chest") return "📦";
+    if (type === "chance") return "❓";
+    if (type === "tax") return icon || "💰";
+    if (type === "railroad") return "🚂";
+    if (type === "utility") return "⚡";
+    return "🏠";
+  };
+
   return (
-    // FIX: Added w-full and h-full here
     <div
       id={id}
-      className={`relative border border-black ${bgColor} overflow-hidden w-full h-full`}
+      className="relative  border border-white/20 overflow-visible w-full h-full flex flex-col rounded-lg shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] bg-gradient-to-br from-white/8 via-white/5 to-white/2 backdrop-blur-md"
     >
+      {/* Background image with dark overlay */}
       <div
-        className="bg-white w-full h-[85%] p-1 flex flex-col justify-around text-center items-center"
+        className="absolute inset-0 opacity-30 rounded-lg "
         style={{
-          position: "absolute",
-          ...(rotation === 180 && { bottom: 0 }),
-          ...(rotation === 0 && { top: 0 }),
-          ...(rotation === -90 && { left: 0, width: "85%", height: "100%" }),
-          ...(rotation === 90 && { right: 0, width: "85%", height: "100%" }),
+          backgroundImage: `url(${tileImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
-      >
+      />
+
+      {/* Dark overlay for contrast */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-900/40 to-slate-900/20 rounded-lg " />
+
+      {/* Color accent bar - neon style - for properties */}
+      {group && (
         <div
+          className={`
+      absolute ${bgColor}
+      shadow-[0_0_20px_-5px]
+      transition-all duration-200
+      hover:shadow-[0_0_30px_0px]
+      opacity-90
+      ${
+        rotation === 0
+          ? "bottom-0 w-full h-[18%] rounded-b-lg"
+          : rotation === 180
+          ? "top-0 w-full h-[18%] rounded-t-lg"
+          : rotation === 90
+          ? "left-0 h-full w-[18%] rounded-l-lg"
+          : rotation === -90
+          ? "right-0 h-full w-[18%] rounded-r-lg"
+          : ""
+      }
+    `}
           style={{
-            transform: `rotate(${rotation}deg)`,
-            ...(isVertical && {
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-              width: "75px",
+            boxShadow: `0 0 20px -5px ${bgColor.split("-")[1]}`,
+          }}
+        />
+      )}
+
+      {/* Owner bar for railroads and utilities */}
+      {ownerBgClass && (type === "railroad" || type === "utility") && (
+        <div
+          className={`absolute ${ownerBgClass} opacity-90 rounded-sm`}
+          style={{
+            zIndex: 20,
+            ...(rotation === 180 && {
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "14%",
+            }),
+            ...(rotation === 0 && {
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "14%",
+            }),
+            ...(rotation === -90 && {
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: "14%",
+            }),
+            ...(rotation === 90 && {
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: "14%",
+            }),
+          }}
+        />
+      )}
+
+      {/* Content wrapper with better text styling */}
+      <div className="absolute inset-0 flex items-center justify-center p-1.5 z-20">
+        <div className="text-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+          {renderIcon()}
+        </div>
+      </div>
+
+      {/* House/Hotel Display - bottom space opposite of group bar */}
+      {group && (
+        <div
+          className={`absolute ${
+            ownerBgClass || "bg-white/10"
+          } border border-white/20 rounded-sm flex items-center justify-center gap-0.5`}
+          style={{
+            zIndex: 15,
+            ...(rotation === 0 && {
+              top: 2,
+              left: 2,
+              right: 2,
+              height: "12%",
+            }),
+            ...(rotation === 180 && {
+              bottom: 2,
+              left: 2,
+              right: 2,
+              height: "12%",
+            }),
+            ...(rotation === 90 && {
+              right: 2,
+              top: 2,
+              bottom: 2,
+              width: "12%",
+            }),
+            ...(rotation === -90 && {
+              left: 2,
+              top: 2,
+              bottom: 2,
+              width: "12%",
             }),
           }}
         >
-          {/* NEW WRAPPER — forces correct orientation */}
-          <div style={{ transform: "rotate(180deg)" }}>{renderIcon()}</div>
+          {/* Houses/hotels will be rendered here */}
         </div>
-      </div>
+      )}
     </div>
   );
 };

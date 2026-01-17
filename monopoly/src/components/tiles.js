@@ -1,41 +1,363 @@
-export const tiles = {
-  // Top Row (rendered left to right, after "Free Parking")
-  top: [
-    { type: "property", group: "red", title: "Kentucky Avenue", price: 220, rotation: 180 },
-    { type: "chance", title: "Chance", rotation: 180 },
-    { type: "property", group: "red", title: "Indiana Avenue", price: 220, rotation: 180 },
-    { type: "property", group: "red", title: "Illinois Avenue", price: 240, rotation: 180 },
-    { type: "railroad", title: "B. & O. Railroad", price: 200, rotation: 180 },
-  ],
-  // Right side (rendered top to bottom, after "Go to Jail")
-  right: [
-    { type: "property", group: "yellow", title: "Atlantic Avenue", price: 260, rotation: -90 },
-    { type: "property", group: "yellow", title: "Ventnor Avenue", price: 260, rotation: -90 },
-    { type: "utility", title: "Water Works", price: 150, rotation: -90 },
-    { type: "property", group: "yellow", title: "Marvin Gardens", price: 280, rotation: -90 },
-    { type: "go-to-jail", title: "Go to Jail", rotation: -90 },
-  ],
-  // Bottom row (rendered right to left, after "Go")
-  bottom: [
-    { type: "property", group: "dark-purple", title: "Mediterranean Avenue", price: 60, rotation: 0 },
-    { type: "community-chest", title: "Community Chest", rotation: 0 },
-    { type: "property", group: "dark-purple", title: "Baltic Avenue", price: 60, rotation: 0 },
-    { type: "tax", title: "Income Tax", price: 200, rotation: 0 },
-    { type: "railroad", title: "Reading Railroad", price: 200, rotation: 0 },
-  ],
-  // Left side (rendered bottom to top, after "Jail")
-  left: [
-    { type: "property", group: "orange", title: "New York Avenue", price: 200, rotation: 90 },
-    { type: "property", group: "orange", title: "Tennessee Avenue", price: 180, rotation: 90 },
-    { type: "community-chest", title: "Community Chest", rotation: 90 },
-    { type: "property", group: "orange", title: "St. James Place", price: 180, rotation: 90 },
-    { type: "railroad", title: "Pennsylvania Railroad", price: 200, rotation: 90 },
-  ],
+export const corners = {
+  "top-left": {
+    type: "corner",
+    title: "GO",
+    rotation: 0,
+    image: "https://images.unsplash.com/photo-1761653457980-21b9f7fd3a04?q=80&w=1287&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80"
+  },
+  "top-right": {
+    type: "corner",
+    title: "Jail",
+    rotation: 0,
+    image: "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?auto=format&fit=crop&w=800&q=80" // Prison bars
+  },
+  "bottom-right": {
+    type: "corner",
+    title: "Parking",
+    rotation: 0,
+    image: "https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=800&q=80" // Parking lot
+  },
+  "bottom-left": {
+    type: "corner",
+    title: "Go to Jail",
+    rotation: 0,
+    image: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80" // Police/jail theme
+  },
 };
 
-export const corners = {
-  "top-left": { type: "corner", title: "Free Parking", rotation: -45 },
-  "top-right": { type: "corner", title: "Go to Jail", rotation: 45 },
-  "bottom-right": { type: "corner", title: "Go", rotation: 135 },
-  "bottom-left": { type: "corner", title: "Just Visiting", rotation: -135 },
+export const tiles = {
+  bottom: [
+    // Group 1: TERAI CITIES (Dark Purple) – Cheapest
+    {
+      type: "property",
+      group: "dark-purple",
+      title: "Janakpur",
+      price: 60,
+      rent: [2, 10, 30, 90, 160, 250],
+      houseCost: 50,
+      rotation: 0,
+      image: "https://images.unsplash.com/photo-1550850603-645ae3c6c387?q=80&w=1287&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Janaki Temple from Wikimedia
+    },
+    {
+      type: "community-chest",
+      title: "Community",
+      rotation: 0,
+      image: "https://images.unsplash.com/photo-1642211841112-2beeda7bfc07?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Community/helping hands
+    },
+    {
+      type: "property",
+      group: "dark-purple",
+      title: "Birgunj",
+      price: 60,
+      rent: [4, 20, 60, 180, 320, 450],
+      houseCost: 50,
+      rotation: 0,
+      image: "https://images.unsplash.com/photo-1734793650000-72b59fcf2d09?q=80&w=1287&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Nepal city/market
+    },
+    {
+      type: "tax",
+      title: "Tax",
+      price: 200,
+      rotation: 0,
+      image: "https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=800&q=80" // Calculator/tax
+    },
+    {
+      type: "railroad",
+      title: "South Railway",
+      price: 200,
+      rent: [25, 50, 100, 200],
+      rotation: 0,
+      image: "https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&w=800&q=80" // Train tracks
+    },
+    // Group 2: LAKES (Light Blue)
+    {
+      type: "property",
+      group: "light-blue",
+      title: "Phewa",
+      price: 100,
+      rent: [6, 30, 90, 270, 400, 550],
+      houseCost: 50,
+      rotation: 0,
+      image: "https://images.unsplash.com/photo-1722595631994-6de3b5318da1?q=80&w=1336&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Phewa Lake boats
+    },
+    {
+      type: "chance",
+      title: "Chance",
+      rotation: 0,
+      image: "https://images.unsplash.com/photo-1628260412297-a3377e45006f?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Question mark/mystery
+    },
+    {
+      type: "property",
+      group: "light-blue",
+      title: "Rara",
+      price: 100,
+      rent: [8, 40, 100, 300, 450, 600],
+      houseCost: 50,
+      rotation: 0,
+      image: "https://images.unsplash.com/photo-1630804597431-46a42500fe02?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Mountain lake
+    },
+    {
+      type: "property",
+      group: "light-blue",
+      title: "Begnas",
+      price: 120,
+      rent: [10, 50, 150, 450, 625, 750],
+      houseCost: 100,
+      rotation: 0,
+      image: "https://images.unsplash.com/photo-1691885770413-7cba2e97c779?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Serene lake
+    },
+  ],
+  right: [
+    // Group 3: TEMPLES (Pink)
+    {
+      type: "property",
+      group: "pink",
+      title: "Pashupati",
+      price: 140,
+      rent: [12, 60, 180, 500, 700, 900],
+      houseCost: 100,
+      rotation: 90,
+      image: "https://images.unsplash.com/photo-1648298470994-7065f521375c?q=80&w=1417&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Pashupatinath Temple
+    },
+    {
+      type: "utility",
+      title: "Hydropower",
+      price: 150,
+      rentMultiplier: [4, 10],
+      rotation: 90,
+      image: "https://images.unsplash.com/photo-1611036884458-6650ef4ccfdb?q=80&w=3264&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Hydroelectric dam
+    },
+    {
+      type: "property",
+      group: "pink",
+      title: "Boudha",
+      price: 140,
+      rent: [14, 70, 200, 550, 750, 950],
+      houseCost: 100,
+      rotation: 90,
+      image: "https://plus.unsplash.com/premium_photo-1694475032847-e6a228961e98?q=80&w=1830&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Boudhanath Stupa
+    },
+    {
+      type: "property",
+      group: "pink",
+      title: "Swayambhu",
+      price: 160,
+      rent: [16, 80, 220, 600, 800, 1000],
+      houseCost: 100,
+      rotation: 90,
+      image: "https://images.unsplash.com/photo-1662721737580-b1558a41a49a?q=80&w=1287&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Swayambhunath Temple
+    },
+    {
+      type: "railroad",
+      title: "East Railway",
+      price: 200,
+      rent: [25, 50, 100, 200],
+      rotation: 90,
+      image: "https://images.unsplash.com/photo-1763809677234-09562e05035a?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Railway
+    },
+    // Group 4: NATIONAL PARKS (Orange)
+    {
+      type: "property",
+      group: "orange",
+      title: "Chitwan",
+      price: 180,
+      rent: [18, 90, 250, 700, 875, 1050],
+      houseCost: 150,
+      rotation: 90,
+      image: "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?auto=format&fit=crop&w=800&q=80" // Elephant/Chitwan
+    },
+    {
+      type: "community-chest",
+      title: "Community",
+      rotation: 90,
+    image: "https://images.unsplash.com/photo-1642211841112-2beeda7bfc07?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Community/helping hands
+    },
+    {
+      type: "property",
+      group: "orange",
+      title: "Bardia",
+      price: 180,
+      rent: [20, 100, 300, 750, 925, 1100],
+      houseCost: 150,
+      rotation: 90,
+      image: "https://images.unsplash.com/photo-1549366021-9f761d450615?auto=format&fit=crop&w=800&q=80" // Tiger/wildlife
+    },
+    {
+      type: "property",
+      group: "orange",
+      title: "Koshi Tappu",
+      price: 200,
+      rent: [22, 110, 330, 800, 975, 1150],
+      houseCost: 150,
+      rotation: 90,
+      image: "https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=800&q=80" // Birds/wetland
+    },
+  ],
+  top: [
+    // Group 5: VALLEY CITIES (Red)
+    {
+      type: "property",
+      group: "red",
+      title: "Kathmandu",
+      price: 220,
+      rent: [24, 120, 360, 850, 1025, 1200],
+      houseCost: 150,
+      rotation: 180,
+      image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80" // Kathmandu valley
+    },
+    {
+      type: "chance",
+      title: "Chance",
+      rotation: 180,
+      image: "https://images.unsplash.com/photo-1628260412297-a3377e45006f?q=80&w=2148&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Question mark/mystery
+    },
+    {
+      type: "property",
+      group: "red",
+      title: "Pokhara",
+      price: 220,
+      rent: [26, 130, 390, 900, 1100, 1275],
+      houseCost: 150,
+      rotation: 180,
+      image: "https://images.unsplash.com/photo-1605640840605-14ac1855827b?auto=format&fit=crop&w=800&q=80" // Pokhara lakeside
+    },
+    {
+      type: "property",
+      group: "red",
+      title: "Patan",
+      price: 240,
+      rent: [28, 140, 400, 950, 1150, 1350],
+      houseCost: 150,
+      rotation: 180,
+      image: "https://images.unsplash.com/photo-1562825101-bcfef760d45e?auto=format&fit=crop&w=800&q=80" // Patan Durbar Square
+    },
+    {
+      type: "railroad",
+      title: "West Railway",
+      price: 200,
+      rent: [25, 50, 100, 200],
+      rotation: 180,
+      image: "https://images.unsplash.com/photo-1542744094-3a31f272c490?auto=format&fit=crop&w=800&q=80" // Train
+    },
+    // Group 6: VIEWPOINTS (Yellow)
+    {
+      type: "property",
+      group: "yellow",
+      title: "Nagarkot",
+      price: 260,
+      rent: [32, 160, 500, 1100, 1300, 1500],
+      houseCost: 200,
+      rotation: 180,
+      image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80" // Mountain sunrise
+    },
+    {
+      type: "utility",
+      title: "Telecom",
+      price: 150,
+      rentMultiplier: [4, 10],
+      rotation: 180,
+      image: "https://images.unsplash.com/photo-1516031190212-da133013de50?auto=format&fit=crop&w=800&q=80" // Communication tower
+    },
+    {
+      type: "property",
+      group: "yellow",
+      title: "Sarangkot",
+      price: 260,
+      rent: [34, 170, 520, 1150, 1350, 1550],
+      houseCost: 200,
+      rotation: 180,
+      image: "https://images.unsplash.com/photo-1608908761160-14a98a27ba97?auto=format&fit=crop&w=800&q=80" // Paragliding viewpoint
+    },
+    {
+      type: "property",
+      group: "yellow",
+      title: "Dhulikhel",
+      price: 280,
+      rent: [36, 180, 540, 1200, 1400, 1600],
+      houseCost: 200,
+      rotation: 180,
+      image: "https://images.unsplash.com/photo-1613483514414-954b02368d79?auto=format&fit=crop&w=800&q=80" // Himalayan panorama
+    },
+  ],
+ left: [
+  {
+    type: "property",
+    group: "green",
+    title: "Annapurna",
+    price: 300,
+    rent: [26, 130, 390, 900, 1100, 1275],
+    houseCost: 200,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1544739313-6fadacdd227f?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "property",
+    group: "green",
+    title: "Langtang",
+    price: 300,
+    rent: [26, 130, 390, 900, 1100, 1275],
+    houseCost: 200,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1608908761160-14a98a27ba97?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "community-chest",
+    title: "Community",
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1642211841112-2beeda7bfc07?q=80&w=2670&auto=format&fit=crop"
+  },
+  {
+    type: "property",
+    group: "green",
+    title: "Manaslu",
+    price: 320,
+    rent: [28, 150, 450, 1000, 1200, 1400],
+    houseCost: 200,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1545243424-0ce743321e11?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "railroad",
+    title: "North Railway",
+    price: 200,
+    rent: [25, 50, 100, 200],
+    houseCost: 0,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1600002415506-dd06090d3480?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "chance",
+    title: "Chance",
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1628260412297-a3377e45006f?q=80&w=2148&auto=format&fit=crop"
+  },
+  {
+    type: "property",
+    group: "dark-blue",
+    title: "Makalu",
+    price: 350,
+    rent: [35, 175, 500, 1100, 1300, 1500],
+    houseCost: 200,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1486870591958-9b9d0d1dda99?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "tax",
+    title: "Luxury Tax",
+    price: 100,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1579621970588-a35d0e7ab9b6?auto=format&fit=crop&w=800&q=80"
+  },
+  {
+    type: "property",
+    group: "dark-blue",
+    title: "Everest",
+    price: 400,
+    rent: [50, 200, 600, 1400, 1700, 2000],
+    houseCost: 200,
+    rotation: -90,
+    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=80"
+  }
+],
+
 };

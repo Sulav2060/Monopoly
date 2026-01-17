@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import * as THREE from "three";
+import { RoundedBoxGeometry } from "three-stdlib";
+import { Environment, ContactShadows } from "@react-three/drei";
 
 const CameraTopFixed = () => {
   const { camera } = useThree();
@@ -25,7 +26,7 @@ const Die = ({
   const meshRef = useRef();
   const [rollTime, setRollTime] = useState(0);
   const [startRot, setStartRot] = useState([0, 0, 0]);
-  const [targetValue, setTargetValue] = useState(value); // Lock the target value
+  const [targetValue, setTargetValue] = useState(value);
   const rollDuration = 0.8;
 
   const getDiceRotationForTop = (topValue) => {
@@ -40,11 +41,9 @@ const Die = ({
     return rotations[topValue] || [0, 0, 0];
   };
 
-  // Lock in the target value when rolling starts
   useEffect(() => {
     if (isRolling) {
-      console.log(`Die ${index} starting roll to value: ${value}`);
-      setTargetValue(value); // Lock the target value
+      setTargetValue(value);
       setRollTime(0);
       setStartRot([
         Math.random() * Math.PI * 2,
@@ -64,7 +63,6 @@ const Die = ({
         const progress = Math.min(newTime / rollDuration, 1);
         const easedProgress = easeOutCubic(progress);
 
-        // Use the locked targetValue instead of value prop
         const targetRot = getDiceRotationForTop(targetValue);
         const spins = 3;
 
@@ -97,9 +95,6 @@ const Die = ({
         if (progress >= 1) {
           meshRef.current.rotation.set(...targetRot);
           meshRef.current.position.set(...position);
-          console.log(
-            `Die ${index} finished rolling, showing value: ${targetValue}`
-          );
           if (onRollComplete && index === 0) {
             setTimeout(() => onRollComplete(), 100);
           }
@@ -107,7 +102,6 @@ const Die = ({
         return newTime;
       });
     } else {
-      // When not rolling, show the target value (last rolled value)
       const finalRot = getDiceRotationForTop(targetValue);
       meshRef.current.rotation.set(...finalRot);
       meshRef.current.position.set(...position);
@@ -148,28 +142,52 @@ const Die = ({
     ],
   };
 
+  // Modern, flat dots that sit flush on the surface
   const createFace = (faceValue, rotationY, rotationX = 0) => (
     <group
       rotation={[rotationX, rotationY, 0]}
       key={`face-${faceValue}-${rotationY}-${rotationX}`}
     >
-      <mesh position={[0, 0, 0.51]}>
-        <planeGeometry args={[0.95, 0.95]} />
-        <meshStandardMaterial color="white" />
-      </mesh>
       {dots[faceValue]?.map((dot, idx) => (
-        <mesh key={idx} position={[dot[0], dot[1], 0.52]}>
-          <circleGeometry args={[0.12, 16]} />
-          <meshStandardMaterial color="#1a1a1a" />
+        <mesh
+          key={idx}
+          // Positioned slightly above the face (0.501) to avoid Z-fighting
+          position={[dot[0], dot[1], 0.501]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          {/* Flatter cylinder, higher segments for a perfect circle */}
+          <cylinderGeometry args={[0.08, 0.08, 0.001, 32]} />
+          <meshBasicMaterial color="#000000" />
         </mesh>
       ))}
     </group>
   );
 
   return (
-    <mesh ref={meshRef} position={position} castShadow>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="#ef4444" roughness={0.4} metalness={0.2} />
+    <mesh ref={meshRef} position={position} castShadow receiveShadow>
+      {/* Soft glow shell slightly larger than the die */}
+      <primitive object={new RoundedBoxGeometry(1.08, 1.08, 1.08, 8, 0.2)} />
+      <meshStandardMaterial
+        color="#ffffff"
+        emissive="#dfe7ff" // silvery white glow
+        emissiveIntensity={0.6} // brighter for dark backgrounds
+        transparent
+        opacity={0.55}
+        roughness={0.9}
+        metalness={0.05}
+      />
+
+      {/* Core die geometry */}
+      <primitive object={new RoundedBoxGeometry(1, 1, 1, 8, 0.18)} />
+      {/* Physical Material creates that realistic high-gloss plastic look */}
+      <meshPhysicalMaterial
+        color="#ffffff"
+        roughness={0.15} // Very smooth
+        metalness={0.0} // Plastic, not metal
+        clearcoat={1} // Adds a polish layer
+        clearcoatRoughness={0.1}
+        reflectivity={1}
+      />
       {createFace(1, 0, 0)}
       {createFace(6, Math.PI, 0)}
       {createFace(2, Math.PI / 2, 0)}
@@ -197,51 +215,44 @@ const DiceScene = ({
     const height = 6;
     const offset = dieIndex === 0 ? -1.5 : 1.5;
 
-    // Define starting positions for each player based on board layout
-    // Bottom, Left, Top, Right positions for each player
     const startPositions = {
       2: [
-        [offset, height, 6], // Player 0 (You) - bottom
-        [offset, height, -6], // Player 1 (Bot 1) - top
+        [offset, height, 6],
+        [offset, height, -6],
       ],
       3: [
-        [offset, height, 6], // Player 0 (You) - bottom
-        [-6, height, offset], // Player 1 (Bot 1) - left
-        [offset, height, -6], // Player 2 (Bot 2) - top
+        [offset, height, 6],
+        [-6, height, offset],
+        [offset, height, -6],
       ],
       4: [
-        [offset, height, 6], // Player 0 (You) - bottom
-        [-6, height, offset], // Player 1 (Bot 1) - left
-        [offset, height, -6], // Player 2 (Bot 2) - top
-        [6, height, offset], // Player 3 (Bot 3) - right
+        [offset, height, 6],
+        [-6, height, offset],
+        [offset, height, -6],
+        [6, height, offset],
       ],
     };
 
     return startPositions[numPlayers]?.[playerIndex] || [offset, height, 6];
   };
 
-  console.log(
-    "DiceScene rendering with values:",
-    dice1Value,
-    dice2Value,
-    "isRolling:",
-    isRolling
-  );
-
   return (
     <>
-      <ambientLight intensity={1.5} />
+      {/* Environment Map adds realistic reflections of a studio */}
+      <Environment preset="studio" />
+
+      {/* Main Directional Light for casting shadows */}
       <directionalLight
         position={[5, 10, 5]}
-        intensity={2}
+        intensity={1}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-bias={-0.0001}
       />
-      <directionalLight position={[-5, 8, -5]} intensity={1} />
-      <pointLight position={[0, 10, 0]} intensity={1.5} />
-      <pointLight position={[-5, 5, 5]} intensity={0.7} />
-      <pointLight position={[5, 5, -5]} intensity={0.7} />
+
+      {/* Fill lights */}
+      <pointLight position={[-10, -10, -10]} intensity={0.5} color="white" />
 
       <Die
         value={dice1Value}
@@ -260,14 +271,14 @@ const DiceScene = ({
         index={1}
       />
 
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -0.51, 0]}
-        receiveShadow
-      >
-        <planeGeometry args={[20, 20]} />
-        <shadowMaterial opacity={0.3} />
-      </mesh>
+      {/* Contact Shadows provide realistic grounding soft shadows */}
+      <ContactShadows
+        position={[0, -0.55, 0]}
+        opacity={0.4}
+        scale={20}
+        blur={2}
+        far={4.5}
+      />
     </>
   );
 };
@@ -280,18 +291,17 @@ const Dice3D = ({
   currentPlayerIndex,
   totalPlayers,
 }) => {
-  console.log("Dice3D props:", { dice1, dice2, isRolling });
-
   return (
     <div className="w-full h-full pointer-events-none">
       <Canvas
         camera={{
           position: [0, 12, 0.1],
-          fov: 45,
+          fov: 35, // Reduced FOV slightly for a more "product photography" telephoto look
           up: [0, 0, -1],
         }}
         shadows
-        gl={{ antialias: true }}
+        gl={{ antialias: true, alpha: true }} // alpha true for transparent background if needed
+        dpr={[1, 2]} // Handle high DPI screens
       >
         <CameraTopFixed />
         <group>

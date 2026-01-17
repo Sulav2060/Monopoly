@@ -3,6 +3,8 @@ import { movePlayer } from "../engine/move";
 import { GameState } from "../types/game";
 
 export const baseState: GameState = {
+  communityChestDeck: [],
+  communityChestIndex: 0,
   players: [
     {
       id: "p1",
@@ -11,6 +13,7 @@ export const baseState: GameState = {
       money: 1500,
       inJail: false,
       jailTurns: 0,
+      isBankrupt: false,
     },
     {
       id: "p2",
@@ -19,6 +22,7 @@ export const baseState: GameState = {
       money: 1500,
       inJail: false,
       jailTurns: 0,
+      isBankrupt: false,
     },
   ],
   currentTurnIndex: 0,

@@ -1,11 +1,31 @@
 import { Router } from "express";
-import { createGame } from "../engine/game";
+import { createGame } from "../ws/gameStore";
+import { createInitialGameState } from "../engine/game";
 
 const router = Router();
 
-router.get("/init", (req, res) => {
-  const game = createGame(["Alice", "Bob"]);
-  res.json(game);
+function generateShortId(length = 6): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+// Create a new game instance
+router.post("/create", (req, res) => {
+  const gameId = generateShortId();
+  const initialState = createInitialGameState();
+  
+  createGame(gameId, initialState);
+  
+  console.log(`🆕 Created new game: ${gameId}`);
+  
+  res.json({ 
+    gameId,
+    message: "Game created successfully" 
+  });
 });
 
 export default router;

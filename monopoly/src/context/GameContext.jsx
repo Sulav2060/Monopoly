@@ -83,24 +83,41 @@ export const GameProvider = ({ children }) => {
   }, []);
 
   /**
-   * Create a new room
+   * Create a new game via API
    */
-  const createRoom = useCallback(async () => {
-    throw new Error("Room API disabled (WebSocket-only mode)");
+  const createGame = useCallback(async (playerName) => {
+    try {
+      setLoading(true);
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const response = await fetch(`${apiUrl}/game/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create game");
+      }
+
+      const data = await response.json();
+      setCurrentGame({ id: data.gameId, players: [] });
+      setCurrentRoom(data.gameId); // Keep room state for compatibility
+      return data.gameId;
+    } catch (error) {
+      console.error("Error creating game:", error);
+      setGameError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   /**
-   * List available rooms
+   * Join an existing game
    */
-  const loadAvailableRooms = useCallback(async () => {
-    throw new Error("Room API disabled (WebSocket-only mode)");
-  }, []);
-
-  /**
-   * Join a room
-   */
-  const joinRoom = useCallback(async () => {
-    throw new Error("Room API disabled (WebSocket-only mode)");
+  const joinGame = useCallback(async (gameId) => {
+    if (!gameId) throw new Error("Game ID is required");
+    setCurrentGame({ id: gameId, players: [] });
+    setCurrentRoom(gameId);
   }, []);
 
   /**
@@ -353,9 +370,10 @@ export const GameProvider = ({ children }) => {
     currentRoom,
     availableRooms,
     roomError,
-    createRoom,
-    loadAvailableRooms,
-    joinRoom,
+    createGame, // Replaced createRoom
+    createRoom: createGame, // Alias for backward compatibility
+    joinGame,   // Replaced joinRoom
+    joinRoom: joinGame, // Alias for backward compatibility
     leaveRoom,
     refreshRoom,
     setCurrentRoom,

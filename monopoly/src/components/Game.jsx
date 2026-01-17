@@ -684,7 +684,7 @@ const Game = () => {
   // Loading state or not in game
   if (!currentGame) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100">
+      <div className="w-screen h-screen flex items-center justify-center bg-linear-to-br from-green-100 to-blue-100">
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-800 mb-4">
             Loading game...
@@ -697,7 +697,7 @@ const Game = () => {
 
   // Main Game UI
   return (
-    <div className="w-screen h-screen flex items-center justify-center p-6 bg-gradient-to-br from-[#0f172a] via-[#0b1221] to-[#05070d] text-gray-100">
+    <div className="w-screen h-screen flex items-center justify-center p-6 bg-linear-to-br from-[#0f172a] via-[#0b1221] to-[#05070d] text-gray-100">
       {/* Notification Toast */}
       {notification && (
         <div
@@ -732,7 +732,7 @@ const Game = () => {
             return (
               <div
                 key={p.id}
-                className={`p-4 rounded-xl border transition-all duration-300 bg-gradient-to-br ${
+                className={`p-4 rounded-xl border transition-all duration-300 bg-linear-to-br ${
                   isCurrentTurn
                     ? "from-yellow-500/20 via-amber-400/10 to-amber-300/5 border-amber-300/60 shadow-[0_8px_30px_-12px_rgba(251,191,36,0.7)] scale-[1.01]"
                     : "from-white/5 via-white/2 to-white/0 border-white/10 hover:border-white/20"
@@ -783,7 +783,7 @@ const Game = () => {
                   {log.message}
                 </div>
               ))}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0b1221] via-[#0b1221]/80 to-transparent" />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t from-[#0b1221] via-[#0b1221]/80 to-transparent" />
             </div>
           </div>
         </div>
@@ -1009,7 +1009,7 @@ const Game = () => {
                   alt={_showPropertyCard.tile.title}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-4">
+                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex items-end p-4">
                   <div>
                     <h5 className="text-white font-bold text-lg drop-shadow-lg">
                       {_showPropertyCard.tile.title}
@@ -1036,14 +1036,14 @@ const Game = () => {
                   {allPropertyTiles.map((tile, idx) => (
                     <div
                       key={idx}
-                      className="w-full h-full relative flex-shrink-0"
+                      className="w-full h-full relative shrink-0"
                     >
                       <img
                         src={tile.image}
                         alt={tile.title}
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-4">
+                      <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent flex items-end p-4">
                         <div className="w-full">
                           <h5 className="text-white font-bold text-lg drop-shadow-lg mb-1">
                             {tile.title}

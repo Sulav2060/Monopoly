@@ -20,7 +20,7 @@ describe("payRent", () => {
     }
     state.properties = [
       {
-        propertyId: "1", //TODO: Make the property id number
+        tileIndex: 1, 
         ownerId: "p1",
       },
     ];

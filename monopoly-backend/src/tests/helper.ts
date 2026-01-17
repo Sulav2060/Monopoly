@@ -2,6 +2,8 @@ import { GameState } from "../types/game";
 
 export function baseGameState(): GameState {
   return {
+    communityChestDeck: [],
+    communityChestIndex: 0,
     players: [
       {
         id: "p1",

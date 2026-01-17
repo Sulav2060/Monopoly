@@ -234,42 +234,46 @@ const PlayerToken = ({
             {/* Cute bubbly water-drop eyes */}
             <div className="absolute inset-0 flex items-center justify-center gap-1">
               {/* Left eye */}
-              <div 
+              <div
                 className="w-3 h-3 bg-white rounded-full shadow-md flex items-center justify-center relative"
                 style={{
-                  background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.7))',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.3), inset -1px -1px 2px rgba(0,0,0,0.1)'
+                  background:
+                    "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.7))",
+                  boxShadow:
+                    "0 1px 3px rgba(0,0,0,0.3), inset -1px -1px 2px rgba(0,0,0,0.1)",
                 }}
               >
                 {/* Pupil */}
                 <div className="w-1.5 h-1.5 bg-black rounded-full"></div>
                 {/* Shine spot */}
-                <div 
+                <div
                   className="absolute w-0.5 h-0.5 bg-white rounded-full"
                   style={{
-                    top: '3px',
-                    left: '3px',
-                    opacity: 0.9
+                    top: "3px",
+                    left: "3px",
+                    opacity: 0.9,
                   }}
                 ></div>
               </div>
               {/* Right eye */}
-              <div 
+              <div
                 className="w-3 h-3 bg-white rounded-full shadow-md flex items-center justify-center relative"
                 style={{
-                  background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.7))',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.3), inset -1px -1px 2px rgba(0,0,0,0.1)'
+                  background:
+                    "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.7))",
+                  boxShadow:
+                    "0 1px 3px rgba(0,0,0,0.3), inset -1px -1px 2px rgba(0,0,0,0.1)",
                 }}
               >
                 {/* Pupil */}
                 <div className="w-1.5 h-1.5 bg-black rounded-full"></div>
                 {/* Shine spot */}
-                <div 
+                <div
                   className="absolute w-0.5 h-0.5 bg-white rounded-full"
                   style={{
-                    top: '3px',
-                    left: '3px',
-                    opacity: 0.9
+                    top: "3px",
+                    left: "3px",
+                    opacity: 0.9,
                   }}
                 ></div>
               </div>

@@ -1,4 +1,5 @@
 ### Node ###
+node_modules/
 # Logs
 logs
 *.log

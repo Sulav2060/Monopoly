@@ -110,7 +110,7 @@ const Tile = ({
   return (
     <div
       id={id}
-      className="relative  border border-white/20 overflow-visible w-full h-full flex flex-col rounded-lg shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] bg-gradient-to-br from-white/8 via-white/5 to-white/2 backdrop-blur-md"
+      className="relative  border border-white/20 overflow-visible w-full h-full flex flex-col rounded-lg shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] bg-linear-to-br from-white/8 via-white/5 to-white/2 backdrop-blur-md"
     >
       {/* Background image with dark overlay */}
       <div
@@ -123,7 +123,7 @@ const Tile = ({
       />
 
       {/* Dark overlay for contrast */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-900/40 to-slate-900/20 rounded-lg " />
+      <div className="absolute inset-0 bg-linear-to-br from-slate-900/60 via-slate-900/40 to-slate-900/20 rounded-lg " />
 
       {/* Color accent bar - neon style - for properties */}
       {group && (

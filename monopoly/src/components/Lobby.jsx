@@ -15,7 +15,7 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
   };
 
   return (
-    <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100 p-4">
+    <div className="w-screen h-screen flex items-center justify-center bg-linear-to-br from-green-100 to-blue-100 p-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">

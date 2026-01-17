@@ -121,7 +121,7 @@ function App() {
   // Show name input screen
   if (!currentPlayerName) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100 p-4">
+      <div className="w-screen h-screen flex items-center justify-center bg-linear-to-br from-green-100 to-blue-100 p-4">
         <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-800 mb-2">

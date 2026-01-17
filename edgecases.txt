@@ -1,0 +1,4 @@
+What if player leaves game at the middle?
+if (!nextPlayer) {
+    throw new Error("Invalid next turn index")
+  }

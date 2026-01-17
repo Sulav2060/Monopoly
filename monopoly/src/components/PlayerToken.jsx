@@ -3,34 +3,176 @@ import React, { useEffect, useState, useRef } from "react";
 const PlayerToken = ({
   position,
   color,
+  isAnimatingPlayer,
   isCurrentPlayer,
-  playerCount,
   playerIndex,
-  // NEW props
   animationStep,
-  diceValue,
-  currentPosition,
+  startPosition,
+  moveSteps,
   tilesCount,
 }) => {
-  if (!color) return null;
+  const fallbackPalette = [
+    { color: "bg-red-500", borderColor: "border-red-900" },
+    { color: "bg-blue-500", borderColor: "border-blue-900" },
+    { color: "bg-green-500", borderColor: "border-green-900" },
+    { color: "bg-yellow-400", borderColor: "border-yellow-700" },
+  ];
 
-  // jumpStep: how many tiles ahead we've jumped visually (0..diceValue)
+  // Normalize `color` prop to ensure proper tailwind classes are applied
+  const resolvedColor = (() => {
+    const fallback = fallbackPalette[playerIndex % fallbackPalette.length];
+    if (!color) return fallback;
+    if (typeof color === "object") {
+      return {
+        color: color.color || fallback.color,
+        borderColor: color.borderColor || fallback.borderColor,
+      };
+    }
+    if (typeof color === "string") {
+      const parts = color.split(/\s+/).filter(Boolean);
+      const bgClass = parts.find((p) => p.startsWith("bg-"));
+      const borderClass = parts.find((p) => p.startsWith("border-"));
+      if (bgClass || borderClass) {
+        return {
+          color: bgClass || fallback.color,
+          borderColor: borderClass || fallback.borderColor,
+        };
+      }
+      return fallback;
+    }
+    return fallback;
+  })();
+
   const [jumpStep, setJumpStep] = useState(0);
+  const [currentDisplayPosition, setCurrentDisplayPosition] =
+    useState(position);
   const timeoutsRef = useRef([]);
+  const lastAnimationKeyRef = useRef(null);
 
-  // Compute displayed position (used for placing the token on the grid)
-  const displayedPosition = (position + jumpStep) % tilesCount;
+  const normalizedTilesCount = tilesCount || 40;
 
-  // Grid placement logic (same as before, but using displayedPosition)
+  const normalizePosition = (pos) =>
+    ((pos % normalizedTilesCount) + normalizedTilesCount) %
+    normalizedTilesCount;
+
+  const normalizedStart = normalizePosition(
+    Number.isFinite(startPosition) ? startPosition : position
+  );
+  const normalizedEnd = normalizePosition(position);
+  const steps = moveSteps || 0;
+
+  // Key insight: If moveSteps > 0, this player is moving!
+  const isMoving = steps > 0;
+
+  //console.log(
+  //   `[Player ${playerIndex}] animationStep: ${animationStep}, isMoving: ${isMoving}, steps: ${steps}, start: ${normalizedStart}, end: ${normalizedEnd}`
+  // );
+
+  // When animation phase changes, handle position locking
+  useEffect(() => {
+    if (animationStep === "rotating" && isMoving) {
+      // Lock at start position when dice starts rolling
+      //console.log(
+      //   `[Player ${playerIndex}] ROTATING - Locking at position ${normalizedStart}`
+      // );
+      setCurrentDisplayPosition(normalizedStart);
+      setJumpStep(0);
+    } else if (animationStep === "zooming" && isMoving) {
+      // Keep token at the destination during zoom to avoid snap-back
+      setCurrentDisplayPosition(normalizedEnd);
+    } else if (animationStep === "idle") {
+      // Animation complete - update to final position
+      //console.log(
+      //   `[Player ${playerIndex}] IDLE - Moving to final position ${normalizedEnd}`
+      // );
+      setCurrentDisplayPosition(normalizedEnd);
+      setJumpStep(0);
+      lastAnimationKeyRef.current = null;
+    }
+  }, [animationStep, isMoving, normalizedStart, normalizedEnd, playerIndex]);
+
+  // Handle wave animation steps
+  useEffect(() => {
+    // Clear any pending timeouts
+    timeoutsRef.current.forEach((t) => clearTimeout(t));
+    timeoutsRef.current = [];
+
+    // Only animate if in waving phase and this player is moving
+    if (animationStep !== "waving" || !isMoving || steps === 0) {
+      setJumpStep(0);
+      return;
+    }
+
+    // Create unique key for this animation sequence
+    const animKey = `${normalizedStart}-${normalizedEnd}-${steps}`;
+
+    // Prevent duplicate animations
+    if (lastAnimationKeyRef.current === animKey) {
+      return;
+    }
+
+    lastAnimationKeyRef.current = animKey;
+    //console.log(
+    //   `[Player ${playerIndex}] WAVING - Animating ${steps} steps from ${normalizedStart}`
+    // );
+
+    // Schedule each step of the wave animation
+    for (let i = 1; i <= steps; i++) {
+      const t = setTimeout(() => {
+        //console.log(
+        //   `[Player ${playerIndex}] Wave step ${i}/${steps} - position ${
+        //     (normalizedStart + i) % normalizedTilesCount
+        //   }`
+        // );
+        setJumpStep(i);
+      }, i * 100);
+      timeoutsRef.current.push(t);
+    }
+
+    return () => {
+      timeoutsRef.current.forEach((t) => clearTimeout(t));
+      timeoutsRef.current = [];
+    };
+  }, [
+    animationStep,
+    isMoving,
+    steps,
+    normalizedStart,
+    normalizedEnd,
+    normalizedTilesCount,
+    playerIndex,
+  ]);
+
+  // Calculate the position to display
+  const displayPosition = (() => {
+    if (!isMoving) return currentDisplayPosition;
+    if (animationStep === "rotating") return normalizedStart;
+    if (animationStep === "waving")
+      return (normalizedStart + jumpStep) % normalizedTilesCount;
+    // During zooming and idle, keep the destination visible
+    return normalizedEnd;
+  })();
+
   const getPositionStyle = (pos) => {
-    if (pos >= 0 && pos <= 6) return { gridRow: 1, gridColumn: pos + 1 }; // Top
-    if (pos >= 7 && pos <= 12) return { gridRow: pos - 5, gridColumn: 7 }; // Right
-    if (pos >= 13 && pos <= 18) return { gridRow: 7, gridColumn: 19 - pos }; // Bottom
-    if (pos >= 19 && pos <= 23) return { gridRow: 25 - pos, gridColumn: 1 }; // Left
-    return {};
+    const boardSize = 11;
+    const normalizedPos = normalizePosition(pos);
+
+    // Top row (GO starts here at index 0)
+    if (normalizedPos <= 10)
+      return { gridRow: 1, gridColumn: normalizedPos + 1 };
+    // Right column
+    if (normalizedPos <= 20)
+      return { gridRow: normalizedPos - 10 + 1, gridColumn: boardSize };
+    // Bottom row
+    if (normalizedPos <= 30)
+      return {
+        gridRow: boardSize,
+        gridColumn: boardSize - (normalizedPos - 20),
+      };
+    // Left column
+    return { gridRow: boardSize - (normalizedPos - 30), gridColumn: 1 };
   };
 
-  // Offsets so multiple tokens on same tile don't overlap
   const getTokenOffset = () => {
     const offsets = [
       { x: 0, y: 0 }, // Player 0
@@ -40,70 +182,29 @@ const PlayerToken = ({
     ];
     return offsets[playerIndex] || { x: 0, y: 0 };
   };
+
   const offset = getTokenOffset();
 
-  // When the waving animation starts, schedule jump steps for the current player
-  useEffect(() => {
-    // Clear previous timeouts
-    timeoutsRef.current.forEach((t) => clearTimeout(t));
-    timeoutsRef.current = [];
-
-    if (isCurrentPlayer && animationStep === "waving" && diceValue > 0) {
-      // For visual sync with your tile wave: use same timing
-      // wave delay per tile used in Board was: i * 0.1s
-      // token jump duration we set to ~300ms, start each jump at i*100ms
-      for (let i = 1; i <= diceValue; i++) {
-        const startDelay = i * 100; // ms
-        // schedule change of jumpStep to i (so token visually moves to that tile)
-        const t1 = setTimeout(() => {
-          setJumpStep(i);
-        }, startDelay);
-        timeoutsRef.current.push(t1);
-
-        // optionally remove "jump" (we keep jumpStep at i so it stays on that tile;
-        // the CSS animation handles the brief visual hop)
-      }
-      // After the waving finishes, leave jumpStep as diceValue (the Game logic will update the real position)
-      // Clear after a safe margin (e.g., extra 600ms) to avoid leftover timers next time
-      const cleanupTimer = setTimeout(() => {
-        timeoutsRef.current.forEach((t) => clearTimeout(t));
-        timeoutsRef.current = [];
-      }, diceValue * 100 + 1000);
-      timeoutsRef.current.push(cleanupTimer);
-    } else {
-      // Not waving or not current player -> ensure no visual jump
-      setJumpStep(0);
-    }
-
-    return () => {
-      timeoutsRef.current.forEach((t) => clearTimeout(t));
-      timeoutsRef.current = [];
-    };
-  }, [
-    animationStep,
-    diceValue,
-    isCurrentPlayer,
-    playerIndex,
-    tilesCount,
-    position,
-    currentPosition,
-  ]);
-
-  // Determine if token should show the hop animation class
-  const shouldAnimateNow =
-    isCurrentPlayer && animationStep === "waving" && jumpStep > 0;
+  // Show hop animation during waving
+  const shouldShowHop = animationStep === "waving" && isMoving && jumpStep > 0;
 
   return (
-    <div className="absolute w-full h-full top-0 left-0 grid grid-cols-[1.6fr_repeat(5,1fr)_1.6fr] grid-rows-[1.6fr_repeat(5,1fr)_1.6fr] pointer-events-none">
+    <div
+      className="absolute w-full h-full top-0 left-0 grid pointer-events-none"
+      style={{
+        gridTemplateRows: "1.6fr repeat(9, 1fr) 1.6fr",
+        gridTemplateColumns: "1.6fr repeat(9, 1fr) 1.6fr",
+      }}
+    >
       <div
-        style={getPositionStyle(displayedPosition)}
+        style={getPositionStyle(displayPosition)}
         className="flex items-center justify-center relative"
       >
         <div
-          className={`w-8 h-8 ${color.color} rounded-full border-2 ${
-            color.borderColor
-          } shadow-lg transition-all duration-300 ease-out ${
-            shouldAnimateNow ? "player-token--jump" : ""
+          className={`w-8 h-8 rounded-full border-2 shadow-lg transition-all duration-300 ease-out ${
+            resolvedColor.color
+          } ${resolvedColor.borderColor} ${
+            shouldShowHop ? "player-token--jump" : ""
           } ${isCurrentPlayer ? "scale-105" : ""}`}
           style={{
             transform: `translate(${offset.x}px, ${offset.y}px)`,

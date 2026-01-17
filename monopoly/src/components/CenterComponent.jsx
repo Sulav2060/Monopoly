@@ -6,11 +6,34 @@ const CenterComponent = ({
   isRolling,
   onRollComplete,
   showDice = true,
-  currentPlayerIndex,
+  currentTurnIndex,
   totalPlayers,
+  hasRolled,
+  isMyTurn,
+  isAnimating,
+  onRollDice,
+  onEndTurn,
+  currentPlayer,
 }) => {
+  const rollBg = currentPlayer?.color?.color || "bg-emerald-600";
+  const showControls = !!isMyTurn;
+
+  const isDisabled = isAnimating || (!hasRolled && !isMyTurn);
+  const isEndState = hasRolled;
+  const actionLabel = isAnimating
+    ? "Moving..."
+    : isEndState
+    ? "End Turn"
+    : "🎲 Roll Dice";
+  const actionHandler = isEndState ? onEndTurn : onRollDice;
+  const actionDisabled =
+    isAnimating || (!isEndState && hasRolled) || (!isEndState && !isMyTurn);
+  const buttonTone = isEndState
+    ? "bg-indigo-500/80 border-indigo-400/60 hover:bg-indigo-500"
+    : `${rollBg} border-white/20 hover:opacity-90`;
+
   return (
-    <div className="col-span-5 row-span-5 border border-black flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="col-span-9 row-span-9 bg-gradient-to-br from-slate-900/50 via-slate-800/30 to-slate-900/40 flex flex-col items-center justify-center relative overflow-hidden">
       {showDice && (
         <div className="absolute w-full h-full inset-0 aspect-square flex items-center justify-center z-50">
           <div className="w-full h-full">
@@ -19,10 +42,30 @@ const CenterComponent = ({
               dice2={currentDice.d2}
               isRolling={isRolling}
               onRollComplete={onRollComplete}
-              currentPlayerIndex={currentPlayerIndex}
+              currentTurnIndex={currentTurnIndex}
               totalPlayers={totalPlayers}
             />
           </div>
+        </div>
+      )}
+
+      {/* Control Panel at Bottom */}
+      {showControls && (
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-60 flex flex-col items-center gap-4 max-w-sm w-[min(420px,90vw)]">
+          <button
+            onClick={actionHandler}
+            disabled={actionDisabled}
+            className={`mx-auto px-6 py-2.5 text-sm font-semibold rounded-lg
+    border backdrop-blur-md transition-all
+    shadow-[0_10px_30px_-12px_rgba(0,0,0,0.9)]
+    ${
+      actionDisabled
+        ? "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+        : "bg-gradient-to-r from-blue-500 to-blue-600 border-blue-400/30 text-white hover:-translate-y-0.5 hover:shadow-blue-500/25"
+    }`}
+          >
+            {actionLabel}
+          </button>
         </div>
       )}
     </div>

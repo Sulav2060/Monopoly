@@ -359,17 +359,15 @@ export const GameProvider = ({ children }) => {
       if (!gameData) return;
       const decorated = decorateGameState(gameData);
       // Determine Game ID using a safe fallback strategy
-      // 1. Check if the incoming data has an ID (usually doesn't)
-      // 2. Check if we already have a current game ID
-      // 3. Check if we have a current room ID
       setCurrentGame((prev) => {
-        const gameId = gameData.gameId || prev?.id || currentRoom;
+        // Use prev.id as the primary source of truth for the ID once established
+        const gameId = prev?.id || gameData.gameId || currentRoom;
         return { ...decorated, id: gameId };
       });
       // Keep room.game in sync so lobby views stay current
       setCurrentRoom((prev) => (prev ? { ...prev, game: decorated } : prev));
     },
-    [decorateGameState, currentRoom]
+    [decorateGameState] // Removed currentRoom from dependency to prevent infinite loops
   );
 
   const value = {

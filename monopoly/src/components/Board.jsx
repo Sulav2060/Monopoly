@@ -40,10 +40,20 @@ const Board = ({
   const gridRef = useRef(null);
   const [popoverPos, setPopoverPos] = React.useState(null);
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 1024);
+  const [boardScale, setBoardScale] = React.useState(1);
   const mobileScrollRef = useRef(null);
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    const handleResize = () => {
+        setIsMobile(window.innerWidth < 1024);
+        // Scale board to fit screen width if smaller than 640px
+        if (window.innerWidth < 640) {
+            setBoardScale(window.innerWidth / 640);
+        } else {
+            setBoardScale(1);
+        }
+    };
+    handleResize(); // Initial check
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -305,11 +315,15 @@ const Board = ({
 
 
   return (
-    <div className="w-full h-full flex items-center justify-center overflow-auto scrollbar-hide touch-pan-x touch-pan-y">
-      <div className="relative aspect-square shrink-0 m-auto
-                      min-w-[600px] min-h-[600px] 
-                      w-[100vmin] h-[100vmin]
-                      lg:w-full lg:h-full lg:min-w-0 lg:min-h-0">
+    <div className="w-full h-full flex items-center justify-center overflow-hidden">
+      <div 
+        className={`relative aspect-square shrink-0 m-auto transition-transform duration-300 origin-center ${!isMobile ? 'min-w-[600px] min-h-[600px] w-[100vmin] h-[100vmin] lg:w-full lg:h-full lg:min-w-0 lg:min-h-0' : ''}`}
+        style={isMobile ? {
+            transform: `scale(${boardScale})`,
+            width: '640px',
+            height: '640px',
+        } : {}}
+      >
         <div
           ref={gridRef}
           className="w-full h-full grid relative"

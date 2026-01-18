@@ -187,6 +187,74 @@ export function setupWebSocket(wss: WebSocketServer) {
         }
 
         /* =======================
+           BUY PROPERTY
+        ======================= */
+        if (msg.type === "BUY_PROPERTY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const currentPlayer = getCurrentPlayerSafe(game.state);
+          if (currentPlayer.id !== msg.playerId) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Not your turn",
+            });
+            return;
+          }
+
+          // Validate property purchase
+          const tile = game.state.board?.[msg.propertyIndex] ?? require("../engine/board").BOARD[msg.propertyIndex];
+          if (!tile || tile.type !== "PROPERTY") {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Invalid property",
+            });
+            return;
+          }
+
+          // Check if property is already owned
+          const existingOwner = game.state.properties.find(
+            (p) => p.tileIndex === msg.propertyIndex
+          );
+          if (existingOwner) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Property already owned",
+            });
+            return;
+          }
+
+          // Check if player has enough money
+          if (currentPlayer.money < tile.price) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Not enough money",
+            });
+            return;
+          }
+
+          // Execute purchase
+          const { buyProperty } = require("../engine/buyProperty");
+          const newState = buyProperty(game.state, tile);
+
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🏠 ${currentPlayer.name} bought property ${tile.name} in game ${msg.gameId}`
+          );
+          return;
+        }
+
+        /* =======================
            END TURN
         ======================= */
         if (msg.type === "END_TURN") {

@@ -14,7 +14,7 @@ export function buyProperty(state: GameState, tile: PropertyTile): GameState {
     money: player.money - tile.price,
   };
 
-  //if enough money automatically buy property for now.
+  // Purchase property when player explicitly requests it
   return {
     ...state,
     players: state.players.map((p, i) => (i === index ? updatedPlayer : p)),

@@ -37,7 +37,7 @@ const CenterComponent = ({
       {/* Centerpiece Image */}
       <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none select-none">
         <img
-          src="/ktm.jpg"
+          src="/nepal.jpg"
           alt="Centerpiece"
           className="w-full h-full object-cover"
         />

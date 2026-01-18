@@ -252,49 +252,6 @@ const Game = () => {
     // Note: Connection is handled by App.jsx. Game.jsx only listens to events.
     if (!currentGame || !currentPlayerId) return;
 
-    const handleGameStateUpdate = (newState) => {
-          // console.log("📨 Game state update received:", newState);
-          syncGameFromSocket(newState);
-
-          // Log any new events that arrived with this update
-          if (Array.isArray(newState.events)) {
-            const prevCount = lastEventCountRef.current;
-            const total = newState.events.length;
-            if (total < prevCount) {
-              lastEventCountRef.current = total;
-            } else if (total > prevCount) {
-              const fresh = newState.events.slice(prevCount);
-              // Filter out dice rolls, player moved, and turn ended - only log important events
-              const importantEvents = fresh.filter(
-                (evt) =>
-                  evt.type !== "DICE_ROLLED" &&
-                  evt.type !== "PLAYER_MOVED" &&
-                  evt.type !== "TURN_ENDED"
-              );
-
-              if (importantEvents.length > 0) {
-                const newLogs = importantEvents.map((evt, idx) => {
-                  const eventIndex = prevCount + idx;
-                  const message = formatEventMessage(evt, newState);
-                  logIdCounterRef.current += 1;
-                  return {
-                    id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${
-                      logIdCounterRef.current
-                    }`,
-                    message,
-                    time: new Date().toLocaleTimeString(),
-                  };
-                });
-
-                // Batch update all logs at once
-                setGameLog((prev) => [...newLogs, ...prev].slice(0, 20));
-              }
-
-              lastEventCountRef.current = total;
-            }
-          }
-    };
-
     const handleError = (error) => {
       console.error("❌ WebSocket error:", error);
       showNotification("Connection error: " + error.message, "error");
@@ -305,17 +262,15 @@ const Game = () => {
     };
 
     // Register listeners
-    wsClient.on("gameStateUpdate", handleGameStateUpdate);
     wsClient.on("error", handleError);
     wsClient.on("disconnect", handleDisconnect);
 
     // CLEANUP listeners on unmount or re-run
     return () => {
-      wsClient.off("gameStateUpdate", handleGameStateUpdate);
       wsClient.off("error", handleError);
       wsClient.off("disconnect", handleDisconnect);
     };
-  }, [currentGame?.id, currentPlayerId, syncGameFromSocket]);
+  }, [currentGame?.id, currentPlayerId]);
 
   // Reset hasRolled when turn changes
   useEffect(() => {
@@ -643,15 +598,6 @@ const Game = () => {
   const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];
   const isMyTurn = currentPlayer?.id === currentPlayerId;
 
-  console.log("🎮 Turn Info:", {
-    currentTurnIndex: currentGame?.currentTurnIndex,
-    currentPlayerName: currentPlayer?.name,
-    currentPlayerId: currentPlayer?.id,
-    myPlayerId: currentPlayerId,
-    isMyTurn,
-  });
-
-  console.log(currentDice);
   // Loading state or not in game
   if (!currentGame) {
     return (

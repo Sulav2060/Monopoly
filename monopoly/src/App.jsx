@@ -15,6 +15,7 @@ function App() {
     setCurrentPlayerName,
     createGame,
     joinGame,
+    syncGameFromSocket,
   } = useGame();
 
   const [nameInput, setNameInput] = useState("");
@@ -57,8 +58,8 @@ function App() {
           if (newState.hasStarted && !gameStarted) {
             setGameStarted(true);
           }
-          // Merge new state with existing game ID validation
-          setCurrentGame(prev => ({ ...newState, id: prev?.id || currentGame.id }));
+          // Use syncGameFromSocket to ensure state is decorated and IDs are preserved
+          syncGameFromSocket(newState);
         });
 
         console.log("✅ WebSocket connected");

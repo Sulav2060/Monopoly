@@ -630,9 +630,9 @@ const Game = () => {
         </div>
       )}
 
-      <div className="w-full h-full flex flex-col lg:flex-row gap-4 lg:gap-5 overflow-y-auto lg:overflow-hidden scrollbar-hide">
+      <div className="w-full h-full flex flex-col lg:flex-row gap-2 lg:gap-5 overflow-y-auto lg:overflow-hidden scrollbar-hide">
         {/* Left Sidebar - Players */}
-        <div className="w-full lg:w-64 order-3 lg:order-1 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
+        <div className="w-full lg:w-64 order-1 lg:order-1 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold tracking-wide text-gray-100">
               Players
@@ -706,7 +706,7 @@ const Game = () => {
         </div>
 
         {/* Game Board */}
-        <div className="w-full lg:w-auto lg:flex-1 order-1 lg:order-2 shrink-0 lg:min-h-0 lg:aspect-square flex flex-col items-center justify-center gap-4 p-2 h-full lg:h-auto overflow-hidden">
+        <div className="w-full lg:w-auto lg:flex-1 order-2 lg:order-2 shrink-0 lg:min-h-0 lg:aspect-square flex flex-col items-center justify-center gap-4 p-2 h-auto lg:h-auto overflow-hidden">
           <Board
             isAnimating={isAnimating}
             animationStep={animationStep}
@@ -733,7 +733,7 @@ const Game = () => {
         </div>
 
         {/* Right Sidebar - Actions & Info */}
-        <div className="w-full lg:w-80 order-2 lg:order-3 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
+        <div className="w-full lg:w-80 order-3 lg:order-3 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
             <h3 className="font-semibold text-lg text-gray-100">Game Panel</h3>

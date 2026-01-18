@@ -33,7 +33,7 @@ const CenterComponent = ({
     : `${rollBg} border-white/20 hover:opacity-90`;
 
   return (
-    <div className="col-span-9 row-span-9 bg-linear-to-br from-slate-900/50 via-slate-800/30 to-slate-900/40 flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="w-full h-full bg-linear-to-br from-slate-900/50 via-slate-800/30 to-slate-900/40 flex flex-col items-center justify-center relative overflow-hidden">
       {/* Centerpiece Image */}
       <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none select-none">
         <img

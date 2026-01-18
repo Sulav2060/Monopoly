@@ -47,8 +47,9 @@ const Board = ({
     const handleResize = () => {
         setIsMobile(window.innerWidth < 1024);
         // Scale board to fit screen width if smaller than 640px
+        // Subtract padding (approx 32px safe area)
         if (window.innerWidth < 640) {
-            setBoardScale(window.innerWidth / 640);
+            setBoardScale((window.innerWidth - 32) / 640);
         } else {
             setBoardScale(1);
         }
@@ -315,9 +316,15 @@ const Board = ({
 
 
   return (
-    <div className="w-full h-full flex items-center justify-center overflow-hidden">
+    <div 
+        className={`w-full h-full flex ${isMobile ? 'items-start' : 'items-center'} justify-center overflow-hidden`}
+        style={isMobile ? {
+            width: '100%',
+            height: `${640 * boardScale}px`
+        } : {}}
+    >
       <div 
-        className={`relative aspect-square shrink-0 m-auto transition-transform duration-300 origin-center ${!isMobile ? 'min-w-[600px] min-h-[600px] w-[100vmin] h-[100vmin] lg:w-full lg:h-full lg:min-w-0 lg:min-h-0' : ''}`}
+        className={`relative aspect-square shrink-0 m-auto transition-transform duration-300 ${isMobile ? 'origin-top' : 'origin-center'} ${!isMobile ? 'min-w-[600px] min-h-[600px] w-[100vmin] h-[100vmin] lg:w-full lg:h-full lg:min-w-0 lg:min-h-0' : ''}`}
         style={isMobile ? {
             transform: `scale(${boardScale})`,
             width: '640px',
@@ -334,20 +341,22 @@ const Board = ({
         >
           {tileElements}
 
-          <CenterComponent
-            currentDice={currentDice}
-            isRolling={animationStep === "rotating"}
-            onRollComplete={onRollComplete}
-            showDice={true}
-            currentTurnIndex={currentTurnIndex}
-            totalPlayers={players.length}
-            hasRolled={hasRolled}
-            isMyTurn={isMyTurn}
-            isAnimating={isAnimating}
-            onRollDice={onRollDice}
-            onEndTurn={onEndTurn}
-            currentPlayer={players[currentTurnIndex]}
-          />
+          <div className="w-full h-full relative" style={{ gridColumn: "2 / span 9", gridRow: "2 / span 9", zIndex: 10 }}>
+            <CenterComponent
+                currentDice={currentDice}
+                isRolling={animationStep === "rotating"}
+                onRollComplete={onRollComplete}
+                showDice={true}
+                currentTurnIndex={currentTurnIndex}
+                totalPlayers={players.length}
+                hasRolled={hasRolled}
+                isMyTurn={isMyTurn}
+                isAnimating={isAnimating}
+                onRollDice={onRollDice}
+                onEndTurn={onEndTurn}
+                currentPlayer={players[currentTurnIndex]}
+            />
+          </div>
         </div>
 
         {players?.map((player, index) => {

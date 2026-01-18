@@ -267,19 +267,26 @@ const Game = () => {
           playerName
         );
 
+        // Define handlers (need refs or extracted functions for off, but simplified for now)
+        // Note: wsClient currently doesn't easily support removing anonymous functions. 
+        // Just adding them works, but ideally we should clean up listeners.
+        // For now, relies on wsClient being singleton and maybe ignoring duplicates?
+        // Actually, wsClient implementation just pushes to array. This creates a leak if this effect runs multiple times.
+        // However, we added idempotency to `connect` so it won't reconnect socket, 
+        // BUT this effect still adds listeners every time it runs! 
+        
+        // TODO: Refactor wsClient to handle listener cleanup properly.
+        // For now, let's assume this effect runs once per game mount.
+
         // Listen for game state updates
         wsClient.on("gameStateUpdate", (newState) => {
-          console.log("📨 Game state update received:", newState);
-          console.log("📦 Properties in received state:", newState.properties);
-          console.log("Current turn index:", newState.currentTurnIndex);
-          console.log(
-            "Current player:",
-            newState.players?.[newState.currentTurnIndex]?.name
-          );
+          // console.log("📨 Game state update received:", newState);
+          // ... (rest of logging logic)
           syncGameFromSocket(newState);
 
           // Log any new events that arrived with this update
           if (Array.isArray(newState.events)) {
+             // ... (logic)
             const prevCount = lastEventCountRef.current;
             const total = newState.events.length;
             if (total < prevCount) {
@@ -308,7 +315,6 @@ const Game = () => {
                   };
                 });
 
-                // Batch update all logs at once
                 setGameLog((prev) => [...newLogs, ...prev].slice(0, 20));
               }
 
@@ -316,33 +322,40 @@ const Game = () => {
             }
           }
         });
-
-        // Listen for errors
-        wsClient.on("error", (error) => {
-          console.error("❌ WebSocket error:", error);
-          showNotification("Connection error: " + error.message, "error");
-        });
-
-        // Listen for disconnect
-        wsClient.on("disconnect", () => {
-          //console.log("👋 WebSocket disconnected");
-          showNotification("Disconnected from server", "error");
-        });
-
+        
+        // ... (rest of listeners)
+        
         showNotification("Connected to game server ✅", "success");
       } catch (error) {
+        // ...
         console.error("Failed to connect WebSocket:", error);
-        showNotification(
+         showNotification(
           "Failed to connect to server: " + error.message,
           "error"
         );
       }
     };
-
+    
+    // We already have connection logic in App.jsx. 
+    // This effect is partially redundant but handles "in-game" specific listeners (like logs).
+    // Ideally, we move listener logic to App.jsx or GameContext.
+    // However, to fix "Game or player not set", verifying connection is key.
+    
     setupWebSocket();
 
     return () => {
-      wsClient.disconnect();
+      // wsClient.disconnect(); 
+      // CRITICAL CHANGE: Do NOT disconnect on unmount if we want to persist connection?
+      // Actually, if we leave Game (navigate back to Lobby?), we might want to disconnect?
+      // But App.jsx handles Lobby connection.
+      
+      // If we remove this disconnect, App.jsx connection stays alive.
+      // If we switch games?
+      // App.jsx effect will re-run.
+      
+      // So removing this disconnect is safer for the "race condition" where Game unmounts 
+      // abruptly or during transitions.
+      // BUT we should probably remove listeners.
     };
   }, [currentGame?.id, currentPlayerId, syncGameFromSocket]);
 

@@ -170,9 +170,9 @@ function App() {
             </button>
 
             <div className="relative flex items-center">
-              <div className="flex-grow border-t border-gray-300"></div>
-              <span className="flex-shrink-0 mx-4 text-gray-400 text-sm">Or join existing</span>
-              <div className="flex-grow border-t border-gray-300"></div>
+              <div className="grow border-t border-gray-300"></div>
+              <span className="shrink-0 mx-4 text-gray-400 text-sm">Or join existing</span>
+              <div className="grow border-t border-gray-300"></div>
             </div>
 
             <form onSubmit={handleJoinGame} className="flex gap-2">

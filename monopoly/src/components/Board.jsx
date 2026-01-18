@@ -20,9 +20,48 @@ const Board = ({
   prevPositions = {},
   currentGame,
 }) => {
+  const getTileColorClass = (group) => {
+    const colorMap = {
+      "dark-purple": "bg-purple-600",
+      "light-blue": "bg-cyan-400",
+      pink: "bg-rose-500",
+      orange: "bg-orange-500",
+      red: "bg-red-500",
+      yellow: "bg-amber-400",
+      green: "bg-emerald-500",
+      "dark-blue": "bg-blue-600",
+      railroad: "bg-slate-800",
+      utility: "bg-gray-500",
+    };
+    return colorMap[group] || "bg-gray-500";
+  };
+
   const [activeIndex, setActiveIndex] = React.useState(null);
   const gridRef = useRef(null);
   const [popoverPos, setPopoverPos] = React.useState(null);
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth < 1024);
+  const mobileScrollRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Scroll to current player on mobile
+  useEffect(() => {
+    if (isMobile && mobileScrollRef.current && players && players.length > 0) {
+       // Find scroll target - prioritize active player
+       const activePlayer = players[currentTurnIndex];
+       if (activePlayer) {
+          const tileEl = document.getElementById(`mobile-tile-${activePlayer.position}`);
+          if (tileEl) {
+             tileEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+       }
+    }
+  }, [isMobile, currentTurnIndex, players, animationStep]);
+
   // ────────────────────────────────
   // Flatten all tiles in board order (starting from GO at top-left)
   // If your intended "top" side content is currently in tiles.bottom,
@@ -263,9 +302,14 @@ const Board = ({
     );
   });
 
+
+
   return (
-    <div className="w-full h-full flex items-center justify-center">
-      <div className="relative w-full h-full aspect-square overflow-hidden">
+    <div className="w-full h-full flex items-center justify-center overflow-auto scrollbar-hide touch-pan-x touch-pan-y">
+      <div className="relative aspect-square shrink-0 m-auto
+                      min-w-[600px] min-h-[600px] 
+                      w-[100vmin] h-[100vmin]
+                      lg:w-full lg:h-full lg:min-w-0 lg:min-h-0">
         <div
           ref={gridRef}
           className="w-full h-full grid relative"

@@ -6,6 +6,8 @@ import { rollDice } from "./dice";
 import { playTurn } from "../engine/playTurn";
 import { getCurrentPlayerSafe } from "../engine/assertions";
 import { endTurn } from "../engine/endTurn";
+import { BOARD } from "../engine/board";
+import { buyProperty } from "../engine/buyProperty";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -206,7 +208,7 @@ export function setupWebSocket(wss: WebSocketServer) {
           }
 
           // Validate property purchase
-          const tile = game.state.board?.[msg.propertyIndex] ?? require("../engine/board").BOARD[msg.propertyIndex];
+          const tile = BOARD[msg.propertyIndex];
           if (!tile || tile.type !== "PROPERTY") {
             safeSend(socket, {
               type: "ERROR",
@@ -237,7 +239,7 @@ export function setupWebSocket(wss: WebSocketServer) {
           }
 
           // Execute purchase
-          const { buyProperty } = require("../engine/buyProperty");
+          // const { buyProperty } = require("../engine/buyProperty");
           const newState = buyProperty(game.state, tile);
 
           updateGame(msg.gameId, newState);

@@ -74,6 +74,8 @@ const Game = () => {
   const logIdCounterRef = useRef(0);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
+  const [renderPlayers, setRenderPlayers] = useState([]); // UI-only player positions for staged animations
+  const [pendingTeleport, setPendingTeleport] = useState(null); // { playerId, landingPos, finalPos }
 
   // Get all property tiles for carousel
   const allPropertyTiles = [
@@ -305,6 +307,14 @@ const Game = () => {
       setHasRolled(false);
     }
   }, [currentGame?.currentTurnIndex]);
+
+  // Keep a render-friendly copy of players unless we are staging a teleport
+  useEffect(() => {
+    if (pendingTeleport) return;
+    if (currentGame?.players) {
+      setRenderPlayers(currentGame.players);
+    }
+  }, [currentGame?.players, pendingTeleport]);
 
   // Stream events into the local game log whenever the events array grows
   useEffect(() => {
@@ -589,6 +599,29 @@ const Game = () => {
   useEffect(() => {
     if (!currentGame?.players) return;
 
+    const isGoToJailEventForPlayer = (evt, playerId) => {
+      if (!evt) return false;
+      if (evt.type === "PLAYER_SENT_TO_JAIL") {
+        return !playerId || evt.playerId === playerId;
+      }
+      if (evt.type === "COMMUNITY_CHEST" || evt.type === "CHANCE") {
+        return (
+          evt.card?.type === "GO_TO_JAIL" &&
+          (!playerId || evt.playerId === playerId)
+        );
+      }
+      if (evt.type === "CHANCE_CARD" || evt.type === "COMMUNITY_CHEST_CARD") {
+        return (
+          evt.card?.type === "GO_TO_JAIL" &&
+          (!playerId || evt.playerId === playerId)
+        );
+      }
+      return false;
+    };
+
+    const recentEvents = currentGame.events?.slice(-3) || [];
+    const jailIndex = 10; // canonical jail tile index on the board
+
     const nextSig = currentGame.players.map((p) => p.position).join("-");
     const prevSig = lastPositionsSigRef.current;
 
@@ -616,7 +649,45 @@ const Game = () => {
         prevPositionsMap[p.id] = prevPlayer ? prevPlayer.position : p.position;
       });
 
+      // Default: use real players list for rendering
+      let stagedPlayers = currentGame.players;
+      let stagedTeleport = null;
+
+      // Detect go-to-jail triggered immediately after landing on Chance/Community Chest/Go To Jail
+      for (const moved of movedPlayers) {
+        const landedInJail = moved.position === jailIndex;
+        if (!landedInJail) continue;
+
+        const relatedEvent = recentEvents.find((evt) =>
+          isGoToJailEventForPlayer(evt, moved.id),
+        );
+
+        if (!relatedEvent) continue;
+
+        const startPos = prevPositionsMap[moved.id] ?? moved.position;
+        const diceSum = currentGame.lastDice
+          ? (currentGame.lastDice.die1 || 0) + (currentGame.lastDice.die2 || 0)
+          : 0;
+
+        if (!diceSum) break; // cannot stage without dice info
+
+        const landingPos = (startPos + diceSum) % TILES_ON_BOARD;
+
+        stagedTeleport = {
+          playerId: moved.id,
+          landingPos,
+          finalPos: moved.position,
+        };
+
+        stagedPlayers = currentGame.players.map((p) =>
+          p.id === moved.id ? { ...p, position: landingPos } : p,
+        );
+
+        break; // only stage the first detected teleport per tick
+      }
+
       setPrevPositions(prevPositionsMap);
+      setRenderPlayers(stagedPlayers);
 
       // Use latest dice from game if present
       if (currentGame.lastDice) {
@@ -626,6 +697,7 @@ const Game = () => {
         });
       }
 
+      setPendingTeleport(stagedTeleport);
       setAnimationStep("rotating");
       setIsAnimating(true);
       setHasRolled(true);
@@ -650,9 +722,28 @@ const Game = () => {
 
     // 2. Token "waving" animation (shake) before moving
     else if (animationStep === "waving") {
-      const waveDuration = diceSum * 100 + 500;
+      const extraHold = pendingTeleport ? 2000 : 0;
+      const waveDuration = diceSum * 100 + 500 + extraHold;
 
       timeout = setTimeout(() => {
+        if (pendingTeleport) {
+          // After showing the landing tile, teleport to jail without wave
+          setPrevPositions((prev) => ({
+            ...prev,
+            [pendingTeleport.playerId]: pendingTeleport.landingPos,
+          }));
+
+          setRenderPlayers((prev) =>
+            prev.map((p) =>
+              p.id === pendingTeleport.playerId
+                ? { ...p, position: pendingTeleport.finalPos }
+                : p,
+            ),
+          );
+
+          setPendingTeleport(null);
+        }
+
         // Movement is handled by backend via rollDice
         // Just update animation
         setAnimationStep("zooming");
@@ -669,7 +760,14 @@ const Game = () => {
     }
 
     return () => clearTimeout(timeout);
-  }, [animationStep, currentDice, isAnimating, currentGame, currentPlayerId]);
+  }, [
+    animationStep,
+    currentDice,
+    isAnimating,
+    currentGame,
+    currentPlayerId,
+    pendingTeleport,
+  ]);
 
   // Determine current player and turn state
   const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];
@@ -787,7 +885,9 @@ const Game = () => {
           <Board
             isAnimating={isAnimating}
             animationStep={animationStep}
-            players={currentGame.players}
+            players={
+              renderPlayers?.length ? renderPlayers : currentGame.players
+            }
             currentTurnIndex={currentGame.currentTurnIndex}
             currentDice={currentDice}
             isMyTurn={isMyTurn}

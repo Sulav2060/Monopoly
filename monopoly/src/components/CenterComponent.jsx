@@ -44,8 +44,7 @@ const CenterComponent = ({
       </div>
 
       {showDice && (
-        <div className="absolute w-full h-full inset-0 aspect-square flex items-center justify-center z-50">
-          <div className="w-full h-full">
+        <div className="absolute inset-0 z-50">
             <Dice3D
               dice1={currentDice.d1}
               dice2={currentDice.d2}
@@ -54,7 +53,6 @@ const CenterComponent = ({
               currentTurnIndex={currentTurnIndex}
               totalPlayers={totalPlayers}
             />
-          </div>
         </div>
       )}
 

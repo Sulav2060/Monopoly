@@ -859,13 +859,13 @@ const Game = () => {
             );
           })}
 
-          {/* Game Log */}
           <div className="mt-2 pt-3 border-t border-white/10 relative">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-sm text-gray-200">Game Log</h3>
               <span className="text-[10px] text-gray-400">live</span>
             </div>
-            <div className="space-y-1.5 max-h-44 overflow-hidden text-xs pr-1 relative">
+
+            <div className="space-y-1.5 min-h-44 max-h-44 overflow-y-auto text-xs pr-1 relative scrollbar-hide">
               {_gameLog.map((log) => (
                 <div
                   key={log.id}
@@ -875,7 +875,9 @@ const Game = () => {
                   {log.message}
                 </div>
               ))}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t from-[#0b1221] via-[#0b1221]/80 to-transparent" />
+
+              {/* fade at bottom */}
+              <div className="pointer-events-none sticky bottom-0 h-8 bg-linear-to-t from-[#181F2E] via-[#181F2E]/80 to-transparent" />
             </div>
           </div>
         </div>

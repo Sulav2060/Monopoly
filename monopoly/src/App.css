@@ -1,4 +1,12 @@
 /* Add these at the end of your main CSS file */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE & Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari */
+}
 
 .transform-style-3d {
   transform-style: preserve-3d;

@@ -76,9 +76,11 @@ function App() {
   }, [currentGame?.id, currentPlayerId, currentPlayerName, gameStarted]);
 
   const handleCreateGame = async () => {
+    if (!nameInput.trim()) return;
     try {
       setIsProcessing(true);
-      await createGame(currentPlayerName);
+      setCurrentPlayerName(nameInput.trim());
+      await createGame(nameInput.trim());
     } catch (err) {
       alert("Failed to create game");
     } finally {
@@ -88,35 +90,29 @@ function App() {
 
   const handleJoinGame = async (e) => {
     e.preventDefault();
-    if (!joinGameId.trim()) return;
+    if (!joinGameId.trim() || !nameInput.trim()) return;
     try {
+      setCurrentPlayerName(nameInput.trim());
       await joinGame(joinGameId.trim());
     } catch (err) {
       alert("Failed to join game");
     }
   };
 
-  // Show name input screen
-  if (!currentPlayerName) {
+  // Show unified login and game selection screen
+  if (!currentGame) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-linear-to-br from-green-100 to-blue-100 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
           <div className="text-center mb-8">
             <h1 className="text-4xl font-bold text-gray-800 mb-2">
               🎲 Monopoly
             </h1>
-            <p className="text-gray-600">Enter your name to join</p>
+            <p className="text-gray-600">Enter your details to get started</p>
           </div>
 
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (nameInput.trim()) {
-                setCurrentPlayerName(nameInput.trim());
-              }
-            }}
-            className="space-y-4"
-          >
+          <div className="space-y-6">
+            {/* Name Input */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Your Name
@@ -132,40 +128,15 @@ function App() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={!nameInput.trim()}
-              className={`w-full py-3 rounded-lg font-bold text-white transition-all ${
-                nameInput.trim()
-                  ? "bg-green-600 hover:bg-green-700 shadow-lg hover:scale-105"
-                  : "bg-gray-400 cursor-not-allowed"
-              }`}
-            >
-              Continue
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // Show Menu (Create or Join)
-  if (!currentGame) {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-linear-to-br from-green-100 to-blue-100 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              Welcome, {currentPlayerName}!
-            </h1>
-            <p className="text-gray-600">Choose how to play</p>
-          </div>
-
-          <div className="space-y-6">
+            {/* Create Game Button */}
             <button
               onClick={handleCreateGame}
-              disabled={isProcessing}
-              className="w-full py-4 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg font-bold transition-all hover:scale-105 flex items-center justify-center gap-2"
+              disabled={isProcessing || !nameInput.trim()}
+              className={`w-full py-4 text-lg rounded-xl shadow-lg font-bold transition-all flex items-center justify-center gap-2 ${
+                nameInput.trim()
+                  ? "bg-blue-600 hover:bg-blue-700 text-white hover:scale-105"
+                  : "bg-gray-400 text-gray-600 cursor-not-allowed"
+              }`}
             >
               {isProcessing ? "Creating..." : "✨ Create New Game"}
             </button>
@@ -176,6 +147,7 @@ function App() {
               <div className="grow border-t border-gray-300"></div>
             </div>
 
+            {/* Join Game Form */}
             <form onSubmit={handleJoinGame} className="flex gap-2">
               <input
                 type="text"

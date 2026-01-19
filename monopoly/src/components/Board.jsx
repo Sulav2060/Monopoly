@@ -317,14 +317,10 @@ const Board = ({
 
   return (
     <div 
-        className={`w-full h-full flex ${isMobile ? 'items-start' : 'items-center'} justify-center overflow-hidden`}
-        style={isMobile ? {
-            width: '100%',
-            height: `${640 * boardScale}px`
-        } : {}}
+        className={`w-full h-full flex items-center justify-center overflow-hidden`}
     >
       <div 
-        className={`relative aspect-square shrink-0 m-auto transition-transform duration-300 ${isMobile ? 'origin-top' : 'origin-center'} ${!isMobile ? 'min-w-[600px] min-h-[600px] w-[100vmin] h-[100vmin] lg:w-full lg:h-full lg:min-w-0 lg:min-h-0' : ''}`}
+        className={`relative aspect-square shrink-0 m-auto transition-transform duration-300 origin-center ${!isMobile ? 'min-w-[600px] min-h-[600px] w-[100vmin] h-[100vmin] lg:w-full lg:h-full lg:min-w-0 lg:min-h-0' : ''}`}
         style={isMobile ? {
             transform: `scale(${boardScale})`,
             width: '640px',

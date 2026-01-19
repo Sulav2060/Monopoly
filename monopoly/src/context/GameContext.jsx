@@ -146,7 +146,10 @@ export const GameProvider = ({ children }) => {
       return new Promise((resolve, reject) => {
         const handleGameStateUpdate = (newState) => {
           //console.log("🎮 Game started via WebSocket");
-          setCurrentGame(decorateGameState(newState));
+          setCurrentGame((prev) => ({
+            ...decorateGameState(newState),
+            id: prev?.id || currentGame?.id,
+          }));
           wsClient.off("gameStateUpdate", handleGameStateUpdate);
           resolve(newState);
         };
@@ -192,7 +195,10 @@ export const GameProvider = ({ children }) => {
         const handleGameStateUpdate = (newState) => {
           //console.log("🎲 Game state updated via WebSocket");
           const decorated = decorateGameState(newState);
-          setCurrentGame(decorated);
+          setCurrentGame((prev) => ({
+            ...decorated,
+            id: prev?.id || currentGame?.id,
+          }));
           wsClient.off("gameStateUpdate", handleGameStateUpdate);
           // Convert die1/die2 to d1/d2 for compatibility
           const diceRoll = decorated.lastDice
@@ -243,7 +249,10 @@ export const GameProvider = ({ children }) => {
           const handleGameStateUpdate = (newState) => {
             console.log("🏠 Property bought via WebSocket");
             const decorated = decorateGameState(newState);
-            setCurrentGame(decorated);
+            setCurrentGame((prev) => ({
+              ...decorated,
+              id: prev?.id || currentGame?.id,
+            }));
             wsClient.off("gameStateUpdate", handleGameStateUpdate);
             resolve(decorated);
           };
@@ -311,7 +320,10 @@ export const GameProvider = ({ children }) => {
       return new Promise((resolve, reject) => {
         const handleGameStateUpdate = (newState) => {
           //console.log("⏭️ Turn ended via WebSocket");
-          setCurrentGame(decorateGameState(newState));
+          setCurrentGame((prev) => ({
+            ...decorateGameState(newState),
+            id: prev?.id || currentGame?.id,
+          }));
           wsClient.off("gameStateUpdate", handleGameStateUpdate);
           resolve(newState);
         };
@@ -358,11 +370,16 @@ export const GameProvider = ({ children }) => {
     (gameData) => {
       if (!gameData) return;
       const decorated = decorateGameState(gameData);
-      setCurrentGame(decorated);
+      // Determine Game ID using a safe fallback strategy
+      setCurrentGame((prev) => {
+        // Use prev.id as the primary source of truth for the ID once established
+        const gameId = prev?.id || gameData.gameId || currentRoom;
+        return { ...decorated, id: gameId };
+      });
       // Keep room.game in sync so lobby views stay current
-      setCurrentRoom((prev) => (prev ? { ...prev, game: decorated } : prev));
+      // setCurrentRoom((prev) => (prev ? { ...prev, game: decorated } : prev));
     },
-    [decorateGameState]
+    [decorateGameState, currentRoom]
   );
 
   const value = {

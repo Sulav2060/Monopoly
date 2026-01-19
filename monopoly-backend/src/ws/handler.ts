@@ -337,8 +337,22 @@ function safeSend(ws: WebSocket, message: ServerMessage) {
 
 function safeBroadcast(wss: WebSocketServer, message: ServerMessage) {
   const data = JSON.stringify(message);
+  
+  // Extract target game ID if applicable
+  let targetGameId: string | undefined;
+  if (message.type === "GAME_STATE_UPDATE") {
+    targetGameId = message.gameId;
+  }
 
   wss.clients.forEach((client) => {
+    // Optimization: Only send to clients in the specific game
+    if (targetGameId) {
+      const meta = socketMeta.get(client);
+      if (meta?.gameId !== targetGameId) {
+        return;
+      }
+    }
+
     try {
       if (client.readyState === client.OPEN) {
         client.send(data);

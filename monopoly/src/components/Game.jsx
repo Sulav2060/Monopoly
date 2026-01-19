@@ -249,102 +249,28 @@ const Game = () => {
 
   // WebSocket connection for real-time updates
   useEffect(() => {
+    // Note: Connection is handled by App.jsx. Game.jsx only listens to events.
     if (!currentGame || !currentPlayerId) return;
 
-    const setupWebSocket = async () => {
-      try {
-        const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:4000";
-
-        const me = currentGame.players.find((p) => p.id === currentPlayerId);
-        const playerName =
-          me?.name || `Player ${currentPlayerId?.split("-").pop()}`;
-
-        // Connect to WebSocket
-        await wsClient.connect(
-          wsUrl,
-          currentGame.id,
-          currentPlayerId,
-          playerName
-        );
-
-        // Listen for game state updates
-        wsClient.on("gameStateUpdate", (newState) => {
-          console.log("📨 Game state update received:", newState);
-          console.log("📦 Properties in received state:", newState.properties);
-          console.log("Current turn index:", newState.currentTurnIndex);
-          console.log(
-            "Current player:",
-            newState.players?.[newState.currentTurnIndex]?.name
-          );
-          syncGameFromSocket(newState);
-
-          // Log any new events that arrived with this update
-          if (Array.isArray(newState.events)) {
-            const prevCount = lastEventCountRef.current;
-            const total = newState.events.length;
-            if (total < prevCount) {
-              lastEventCountRef.current = total;
-            } else if (total > prevCount) {
-              const fresh = newState.events.slice(prevCount);
-              // Filter out dice rolls, player moved, and turn ended - only log important events
-              const importantEvents = fresh.filter(
-                (evt) =>
-                  evt.type !== "DICE_ROLLED" &&
-                  evt.type !== "PLAYER_MOVED" &&
-                  evt.type !== "TURN_ENDED"
-              );
-
-              if (importantEvents.length > 0) {
-                const newLogs = importantEvents.map((evt, idx) => {
-                  const eventIndex = prevCount + idx;
-                  const message = formatEventMessage(evt, newState);
-                  logIdCounterRef.current += 1;
-                  return {
-                    id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${
-                      logIdCounterRef.current
-                    }`,
-                    message,
-                    time: new Date().toLocaleTimeString(),
-                  };
-                });
-
-                // Batch update all logs at once
-                setGameLog((prev) => [...newLogs, ...prev].slice(0, 20));
-              }
-
-              lastEventCountRef.current = total;
-            }
-          }
-        });
-
-        // Listen for errors
-        wsClient.on("error", (error) => {
-          console.error("❌ WebSocket error:", error);
-          showNotification("Connection error: " + error.message, "error");
-        });
-
-        // Listen for disconnect
-        wsClient.on("disconnect", () => {
-          //console.log("👋 WebSocket disconnected");
-          showNotification("Disconnected from server", "error");
-        });
-
-        showNotification("Connected to game server ✅", "success");
-      } catch (error) {
-        console.error("Failed to connect WebSocket:", error);
-        showNotification(
-          "Failed to connect to server: " + error.message,
-          "error"
-        );
-      }
+    const handleError = (error) => {
+      console.error("❌ WebSocket error:", error);
+      showNotification("Connection error: " + error.message, "error");
     };
 
-    setupWebSocket();
+    const handleDisconnect = () => {
+       showNotification("Disconnected from server", "error");
+    };
 
+    // Register listeners
+    wsClient.on("error", handleError);
+    wsClient.on("disconnect", handleDisconnect);
+
+    // CLEANUP listeners on unmount or re-run
     return () => {
-      wsClient.disconnect();
+      wsClient.off("error", handleError);
+      wsClient.off("disconnect", handleDisconnect);
     };
-  }, [currentGame?.id, currentPlayerId, syncGameFromSocket]);
+  }, [currentGame?.id, currentPlayerId]);
 
   // Reset hasRolled when turn changes
   useEffect(() => {
@@ -672,15 +598,6 @@ const Game = () => {
   const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];
   const isMyTurn = currentPlayer?.id === currentPlayerId;
 
-  console.log("🎮 Turn Info:", {
-    currentTurnIndex: currentGame?.currentTurnIndex,
-    currentPlayerName: currentPlayer?.name,
-    currentPlayerId: currentPlayer?.id,
-    myPlayerId: currentPlayerId,
-    isMyTurn,
-  });
-
-  console.log(currentDice);
   // Loading state or not in game
   if (!currentGame) {
     return (
@@ -697,7 +614,7 @@ const Game = () => {
 
   // Main Game UI
   return (
-    <div className="w-screen h-screen flex items-center justify-center p-6 bg-linear-to-br from-[#0f172a] via-[#0b1221] to-[#05070d] text-gray-100">
+    <div className="w-screen h-screen flex items-center justify-center p-2 lg:p-6 bg-linear-to-br from-[#0f172a] via-[#0b1221] to-[#05070d] text-gray-100 overflow-hidden">
       {/* Notification Toast */}
       {notification && (
         <div
@@ -713,9 +630,9 @@ const Game = () => {
         </div>
       )}
 
-      <div className="w-full h-full flex gap-5">
+      <div className="w-full h-full flex flex-col lg:flex-row gap-2 lg:gap-5 overflow-y-auto lg:overflow-hidden scrollbar-hide">
         {/* Left Sidebar - Players */}
-        <div className="w-64 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-5 overflow-y-auto flex flex-col gap-4 backdrop-blur-lg">
+        <div className="w-full lg:w-64 order-1 lg:order-1 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold tracking-wide text-gray-100">
               Players
@@ -789,7 +706,7 @@ const Game = () => {
         </div>
 
         {/* Game Board */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 overflow-hidden ">
+        <div className="w-full lg:w-auto lg:flex-1 order-2 lg:order-2 shrink-0 lg:min-h-0 lg:aspect-square flex flex-col items-center justify-center gap-4 p-2 h-auto lg:h-auto overflow-hidden">
           <Board
             isAnimating={isAnimating}
             animationStep={animationStep}
@@ -816,7 +733,7 @@ const Game = () => {
         </div>
 
         {/* Right Sidebar - Actions & Info */}
-        <div className="w-80 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-5 flex flex-col gap-4 backdrop-blur-lg">
+        <div className="w-full lg:w-80 order-3 lg:order-3 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
             <h3 className="font-semibold text-lg text-gray-100">Game Panel</h3>

@@ -28,10 +28,31 @@ class GameSocketManager {
   connect(url, gameId, playerId, playerName) {
     return new Promise((resolve, reject) => {
       try {
+        if (
+          this.socket &&
+          (this.socket.readyState === WebSocket.OPEN ||
+            this.socket.readyState === WebSocket.CONNECTING) &&
+          this.gameId === gameId &&
+          this.playerId === playerId
+        ) {
+          console.log("🔄 WebSocket already connected/connecting to this game session");
+          resolve();
+          return;
+        }
+
         this.gameId = gameId;
         this.playerId = playerId;
         this.playerName = playerName || `Player ${playerId?.split("-").pop()}`;
         this.isIntentionallyClosed = false;
+
+        // Force close existing if different
+        if (this.socket) {
+          try {
+            this.socket.close();
+          } catch (e) {
+            /* ignore */
+          }
+        }
 
         console.log(`🔌 Connecting WebSocket to ${url}`);
         this.socket = new WebSocket(url);
@@ -127,7 +148,7 @@ class GameSocketManager {
    */
   startGame() {
     if (!this.gameId) {
-      throw new Error("Game ID not set");
+      throw new Error(`Game ID not set. Current: ${this.gameId}`);
     }
 
     this.send({
@@ -141,7 +162,7 @@ class GameSocketManager {
    */
   endTurn() {
     if (!this.gameId || !this.playerId) {
-      throw new Error("Game or player not set");
+      throw new Error(`Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`);
     }
 
     this.send({
@@ -156,7 +177,7 @@ class GameSocketManager {
    */
   rollDice() {
     if (!this.gameId || !this.playerId) {
-      throw new Error("Game or player not set");
+      throw new Error(`Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`);
     }
 
     this.send({
@@ -171,7 +192,7 @@ class GameSocketManager {
    */
   buyProperty(propertyIndex) {
     if (!this.gameId || !this.playerId) {
-      throw new Error("Game or player not set");
+      throw new Error(`Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`);
     }
 
     this.send({

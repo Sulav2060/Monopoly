@@ -80,6 +80,38 @@ const Landing = ({
   isProcessing,
 }) => {
   const [activeField, setActiveField] = useState(null);
+  const [shouldProceed, setShouldProceed] = useState(false);
+
+  const PLAYER_NAMES = [
+    "Bob", "Max", "Leo", "Alex", "Sam",
+    "Emma", "Zoe", "Mia", "Ava", "Ivy",
+    "Jack", "Tom", "Dan", "Ben", "Kai",
+    "Lily", "Eva", "Anna", "Nina", "Ren",
+    "Rio", "Ash", "Rey", "Sage", "Sky",
+    "Nash", "Beck", "Felix", "Rohan", "Sera"
+  ];
+
+  const generateRandomName = () => {
+    return PLAYER_NAMES[Math.floor(Math.random() * PLAYER_NAMES.length)];
+  };
+
+  // Trigger action when name is set and shouldProceed flag is true
+  useEffect(() => {
+    if (shouldProceed && nameInput.trim()) {
+      if (joinGameId.trim()) {
+        onJoinGame({ preventDefault: () => {} });
+      } else {
+        onCreateGame();
+      }
+      setShouldProceed(false);
+    }
+  }, [nameInput, shouldProceed, joinGameId, onJoinGame, onCreateGame]);
+
+  const handleAction = () => {
+    const finalName = nameInput.trim() || generateRandomName();
+    setNameInput(finalName);
+    setShouldProceed(true);
+  };
 
   return (
     <div className="min-h-screen w-full bg-[#050505] text-slate-200 relative overflow-hidden font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
@@ -160,7 +192,7 @@ const Landing = ({
                           onChange={(e) => setNameInput(e.target.value)}
                           onFocus={() => setActiveField('name')}
                           onBlur={() => setActiveField(null)}
-                          placeholder="e.g. Biraj"
+                          placeholder="e.g. Bliss"
                           className="w-full px-4 py-3.5 bg-transparent text-white placeholder-slate-600 focus:outline-none rounded-xl"
                         />
                       </div>
@@ -186,7 +218,7 @@ const Landing = ({
                           onChange={(e) => setJoinGameId(e.target.value)}
                           onFocus={() => setActiveField('room')}
                           onBlur={() => setActiveField(null)}
-                          placeholder="e.g. NP-8848"
+                          placeholder="e.g. EC8ET3"
                           className="w-full px-4 py-3.5 bg-transparent text-white placeholder-slate-600 focus:outline-none rounded-xl font-mono text-sm"
                         />
                       </div>
@@ -197,10 +229,10 @@ const Landing = ({
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    disabled={!nameInput || isProcessing}
-                    onClick={() => joinGameId.trim() ? onJoinGame({ preventDefault: () => {} }) : onCreateGame()}
+                    disabled={isProcessing}
+                    onClick={handleAction}
                     className={`group w-full relative overflow-hidden py-4 rounded-xl font-bold text-base transition-all duration-300 shadow-lg ${
-                      !nameInput ? 'opacity-50 cursor-not-allowed grayscale' : ''
+                      isProcessing ? 'opacity-50 cursor-not-allowed' : ''
                     } ${
                       joinGameId.trim()
                         ? "bg-gradient-to-r from-amber-400 to-orange-500 text-black shadow-amber-900/20"

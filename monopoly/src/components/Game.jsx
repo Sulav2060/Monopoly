@@ -3,7 +3,15 @@ import Board from "./Board";
 import { tiles, corners } from "./tiles";
 import { useGame } from "../context/GameContext";
 import { wsClient } from "../services/wsClient";
-import { playDiceRoll, playMove, playPropertyBought, playGoToJail, playTurnEnd, playMoney, playTax } from "../services/sound";
+import {
+  playDiceRoll,
+  playMove,
+  playPropertyBought,
+  playGoToJail,
+  playTurnEnd,
+  playMoney,
+  playTax,
+} from "../services/sound";
 
 const TILES_ON_BOARD =
   tiles.bottom.length +
@@ -71,19 +79,19 @@ const Game = () => {
   const allPropertyTiles = [
     ...tiles.bottom.filter(
       (t) =>
-        t.type === "property" || t.type === "railroad" || t.type === "utility"
+        t.type === "property" || t.type === "railroad" || t.type === "utility",
     ),
     ...tiles.right.filter(
       (t) =>
-        t.type === "property" || t.type === "railroad" || t.type === "utility"
+        t.type === "property" || t.type === "railroad" || t.type === "utility",
     ),
     ...tiles.top.filter(
       (t) =>
-        t.type === "property" || t.type === "railroad" || t.type === "utility"
+        t.type === "property" || t.type === "railroad" || t.type === "utility",
     ),
     ...tiles.left.filter(
       (t) =>
-        t.type === "property" || t.type === "railroad" || t.type === "utility"
+        t.type === "property" || t.type === "railroad" || t.type === "utility",
     ),
   ];
 
@@ -276,7 +284,7 @@ const Game = () => {
     };
 
     const handleDisconnect = () => {
-       showNotification("Disconnected from server", "error");
+      showNotification("Disconnected from server", "error");
     };
 
     // Register listeners
@@ -362,7 +370,7 @@ const Game = () => {
         (evt) =>
           evt.type !== "DICE_ROLLED" &&
           evt.type !== "PLAYER_MOVED" &&
-          evt.type !== "TURN_ENDED"
+          evt.type !== "TURN_ENDED",
       );
 
       if (importantEvents.length > 0) {
@@ -447,7 +455,7 @@ const Game = () => {
       addLog(
         `${
           currentGame.players[currentGame.currentTurnIndex]?.name
-        }'s turn ended.`
+        }'s turn ended.`,
       );
       setHasRolled(false);
     } catch (error) {
@@ -490,7 +498,10 @@ const Game = () => {
 
     // Check if property is already owned - use tileIndex, propertyId, or tile
     const isOwned = currentGame.properties?.some(
-      (p) => p.tileIndex === tileIndex || p.propertyId === tileIndex || p.tile === tileIndex
+      (p) =>
+        p.tileIndex === tileIndex ||
+        p.propertyId === tileIndex ||
+        p.tile === tileIndex,
     );
     if (isOwned) {
       return false;
@@ -522,7 +533,10 @@ const Game = () => {
 
     // Check if property is already owned - use tileIndex, propertyId, or tile
     const isOwned = currentGame.properties?.some(
-      (p) => p.tileIndex === tileIndex || p.propertyId === tileIndex || p.tile === tileIndex
+      (p) =>
+        p.tileIndex === tileIndex ||
+        p.propertyId === tileIndex ||
+        p.tile === tileIndex,
     );
     if (isOwned) {
       showNotification("This property is already owned!", "error");
@@ -538,7 +552,7 @@ const Game = () => {
       setIsLoadingAction(true);
       await contextBuyProperty(tileIndex);
       addLog(
-        `${player.name} bought property "${tile.title}" for $${tile.price}`
+        `${player.name} bought property "${tile.title}" for $${tile.price}`,
       );
       showNotification(`Property purchased for $${tile.price}!`, "success");
     } catch (error) {
@@ -587,7 +601,7 @@ const Game = () => {
     // Detect any movement from the previous game snapshot
     const movedPlayers = currentGame.players.filter((p) => {
       const prevPlayer = prevGameRef.current.players?.find(
-        (pp) => pp.id === p.id
+        (pp) => pp.id === p.id,
       );
       return prevPlayer && prevPlayer.position !== p.position;
     });
@@ -597,7 +611,7 @@ const Game = () => {
       const prevPositionsMap = {};
       currentGame.players.forEach((p) => {
         const prevPlayer = prevGameRef.current.players?.find(
-          (pp) => pp.id === p.id
+          (pp) => pp.id === p.id,
         );
         prevPositionsMap[p.id] = prevPlayer ? prevPlayer.position : p.position;
       });
@@ -685,8 +699,8 @@ const Game = () => {
             notification.type === "success"
               ? "shadow-green-500/30"
               : notification.type === "error"
-              ? "shadow-red-500/30"
-              : "shadow-blue-500/30"
+                ? "shadow-red-500/30"
+                : "shadow-blue-500/30"
           }`}
         >
           {notification.message}
@@ -866,7 +880,7 @@ const Game = () => {
                     (prop) =>
                       prop.ownerId === currentPlayerId ||
                       prop.owner === currentPlayerId ||
-                      prop.playerId === currentPlayerId
+                      prop.playerId === currentPlayerId,
                   ) || [];
 
                 if (myProperties.length > 0) {
@@ -1014,10 +1028,7 @@ const Game = () => {
                   }}
                 >
                   {allPropertyTiles.map((tile, idx) => (
-                    <div
-                      key={idx}
-                      className="w-full h-full relative shrink-0"
-                    >
+                    <div key={idx} className="w-full h-full relative shrink-0">
                       <img
                         src={tile.image}
                         alt={tile.title}

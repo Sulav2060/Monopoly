@@ -45,14 +45,14 @@ const Board = ({
 
   useEffect(() => {
     const handleResize = () => {
-        setIsMobile(window.innerWidth < 1024);
-        // Scale board to fit screen width if smaller than 640px
-        // Subtract padding (approx 32px safe area)
-        if (window.innerWidth < 640) {
-            setBoardScale((window.innerWidth - 32) / 640);
-        } else {
-            setBoardScale(1);
-        }
+      setIsMobile(window.innerWidth < 1024);
+      // Scale board to fit screen width if smaller than 640px
+      // Subtract padding (approx 32px safe area)
+      if (window.innerWidth < 640) {
+        setBoardScale((window.innerWidth - 32) / 640);
+      } else {
+        setBoardScale(1);
+      }
     };
     handleResize(); // Initial check
     window.addEventListener("resize", handleResize);
@@ -62,14 +62,16 @@ const Board = ({
   // Scroll to current player on mobile
   useEffect(() => {
     if (isMobile && mobileScrollRef.current && players && players.length > 0) {
-       // Find scroll target - prioritize active player
-       const activePlayer = players[currentTurnIndex];
-       if (activePlayer) {
-          const tileEl = document.getElementById(`mobile-tile-${activePlayer.position}`);
-          if (tileEl) {
-             tileEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-       }
+      // Find scroll target - prioritize active player
+      const activePlayer = players[currentTurnIndex];
+      if (activePlayer) {
+        const tileEl = document.getElementById(
+          `mobile-tile-${activePlayer.position}`,
+        );
+        if (tileEl) {
+          tileEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
     }
   }, [isMobile, currentTurnIndex, players, animationStep]);
 
@@ -109,7 +111,7 @@ const Board = ({
     // Always show ownership colors - don't hide them during animation
     // First check the properties array directly from game state
     const propertyEntry = propertiesFromGame.find(
-      (prop) => prop.tileIndex === tileIndex || prop.propertyId === tileIndex
+      (prop) => prop.tileIndex === tileIndex || prop.propertyId === tileIndex,
     );
 
     if (propertyEntry && players) {
@@ -304,23 +306,29 @@ const Board = ({
     );
   });
 
-
-
   return (
-    <div 
-        className={`w-full h-full flex ${isMobile ? 'items-start' : 'items-center'} justify-center overflow-hidden`}
-        style={isMobile ? {
-            width: '100%',
-            height: `${640 * boardScale}px`
-        } : {}}
+    <div
+      className={`w-full h-full flex ${isMobile ? "items-start" : "items-center"} justify-center overflow-hidden`}
+      style={
+        isMobile
+          ? {
+              width: "100%",
+              height: `${640 * boardScale}px`,
+            }
+          : {}
+      }
     >
-      <div 
-        className={`relative aspect-square shrink-0 m-auto transition-transform duration-300 ${isMobile ? 'origin-top' : 'origin-center'} ${!isMobile ? 'min-w-[600px] min-h-[600px] w-[100vmin] h-[100vmin] lg:w-full lg:h-full lg:min-w-0 lg:min-h-0' : ''}`}
-        style={isMobile ? {
-            transform: `scale(${boardScale})`,
-            width: '640px',
-            height: '640px',
-        } : {}}
+      <div
+        className={`relative aspect-square shrink-0 m-auto transition-transform duration-300 ${isMobile ? "origin-top" : "origin-center"} ${!isMobile ? "min-w-[600px] min-h-[600px] w-[100vmin] h-[100vmin] lg:w-full lg:h-full lg:min-w-0 lg:min-h-0" : ""}`}
+        style={
+          isMobile
+            ? {
+                transform: `scale(${boardScale})`,
+                width: "640px",
+                height: "640px",
+              }
+            : {}
+        }
       >
         <div
           ref={gridRef}
@@ -332,20 +340,27 @@ const Board = ({
         >
           {tileElements}
 
-          <div className="w-full h-full relative" style={{ gridColumn: "2 / span 9", gridRow: "2 / span 9", zIndex: 10 }}>
+          <div
+            className="w-full h-full relative"
+            style={{
+              gridColumn: "2 / span 9",
+              gridRow: "2 / span 9",
+              zIndex: 10,
+            }}
+          >
             <CenterComponent
-                currentDice={currentDice}
-                isRolling={animationStep === "rotating"}
-                onRollComplete={onRollComplete}
-                showDice={true}
-                currentTurnIndex={currentTurnIndex}
-                totalPlayers={players.length}
-                hasRolled={hasRolled}
-                isMyTurn={isMyTurn}
-                isAnimating={isAnimating}
-                onRollDice={onRollDice}
-                onEndTurn={onEndTurn}
-                currentPlayer={players[currentTurnIndex]}
+              currentDice={currentDice}
+              isRolling={animationStep === "rotating"}
+              onRollComplete={onRollComplete}
+              showDice={true}
+              currentTurnIndex={currentTurnIndex}
+              totalPlayers={players.length}
+              hasRolled={hasRolled}
+              isMyTurn={isMyTurn}
+              isAnimating={isAnimating}
+              onRollDice={onRollDice}
+              onEndTurn={onEndTurn}
+              currentPlayer={players[currentTurnIndex]}
             />
           </div>
         </div>

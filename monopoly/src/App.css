@@ -46,3 +46,17 @@
   /* ensure animation plays even when added dynamically */
   animation-fill-mode: forwards;
 }
+
+@keyframes pulseShine {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.btn-pulse {
+  background-size: 200% 100%;
+  animation: pulseShine 2s infinite;
+}

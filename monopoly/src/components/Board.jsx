@@ -106,16 +106,7 @@ const Board = ({
   const currentPlayerPosition = currentPlayer ? currentPlayer.position : -1;
 
   const getOwnerColorForTile = (tileIndex) => {
-    // Don't show ownership colors for the currently moving player's position
-    // until the animation is complete (animationStep === "idle")
-    if (
-      isAnimating &&
-      animationStep !== "idle" &&
-      tileIndex === currentPlayerPosition
-    ) {
-      return null;
-    }
-
+    // Always show ownership colors - don't hide them during animation
     // First check the properties array directly from game state
     const propertyEntry = propertiesFromGame.find(
       (prop) => prop.tileIndex === tileIndex || prop.propertyId === tileIndex

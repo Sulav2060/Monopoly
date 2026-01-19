@@ -3,6 +3,7 @@ import Board from "./Board";
 import { tiles, corners } from "./tiles";
 import { useGame } from "../context/GameContext";
 import { wsClient } from "../services/wsClient";
+import { playDiceRoll, playMove, playPropertyBought, playGoToJail, playTurnEnd, playMoney, playTax } from "../services/sound";
 
 const TILES_ON_BOARD =
   tiles.bottom.length +
@@ -217,6 +218,23 @@ const Game = () => {
         } collected $${amount} from Free Parking!`;
       }
 
+      case "COMMUNITY_CHEST": {
+        const name = current?.name || "Player";
+        const tile = getTileAtPosition(current?.position);
+        const label = tile?.type === "chance" ? "Chance" : "Community Chest";
+        if (event.card?.type === "MONEY") {
+          const amt = event.card.amount ?? 0;
+          return `🎁 ${name} received $${amt} from ${label}`;
+        }
+        if (event.card?.type === "MOVE") {
+          return `🎁 ${name} drew ${label} and moved`;
+        }
+        if (event.card?.type === "GO_TO_JAIL") {
+          return `🎁 ${name} drew ${label}: Go To Jail!`;
+        }
+        return `🎁 ${name} drew a card`;
+      }
+
       case "PLAYER_BANKRUPT": {
         const player = players.find((p) => p.id === event.playerId);
         const causedBy = event.causedBy
@@ -294,6 +312,51 @@ const Game = () => {
 
     if (total > prevCount) {
       const fresh = currentGame.events.slice(prevCount);
+
+      // Play sounds for all new events
+      try {
+        fresh.forEach((evt) => {
+          switch (evt.type) {
+            case "DICE_ROLLED":
+              playDiceRoll();
+              break;
+            case "PLAYER_MOVED":
+              playMove();
+              break;
+            case "PROPERTY_BOUGHT":
+              playPropertyBought();
+              break;
+            case "PLAYER_SENT_TO_JAIL":
+              playGoToJail();
+              break;
+            case "TURN_ENDED":
+              playTurnEnd();
+              break;
+            case "COMMUNITY_CHEST":
+              if (evt.card?.type === "MONEY") {
+                playMoney(evt.card.amount ?? 0);
+              }
+              break;
+            case "PASSED_GO":
+              playMoney(evt.amount ?? 0);
+              break;
+            case "FREE_PARKING_COLLECTED":
+              playMoney(evt.amount ?? 0);
+              break;
+            case "TAX_PAID":
+              playTax(evt.amount ?? 0);
+              break;
+            case "RENT_PAID":
+              playTax(evt.amount ?? 0);
+              break;
+            default:
+              break;
+          }
+        });
+      } catch (e) {
+        // ignore audio errors
+      }
+
       // Filter out dice rolls, player moved, and turn ended - only log important events
       const importantEvents = fresh.filter(
         (evt) =>
@@ -425,9 +488,9 @@ const Game = () => {
       return false;
     }
 
-    // Check if property is already owned
+    // Check if property is already owned - use tileIndex, propertyId, or tile
     const isOwned = currentGame.properties?.some(
-      (p) => p.propertyId === tileIndex
+      (p) => p.tileIndex === tileIndex || p.propertyId === tileIndex || p.tile === tileIndex
     );
     if (isOwned) {
       return false;
@@ -457,9 +520,9 @@ const Game = () => {
       return;
     }
 
-    // Check if property is already owned
+    // Check if property is already owned - use tileIndex, propertyId, or tile
     const isOwned = currentGame.properties?.some(
-      (p) => p.propertyId === tileIndex
+      (p) => p.tileIndex === tileIndex || p.propertyId === tileIndex || p.tile === tileIndex
     );
     if (isOwned) {
       showNotification("This property is already owned!", "error");

@@ -6,6 +6,7 @@ import { rollDice } from "./dice";
 import { playTurn } from "../engine/playTurn";
 import { getCurrentPlayerSafe } from "../engine/assertions";
 import { endTurn } from "../engine/endTurn";
+import { skipProperty } from "../engine/skipProperty";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -44,7 +45,7 @@ export function setupWebSocket(wss: WebSocketServer) {
 
           // Reuse existing player entry if the client reconnects with the same id
           const existingPlayer = game.state.players.find(
-            (p) => p.id === msg.playerId
+            (p) => p.id === msg.playerId,
           );
 
           if (existingPlayer) {
@@ -61,7 +62,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             });
 
             console.log(
-              `♻️ Player ${existingPlayer.name} reconnected to game ${msg.gameId}`
+              `♻️ Player ${existingPlayer.name} reconnected to game ${msg.gameId}`,
             );
             return;
           }
@@ -84,7 +85,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             id: msg.playerId ?? randomUUID(),
             name: msg.playerName,
             position: 0,
-            money: 1500,
+            money: 50,
             inJail: false,
             jailTurns: 0,
             isBankrupt: false,
@@ -158,7 +159,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             "Current player:",
             currentPlayer.id,
             "Message player:",
-            msg.playerId
+            msg.playerId,
           );
 
           if (currentPlayer.id !== msg.playerId) {
@@ -181,7 +182,7 @@ export function setupWebSocket(wss: WebSocketServer) {
           });
 
           console.log(
-            `🎲 ${currentPlayer.name} rolled dice in game ${msg.gameId}`
+            `🎲 ${currentPlayer.name} rolled dice in game ${msg.gameId}`,
           );
           return;
         }
@@ -204,23 +205,28 @@ export function setupWebSocket(wss: WebSocketServer) {
             });
             return;
           }
-          const gameState = endTurn(game.state);
-
+          // 👇 NEW LOGIC
+          let currentState;
+          if (game.state.pendingAction?.type === "BUY_PROPERTY") {
+            currentState = skipProperty(game.state);
+          } else {
+            currentState = endTurn(game.state);
+          }
           // Persist the turn change to game store
-          updateGame(msg.gameId, gameState);
+          updateGame(msg.gameId, currentState);
 
           safeBroadcast(wss, {
             type: "GAME_STATE_UPDATE",
             gameId: msg.gameId,
-            state: gameState,
+            state: currentState,
           });
 
-          const currentTurnIndex = gameState.currentTurnIndex;
+          const currentTurnIndex = currentState.currentTurnIndex;
 
-          const nextPlayer = gameState.players[currentTurnIndex];
+          const nextPlayer = currentState.players[currentTurnIndex];
           if (nextPlayer) {
             console.log(
-              `⏭️ Turn changed to ${nextPlayer.name} in game ${msg.gameId}`
+              `⏭️ Turn changed to ${nextPlayer.name} in game ${msg.gameId}`,
             );
           }
           return;

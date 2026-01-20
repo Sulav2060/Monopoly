@@ -20,8 +20,13 @@ export type ClientMessage =
       type: "END_TURN";
       gameId: string;
       playerId: string;
+    }
+  | {
+      type: "BUY_PROPERTY";
+      gameId: string;
+      playerId: string;
     };
-
+    
 export type ServerMessage =
   | {
       type: "GAME_STATE_UPDATE";

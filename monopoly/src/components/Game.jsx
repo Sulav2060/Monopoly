@@ -183,6 +183,13 @@ const Game = () => {
         }`;
       }
 
+      case "PROPERTY_SKIPPED": {
+        const player = players.find((p) => p.id === event.playerId);
+        const tile = getTileAtPosition(event.tileIndex);
+        const tileName = tile?.title || `Tile ${event.tileIndex}`;
+        return `⏭️ ${player?.name || "Player"} skipped buying ${tileName}`;
+      }
+
       case "TURN_ENDED": {
         const next = players.find((p) => p.id === event.nextPlayerId);
         return `⏭️ ${next?.name || "Next player"}'s turn`;
@@ -375,12 +382,9 @@ const Game = () => {
         // ignore audio errors
       }
 
-      // Filter out dice rolls, player moved, and turn ended - only log important events
+      // Filter out low-signal events; keep ordering as sent by backend
       const importantEvents = fresh.filter(
-        (evt) =>
-          evt.type !== "DICE_ROLLED" &&
-          evt.type !== "PLAYER_MOVED" &&
-          evt.type !== "TURN_ENDED",
+        (evt) => evt.type !== "DICE_ROLLED" && evt.type !== "PLAYER_MOVED",
       );
 
       if (importantEvents.length > 0) {
@@ -462,11 +466,6 @@ const Game = () => {
     try {
       setIsLoadingAction(true);
       await contextEndTurn();
-      addLog(
-        `${
-          currentGame.players[currentGame.currentTurnIndex]?.name
-        }'s turn ended.`,
-      );
       setHasRolled(false);
     } catch (error) {
       showNotification(error.message, "error");

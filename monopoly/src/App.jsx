@@ -1,6 +1,7 @@
 import "./App.css";
 import Game from "./components/Game";
 import Lobby from "./components/Lobby";
+import Landing from "./components/Landing";
 import { useGame } from "./context/GameContext";
 import { useEffect, useState } from "react";
 import { wsClient } from "./services/wsClient";
@@ -13,11 +14,15 @@ function App() {
     setCurrentPlayerId,
     currentPlayerName,
     setCurrentPlayerName,
-    setCurrentRoom,
+    createGame,
+    joinGame,
+    syncGameFromSocket,
   } = useGame();
 
   const [nameInput, setNameInput] = useState("");
+  const [joinGameId, setJoinGameId] = useState("");
   const [gameStarted, setGameStarted] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Step 1: Initialize player ID on mount
   useEffect(() => {
@@ -50,17 +55,12 @@ function App() {
 
         // Listen for game state updates
         wsClient.on("gameStateUpdate", (newState) => {
-          console.log("📨 Game state update received:", newState);
-
           // Check if game has started
           if (newState.hasStarted && !gameStarted) {
-            console.log("✅ Game has started! Showing board...");
             setGameStarted(true);
           }
-
-          // Update game state directly from server payload
-          // Server already provides the authoritative shape (currentTurnIndex, lastDice, etc.)
-          setCurrentGame(newState);
+          // Use syncGameFromSocket to ensure state is decorated and IDs are preserved
+          syncGameFromSocket(newState);
         });
 
         console.log("✅ WebSocket connected");
@@ -76,110 +76,44 @@ function App() {
     };
   }, [currentGame?.id, currentPlayerId, currentPlayerName, gameStarted]);
 
-  // Step 3: Create initial game after player enters name
-  useEffect(() => {
-    if (currentGame || !currentPlayerName || !currentPlayerId) {
-      console.log("Game init check:", {
-        currentGame: !!currentGame,
-        currentPlayerName,
-        currentPlayerId,
-      });
-      return;
+  const handleCreateGame = async () => {
+    if (!nameInput.trim()) return;
+    try {
+      setIsProcessing(true);
+      setCurrentPlayerName(nameInput.trim());
+      await createGame(nameInput.trim());
+    } catch (err) {
+      alert("Failed to create game");
+    } finally {
+      setIsProcessing(false);
     }
+  };
 
-    console.log("🎮 Creating initial game for:", currentPlayerName);
+  const handleJoinGame = async (e) => {
+    e.preventDefault();
+    if (!joinGameId.trim() || !nameInput.trim()) return;
+    try {
+      setCurrentPlayerName(nameInput.trim());
+      await joinGame(joinGameId.trim());
+    } catch (err) {
+      alert("Failed to join game");
+    }
+  };
 
-    // Initialize game with current player
-    const initialGame = {
-      id: "game-1",
-      roomId: "room-1",
-      players: [
-        {
-          id: currentPlayerId,
-          name: currentPlayerName,
-          position: 0,
-          money: 1500,
-          inJail: false,
-          jailTurns: 0,
-          isBankrupt: false,
-          properties: [],
-          color: "bg-red-500",
-        },
-      ],
-      currentTurnIndex: 0,
-      properties: [],
-      turnNumber: 1,
-      lastDiceRoll: null,
-      gameOver: false,
-      hasStarted: false,
-    };
-
-    setCurrentGame(initialGame);
-    setGameStarted(false);
-  }, [currentPlayerName, currentPlayerId, currentGame, setCurrentGame]);
-
-  // Show name input screen
-  if (!currentPlayerName) {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100 p-4">
-        <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">
-              🎲 Monopoly
-            </h1>
-            <p className="text-gray-600">Enter your name to join</p>
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (nameInput.trim()) {
-                setCurrentPlayerName(nameInput.trim());
-              }
-            }}
-            className="space-y-4"
-          >
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Your Name
-              </label>
-              <input
-                type="text"
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                placeholder="Enter your player name..."
-                maxLength="30"
-                autoFocus
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={!nameInput.trim()}
-              className={`w-full py-3 rounded-lg font-bold text-white transition-all ${
-                nameInput.trim()
-                  ? "bg-green-600 hover:bg-green-700 shadow-lg hover:scale-105"
-                  : "bg-gray-400 cursor-not-allowed"
-              }`}
-            >
-              Continue
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading state
+  // Show unified login and game selection screen
   if (!currentGame) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gray-900 text-white text-2xl">
-        Initializing game...
-      </div>
+      <Landing
+        onCreateGame={handleCreateGame}
+        onJoinGame={handleJoinGame}
+        nameInput={nameInput}
+        setNameInput={setNameInput}
+        joinGameId={joinGameId}
+        setJoinGameId={setJoinGameId}
+        isProcessing={isProcessing}
+      />
     );
   }
-
   // Determine if current player is host (first player)
   const isHost =
     currentGame.players?.length > 0 &&

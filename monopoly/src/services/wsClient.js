@@ -28,10 +28,33 @@ class GameSocketManager {
   connect(url, gameId, playerId, playerName) {
     return new Promise((resolve, reject) => {
       try {
+        if (
+          this.socket &&
+          (this.socket.readyState === WebSocket.OPEN ||
+            this.socket.readyState === WebSocket.CONNECTING) &&
+          this.gameId === gameId &&
+          this.playerId === playerId
+        ) {
+          console.log(
+            "🔄 WebSocket already connected/connecting to this game session",
+          );
+          resolve();
+          return;
+        }
+
         this.gameId = gameId;
         this.playerId = playerId;
         this.playerName = playerName || `Player ${playerId?.split("-").pop()}`;
         this.isIntentionallyClosed = false;
+
+        // Force close existing if different
+        if (this.socket) {
+          try {
+            this.socket.close();
+          } catch (e) {
+            /* ignore */
+          }
+        }
 
         console.log(`🔌 Connecting WebSocket to ${url}`);
         this.socket = new WebSocket(url);
@@ -49,7 +72,7 @@ class GameSocketManager {
               gameId,
               playerId: this.playerId,
               playerName: this.playerName,
-            })
+            }),
           );
 
           this._trigger("connect");
@@ -127,7 +150,7 @@ class GameSocketManager {
    */
   startGame() {
     if (!this.gameId) {
-      throw new Error("Game ID not set");
+      throw new Error(`Game ID not set. Current: ${this.gameId}`);
     }
 
     this.send({
@@ -141,7 +164,9 @@ class GameSocketManager {
    */
   endTurn() {
     if (!this.gameId || !this.playerId) {
-      throw new Error("Game or player not set");
+      throw new Error(
+        `Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`,
+      );
     }
 
     this.send({
@@ -156,7 +181,9 @@ class GameSocketManager {
    */
   rollDice() {
     if (!this.gameId || !this.playerId) {
-      throw new Error("Game or player not set");
+      throw new Error(
+        `Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`,
+      );
     }
 
     this.send({
@@ -169,16 +196,17 @@ class GameSocketManager {
   /**
    * Buy property (sends BUY_PROPERTY message)
    */
-  buyProperty(propertyIndex) {
+  buyProperty() {
     if (!this.gameId || !this.playerId) {
-      throw new Error("Game or player not set");
+      throw new Error(
+        `Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`,
+      );
     }
 
     this.send({
       type: "BUY_PROPERTY",
       gameId: this.gameId,
       playerId: this.playerId,
-      propertyIndex: propertyIndex,
     });
   }
 
@@ -245,7 +273,7 @@ class GameSocketManager {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * this.reconnectAttempts;
       console.log(
-        `🔄 Reconnecting in ${delay}ms... (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+        `🔄 Reconnecting in ${delay}ms... (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
       );
 
       setTimeout(() => {

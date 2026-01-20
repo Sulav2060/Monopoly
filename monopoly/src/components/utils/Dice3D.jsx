@@ -292,8 +292,9 @@ const Dice3D = ({
   totalPlayers,
 }) => {
   return (
-    <div className="w-full h-full pointer-events-none">
+    <div className="w-full h-full pointer-events-none" style={{ minHeight: '100%', minWidth: '100%' }}>
       <Canvas
+        style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
         camera={{
           position: [0, 12, 0.1],
           fov: 35, // Reduced FOV slightly for a more "product photography" telephoto look
@@ -302,6 +303,7 @@ const Dice3D = ({
         shadows
         gl={{ antialias: true, alpha: true }} // alpha true for transparent background if needed
         dpr={[1, 2]} // Handle high DPI screens
+        resize={{ scroll: false }} // prevent resize loops
       >
         <CameraTopFixed />
         <group>

@@ -39,26 +39,26 @@ const Tile = ({
   const renderIcon = () => {
     if (type === "community-chest") {
       return (
-        <div className="flex flex-col items-center gap-1">
-          <div className="font-bold text-xs tracking-tight">{title}</div>
+        <div className="flex flex-col items-center gap-1 w-full overflow-hidden">
+          <div className="font-bold text-[0.5rem] sm:text-xs tracking-tight text-center wrap-break-words w-full px-0.5">{title}</div>
         </div>
       );
     }
 
     if (type === "chance") {
       return (
-        <div className="flex flex-col items-center gap-1">
-          <div className="font-bold text-xs tracking-tight">{title}</div>
+        <div className="flex flex-col items-center gap-1 w-full overflow-hidden">
+          <div className="font-bold text-[0.5rem] sm:text-xs tracking-tight text-center wrap-break-words w-full px-0.5">{title}</div>
         </div>
       );
     }
 
     if (type === "tax") {
       return (
-        <div className="flex flex-col items-center gap-1">
-          <div className="font-bold text-xs tracking-tight">{title}</div>
+        <div className="flex flex-col items-center gap-0.5 w-full overflow-hidden">
+          <div className="font-bold text-[0.6rem] sm:text-xs tracking-tight text-center truncate w-full px-0.5">{title}</div>
           {price && (
-            <div className="text-xs font-semibold bg-black/40 px-2 py-0.5 rounded-full text-white">
+            <div className="text-[0.5rem] sm:text-xs font-semibold bg-black/40 px-1.5 py-0.5 rounded-full text-white">
               ${price}
             </div>
           )}
@@ -68,12 +68,12 @@ const Tile = ({
 
     if (type === "railroad" || type === "utility") {
       return (
-        <div className="flex flex-col items-center gap-1">
-          <div className="font-bold text-xs text-center leading-tight px-1">
+        <div className="flex flex-col items-center gap-0.5 w-full overflow-hidden">
+          <div className="font-bold text-[0.6rem] sm:text-xs text-center leading-tight px-0.5 w-full truncate">
             {title}
           </div>
           {price && (
-            <div className="text-xs font-semibold bg-black/40 px-2 py-0.5 rounded-full text-white">
+            <div className="text-[0.5rem] sm:text-xs font-semibold bg-black/40 px-1.5 py-0.5 rounded-full text-white">
               ${price}
             </div>
           )}
@@ -83,12 +83,12 @@ const Tile = ({
 
     // Property tiles
     return (
-      <div className="flex flex-col items-center gap-1">
-        <div className="font-bold text-xs text-center leading-tight px-1">
+      <div className="flex flex-col items-center gap-0.5 justify-center w-full h-full overflow-hidden">
+        <div className="font-bold text-[0.6rem] sm:text-xs text-center leading-tight px-0.5 w-full truncate">
           {title}
         </div>
         {price && (
-          <div className="text-xs font-semibold bg-black/50 px-2 py-0.5 rounded-full text-white">
+          <div className="text-[0.5rem] sm:text-xs font-semibold bg-black/50 px-1.5 py-0.5 rounded-full text-white">
             ${price}
           </div>
         )}
@@ -110,7 +110,7 @@ const Tile = ({
   return (
     <div
       id={id}
-      className="relative  border border-white/20 overflow-visible w-full h-full flex flex-col rounded-lg shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] bg-gradient-to-br from-white/8 via-white/5 to-white/2 backdrop-blur-md"
+      className="relative  border border-white/20 overflow-visible w-full h-full flex flex-col rounded-lg shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] bg-linear-to-br from-white/8 via-white/5 to-white/2 backdrop-blur-md"
     >
       {/* Background image with dark overlay */}
       <div
@@ -123,7 +123,7 @@ const Tile = ({
       />
 
       {/* Dark overlay for contrast */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900/60 via-slate-900/40 to-slate-900/20 rounded-lg " />
+      <div className="absolute inset-0 bg-linear-to-br from-slate-900/60 via-slate-900/40 to-slate-900/20 rounded-lg " />
 
       {/* Color accent bar - neon style - for properties */}
       {group && (

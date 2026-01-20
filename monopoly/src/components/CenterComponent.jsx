@@ -33,10 +33,18 @@ const CenterComponent = ({
     : `${rollBg} border-white/20 hover:opacity-90`;
 
   return (
-    <div className="col-span-9 row-span-9 bg-gradient-to-br from-slate-900/50 via-slate-800/30 to-slate-900/40 flex flex-col items-center justify-center relative overflow-hidden">
+    <div className="w-full h-full bg-linear-to-br from-slate-900/50 via-slate-800/30 to-slate-900/40 flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Centerpiece Image */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-40 pointer-events-none select-none">
+        <img
+          src="/nepal.jpg"
+          alt="Centerpiece"
+          className="w-full h-full object-cover"
+        />
+      </div>
+
       {showDice && (
-        <div className="absolute w-full h-full inset-0 aspect-square flex items-center justify-center z-50">
-          <div className="w-full h-full">
+        <div className="absolute inset-0 z-50">
             <Dice3D
               dice1={currentDice.d1}
               dice2={currentDice.d2}
@@ -45,7 +53,6 @@ const CenterComponent = ({
               currentTurnIndex={currentTurnIndex}
               totalPlayers={totalPlayers}
             />
-          </div>
         </div>
       )}
 
@@ -61,7 +68,7 @@ const CenterComponent = ({
     ${
       actionDisabled
         ? "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-        : "bg-gradient-to-r from-blue-500 to-blue-600 border-blue-400/30 text-white hover:-translate-y-0.5 hover:shadow-blue-500/25"
+        : "bg-linear-to-r from-blue-500 to-blue-600 border-blue-400/30 text-white hover:-translate-y-0.5 hover:shadow-blue-500/25"
     }`}
           >
             {actionLabel}

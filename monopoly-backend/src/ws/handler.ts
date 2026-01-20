@@ -7,6 +7,7 @@ import { playTurn } from "../engine/playTurn";
 import { getCurrentPlayerSafe } from "../engine/assertions";
 import { endTurn } from "../engine/endTurn";
 import { skipProperty } from "../engine/skipProperty";
+import { buyPendingProperty } from "../engine/buyPendingProperty";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -233,6 +234,50 @@ export function setupWebSocket(wss: WebSocketServer) {
         }
 
         /* =======================
+           BUY PROPERTY
+        ======================= */
+        if (msg.type === "BUY_PROPERTY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const currentPlayer = getCurrentPlayerSafe(game.state);
+          if (currentPlayer.id !== msg.playerId) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Not your turn",
+            });
+            return;
+          }
+
+          // Verify there's a pending buy action
+          if (game.state.pendingAction?.type !== "BUY_PROPERTY") {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "No property purchase pending",
+            });
+            return;
+          }
+
+          // Buy the pending property
+          const newState = buyPendingProperty(game.state);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🏠 ${currentPlayer.name} bought property in game ${msg.gameId}`,
+          );
+          return;
+        }
+
+        /* =======================
            UNKNOWN MESSAGE
         ======================= */
         console.warn("⚠️ Unknown message type:", msg);
@@ -274,7 +319,21 @@ function safeSend(ws: WebSocket, message: ServerMessage) {
 function safeBroadcast(wss: WebSocketServer, message: ServerMessage) {
   const data = JSON.stringify(message);
 
+  // Extract target game ID if applicable
+  let targetGameId: string | undefined;
+  if (message.type === "GAME_STATE_UPDATE") {
+    targetGameId = message.gameId;
+  }
+
   wss.clients.forEach((client) => {
+    // Optimization: Only send to clients in the specific game
+    if (targetGameId) {
+      const meta = socketMeta.get(client);
+      if (meta?.gameId !== targetGameId) {
+        return;
+      }
+    }
+
     try {
       if (client.readyState === client.OPEN) {
         client.send(data);

@@ -20,9 +20,61 @@ const Board = ({
   prevPositions = {},
   currentGame,
 }) => {
+  const getTileColorClass = (group) => {
+    const colorMap = {
+      "dark-purple": "bg-purple-600",
+      "light-blue": "bg-cyan-400",
+      pink: "bg-rose-500",
+      orange: "bg-orange-500",
+      red: "bg-red-500",
+      yellow: "bg-amber-400",
+      green: "bg-emerald-500",
+      "dark-blue": "bg-blue-600",
+      railroad: "bg-slate-800",
+      utility: "bg-gray-500",
+    };
+    return colorMap[group] || "bg-gray-500";
+  };
+
   const [activeIndex, setActiveIndex] = React.useState(null);
   const gridRef = useRef(null);
   const [popoverPos, setPopoverPos] = React.useState(null);
+  const [isMobile, setIsMobile] = React.useState(window.innerWidth < 1024);
+  const [boardScale, setBoardScale] = React.useState(1);
+  const mobileScrollRef = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+      // Scale board to fit screen width if smaller than 640px
+      // Subtract padding (approx 32px safe area)
+      if (window.innerWidth < 640) {
+        setBoardScale((window.innerWidth - 32) / 640);
+      } else {
+        setBoardScale(1);
+      }
+    };
+    handleResize(); // Initial check
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Scroll to current player on mobile
+  useEffect(() => {
+    if (isMobile && mobileScrollRef.current && players && players.length > 0) {
+      // Find scroll target - prioritize active player
+      const activePlayer = players[currentTurnIndex];
+      if (activePlayer) {
+        const tileEl = document.getElementById(
+          `mobile-tile-${activePlayer.position}`,
+        );
+        if (tileEl) {
+          tileEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+    }
+  }, [isMobile, currentTurnIndex, players, animationStep]);
+
   // ────────────────────────────────
   // Flatten all tiles in board order (starting from GO at top-left)
   // If your intended "top" side content is currently in tiles.bottom,
@@ -56,19 +108,10 @@ const Board = ({
   const currentPlayerPosition = currentPlayer ? currentPlayer.position : -1;
 
   const getOwnerColorForTile = (tileIndex) => {
-    // Don't show ownership colors for the currently moving player's position
-    // until the animation is complete (animationStep === "idle")
-    if (
-      isAnimating &&
-      animationStep !== "idle" &&
-      tileIndex === currentPlayerPosition
-    ) {
-      return null;
-    }
-
+    // Always show ownership colors - don't hide them during animation
     // First check the properties array directly from game state
     const propertyEntry = propertiesFromGame.find(
-      (prop) => prop.tileIndex === tileIndex || prop.propertyId === tileIndex
+      (prop) => prop.tileIndex === tileIndex || prop.propertyId === tileIndex,
     );
 
     if (propertyEntry && players) {
@@ -264,8 +307,29 @@ const Board = ({
   });
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
-      <div className="relative w-full h-full aspect-square overflow-hidden">
+    <div
+      className={`w-full h-full flex ${isMobile ? "items-start" : "items-center"} justify-center overflow-hidden`}
+      style={
+        isMobile
+          ? {
+              width: "100%",
+              height: `${640 * boardScale}px`,
+            }
+          : {}
+      }
+    >
+      <div
+        className={`relative aspect-square shrink-0 m-auto transition-transform duration-300 ${isMobile ? "origin-top" : "origin-center"} ${!isMobile ? "min-w-[600px] min-h-[600px] w-[100vmin] h-[100vmin] lg:w-full lg:h-full lg:min-w-0 lg:min-h-0" : ""}`}
+        style={
+          isMobile
+            ? {
+                transform: `scale(${boardScale})`,
+                width: "640px",
+                height: "640px",
+              }
+            : {}
+        }
+      >
         <div
           ref={gridRef}
           className="w-full h-full grid relative"
@@ -276,20 +340,29 @@ const Board = ({
         >
           {tileElements}
 
-          <CenterComponent
-            currentDice={currentDice}
-            isRolling={animationStep === "rotating"}
-            onRollComplete={onRollComplete}
-            showDice={true}
-            currentTurnIndex={currentTurnIndex}
-            totalPlayers={players.length}
-            hasRolled={hasRolled}
-            isMyTurn={isMyTurn}
-            isAnimating={isAnimating}
-            onRollDice={onRollDice}
-            onEndTurn={onEndTurn}
-            currentPlayer={players[currentTurnIndex]}
-          />
+          <div
+            className="w-full h-full relative"
+            style={{
+              gridColumn: "2 / span 9",
+              gridRow: "2 / span 9",
+              zIndex: 10,
+            }}
+          >
+            <CenterComponent
+              currentDice={currentDice}
+              isRolling={animationStep === "rotating"}
+              onRollComplete={onRollComplete}
+              showDice={true}
+              currentTurnIndex={currentTurnIndex}
+              totalPlayers={players.length}
+              hasRolled={hasRolled}
+              isMyTurn={isMyTurn}
+              isAnimating={isAnimating}
+              onRollDice={onRollDice}
+              onEndTurn={onEndTurn}
+              currentPlayer={players[currentTurnIndex]}
+            />
+          </div>
         </div>
 
         {players?.map((player, index) => {

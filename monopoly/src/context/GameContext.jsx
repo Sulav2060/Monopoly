@@ -62,13 +62,13 @@ export const GameProvider = ({ children }) => {
           const ownedTiles = properties
             .filter((prop) => {
               const ownerIds = [prop.ownerId, prop.owner, prop.playerId].filter(
-                Boolean
+                Boolean,
               );
               return ownerIds.includes(player.id);
             })
             .map((prop) => {
               const idx = [prop.tileIndex, prop.propertyId, prop.tile].find(
-                (v) => Number.isFinite(v)
+                (v) => Number.isFinite(v),
               );
               return idx;
             })
@@ -83,24 +83,41 @@ export const GameProvider = ({ children }) => {
   }, []);
 
   /**
-   * Create a new room
+   * Create a new game via API
    */
-  const createRoom = useCallback(async () => {
-    throw new Error("Room API disabled (WebSocket-only mode)");
+  const createGame = useCallback(async (playerName) => {
+    try {
+      setLoading(true);
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const response = await fetch(`${apiUrl}/game/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create game");
+      }
+
+      const data = await response.json();
+      setCurrentGame({ id: data.gameId, players: [] });
+      setCurrentRoom(data.gameId); // Keep room state for compatibility
+      return data.gameId;
+    } catch (error) {
+      console.error("Error creating game:", error);
+      setGameError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   /**
-   * List available rooms
+   * Join an existing game
    */
-  const loadAvailableRooms = useCallback(async () => {
-    throw new Error("Room API disabled (WebSocket-only mode)");
-  }, []);
-
-  /**
-   * Join a room
-   */
-  const joinRoom = useCallback(async () => {
-    throw new Error("Room API disabled (WebSocket-only mode)");
+  const joinGame = useCallback(async (gameId) => {
+    if (!gameId) throw new Error("Game ID is required");
+    setCurrentGame({ id: gameId, players: [] });
+    setCurrentRoom(gameId);
   }, []);
 
   /**
@@ -129,7 +146,10 @@ export const GameProvider = ({ children }) => {
       return new Promise((resolve, reject) => {
         const handleGameStateUpdate = (newState) => {
           //console.log("🎮 Game started via WebSocket");
-          setCurrentGame(decorateGameState(newState));
+          setCurrentGame((prev) => ({
+            ...decorateGameState(newState),
+            id: prev?.id || currentGame?.id,
+          }));
           wsClient.off("gameStateUpdate", handleGameStateUpdate);
           resolve(newState);
         };
@@ -175,7 +195,10 @@ export const GameProvider = ({ children }) => {
         const handleGameStateUpdate = (newState) => {
           //console.log("🎲 Game state updated via WebSocket");
           const decorated = decorateGameState(newState);
-          setCurrentGame(decorated);
+          setCurrentGame((prev) => ({
+            ...decorated,
+            id: prev?.id || currentGame?.id,
+          }));
           wsClient.off("gameStateUpdate", handleGameStateUpdate);
           // Convert die1/die2 to d1/d2 for compatibility
           const diceRoll = decorated.lastDice
@@ -208,51 +231,51 @@ export const GameProvider = ({ children }) => {
   /**
    * Buy property
    */
-  const buyProperty = useCallback(
-    async (propertyIndex) => {
-      try {
-        setGameError(null);
+  const buyProperty = useCallback(async () => {
+    try {
+      setGameError(null);
 
-        if (!currentGame || !currentPlayerId) {
-          throw new Error("Game not started or player not found");
-        }
-
-        // WebSocket-only path
-        if (!wsClient.isConnected()) {
-          throw new Error("WebSocket not connected");
-        }
-
-        return new Promise((resolve, reject) => {
-          const handleGameStateUpdate = (newState) => {
-            console.log("🏠 Property bought via WebSocket");
-            const decorated = decorateGameState(newState);
-            setCurrentGame(decorated);
-            wsClient.off("gameStateUpdate", handleGameStateUpdate);
-            resolve(decorated);
-          };
-
-          wsClient.on("gameStateUpdate", handleGameStateUpdate);
-
-          try {
-            wsClient.buyProperty(propertyIndex);
-          } catch (error) {
-            wsClient.off("gameStateUpdate", handleGameStateUpdate);
-            reject(error);
-          }
-
-          // Timeout after 10 seconds
-          setTimeout(() => {
-            wsClient.off("gameStateUpdate", handleGameStateUpdate);
-            reject(new Error("Buy property request timeout"));
-          }, 10000);
-        });
-      } catch (error) {
-        setGameError(error.message);
-        throw error;
+      if (!currentGame || !currentPlayerId) {
+        throw new Error("Game not started or player not found");
       }
-    },
-    [currentGame, currentPlayerId, decorateGameState]
-  );
+
+      // WebSocket-only path
+      if (!wsClient.isConnected()) {
+        throw new Error("WebSocket not connected");
+      }
+
+      return new Promise((resolve, reject) => {
+        const handleGameStateUpdate = (newState) => {
+          console.log("🏠 Property bought via WebSocket");
+          const decorated = decorateGameState(newState);
+          setCurrentGame((prev) => ({
+            ...decorated,
+            id: prev?.id || currentGame?.id,
+          }));
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          resolve(decorated);
+        };
+
+        wsClient.on("gameStateUpdate", handleGameStateUpdate);
+
+        try {
+          wsClient.buyProperty();
+        } catch (error) {
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          reject(error);
+        }
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          reject(new Error("Buy property request timeout"));
+        }, 10000);
+      });
+    } catch (error) {
+      setGameError(error.message);
+      throw error;
+    }
+  }, [currentGame, currentPlayerId, decorateGameState]);
 
   /**
    * Pay rent
@@ -294,7 +317,10 @@ export const GameProvider = ({ children }) => {
       return new Promise((resolve, reject) => {
         const handleGameStateUpdate = (newState) => {
           //console.log("⏭️ Turn ended via WebSocket");
-          setCurrentGame(decorateGameState(newState));
+          setCurrentGame((prev) => ({
+            ...decorateGameState(newState),
+            id: prev?.id || currentGame?.id,
+          }));
           wsClient.off("gameStateUpdate", handleGameStateUpdate);
           resolve(newState);
         };
@@ -341,11 +367,16 @@ export const GameProvider = ({ children }) => {
     (gameData) => {
       if (!gameData) return;
       const decorated = decorateGameState(gameData);
-      setCurrentGame(decorated);
+      // Determine Game ID using a safe fallback strategy
+      setCurrentGame((prev) => {
+        // Use prev.id as the primary source of truth for the ID once established
+        const gameId = prev?.id || gameData.gameId || currentRoom;
+        return { ...decorated, id: gameId };
+      });
       // Keep room.game in sync so lobby views stay current
-      setCurrentRoom((prev) => (prev ? { ...prev, game: decorated } : prev));
+      // setCurrentRoom((prev) => (prev ? { ...prev, game: decorated } : prev));
     },
-    [decorateGameState]
+    [decorateGameState, currentRoom],
   );
 
   const value = {
@@ -353,9 +384,10 @@ export const GameProvider = ({ children }) => {
     currentRoom,
     availableRooms,
     roomError,
-    createRoom,
-    loadAvailableRooms,
-    joinRoom,
+    createGame, // Replaced createRoom
+    createRoom: createGame, // Alias for backward compatibility
+    joinGame, // Replaced joinRoom
+    joinRoom: joinGame, // Alias for backward compatibility
     leaveRoom,
     refreshRoom,
     setCurrentRoom,

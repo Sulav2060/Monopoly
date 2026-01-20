@@ -22,6 +22,9 @@ export function buyProperty(state: GameState, tile: PropertyTile): GameState {
       ...state.properties,
       { tileIndex: tile.tileIndex, ownerId: player.id },
     ],
-    events: [...state.events, { type: "PROPERTY_BOUGHT", tile: tile.id }],
+    events: [
+      ...state.events,
+      { type: "PROPERTY_BOUGHT", tile: tile.tileIndex },
+    ],
   };
 }

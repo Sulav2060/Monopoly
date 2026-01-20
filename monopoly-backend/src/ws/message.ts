@@ -26,7 +26,7 @@ export type ClientMessage =
       gameId: string;
       playerId: string;
     };
-    
+
 export type ServerMessage =
   | {
       type: "GAME_STATE_UPDATE";

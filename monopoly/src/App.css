@@ -1,4 +1,12 @@
 /* Add these at the end of your main CSS file */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE & Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari */
+}
 
 .transform-style-3d {
   transform-style: preserve-3d;
@@ -37,4 +45,18 @@
   animation: tokenJump 0.35s ease-in-out;
   /* ensure animation plays even when added dynamically */
   animation-fill-mode: forwards;
+}
+
+@keyframes pulseShine {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.btn-pulse {
+  background-size: 200% 100%;
+  animation: pulseShine 2s infinite;
 }

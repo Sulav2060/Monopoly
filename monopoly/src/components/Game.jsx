@@ -3,6 +3,15 @@ import Board from "./Board";
 import { tiles, corners } from "./tiles";
 import { useGame } from "../context/GameContext";
 import { wsClient } from "../services/wsClient";
+import {
+  playDiceRoll,
+  playMove,
+  playPropertyBought,
+  playGoToJail,
+  playTurnEnd,
+  playMoney,
+  playTax,
+} from "../services/sound";
 
 const TILES_ON_BOARD =
   tiles.bottom.length +
@@ -65,24 +74,26 @@ const Game = () => {
   const logIdCounterRef = useRef(0);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
+  const [renderPlayers, setRenderPlayers] = useState([]); // UI-only player positions for staged animations
+  const [pendingTeleport, setPendingTeleport] = useState(null); // { playerId, landingPos, finalPos }
 
   // Get all property tiles for carousel
   const allPropertyTiles = [
     ...tiles.bottom.filter(
       (t) =>
-        t.type === "property" || t.type === "railroad" || t.type === "utility"
+        t.type === "property" || t.type === "railroad" || t.type === "utility",
     ),
     ...tiles.right.filter(
       (t) =>
-        t.type === "property" || t.type === "railroad" || t.type === "utility"
+        t.type === "property" || t.type === "railroad" || t.type === "utility",
     ),
     ...tiles.top.filter(
       (t) =>
-        t.type === "property" || t.type === "railroad" || t.type === "utility"
+        t.type === "property" || t.type === "railroad" || t.type === "utility",
     ),
     ...tiles.left.filter(
       (t) =>
-        t.type === "property" || t.type === "railroad" || t.type === "utility"
+        t.type === "property" || t.type === "railroad" || t.type === "utility",
     ),
   ];
 
@@ -217,6 +228,23 @@ const Game = () => {
         } collected $${amount} from Free Parking!`;
       }
 
+      case "COMMUNITY_CHEST": {
+        const name = current?.name || "Player";
+        const tile = getTileAtPosition(current?.position);
+        const label = tile?.type === "chance" ? "Chance" : "Community Chest";
+        if (event.card?.type === "MONEY") {
+          const amt = event.card.amount ?? 0;
+          return `🎁 ${name} received $${amt} from ${label}`;
+        }
+        if (event.card?.type === "MOVE") {
+          return `🎁 ${name} drew ${label} and moved`;
+        }
+        if (event.card?.type === "GO_TO_JAIL") {
+          return `🎁 ${name} drew ${label}: Go To Jail!`;
+        }
+        return `🎁 ${name} drew a card`;
+      }
+
       case "PLAYER_BANKRUPT": {
         const player = players.find((p) => p.id === event.playerId);
         const causedBy = event.causedBy
@@ -249,102 +277,28 @@ const Game = () => {
 
   // WebSocket connection for real-time updates
   useEffect(() => {
+    // Note: Connection is handled by App.jsx. Game.jsx only listens to events.
     if (!currentGame || !currentPlayerId) return;
 
-    const setupWebSocket = async () => {
-      try {
-        const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:4000";
-
-        const me = currentGame.players.find((p) => p.id === currentPlayerId);
-        const playerName =
-          me?.name || `Player ${currentPlayerId?.split("-").pop()}`;
-
-        // Connect to WebSocket
-        await wsClient.connect(
-          wsUrl,
-          currentGame.id,
-          currentPlayerId,
-          playerName
-        );
-
-        // Listen for game state updates
-        wsClient.on("gameStateUpdate", (newState) => {
-          console.log("📨 Game state update received:", newState);
-          console.log("📦 Properties in received state:", newState.properties);
-          console.log("Current turn index:", newState.currentTurnIndex);
-          console.log(
-            "Current player:",
-            newState.players?.[newState.currentTurnIndex]?.name
-          );
-          syncGameFromSocket(newState);
-
-          // Log any new events that arrived with this update
-          if (Array.isArray(newState.events)) {
-            const prevCount = lastEventCountRef.current;
-            const total = newState.events.length;
-            if (total < prevCount) {
-              lastEventCountRef.current = total;
-            } else if (total > prevCount) {
-              const fresh = newState.events.slice(prevCount);
-              // Filter out dice rolls, player moved, and turn ended - only log important events
-              const importantEvents = fresh.filter(
-                (evt) =>
-                  evt.type !== "DICE_ROLLED" &&
-                  evt.type !== "PLAYER_MOVED" &&
-                  evt.type !== "TURN_ENDED"
-              );
-
-              if (importantEvents.length > 0) {
-                const newLogs = importantEvents.map((evt, idx) => {
-                  const eventIndex = prevCount + idx;
-                  const message = formatEventMessage(evt, newState);
-                  logIdCounterRef.current += 1;
-                  return {
-                    id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${
-                      logIdCounterRef.current
-                    }`,
-                    message,
-                    time: new Date().toLocaleTimeString(),
-                  };
-                });
-
-                // Batch update all logs at once
-                setGameLog((prev) => [...newLogs, ...prev].slice(0, 20));
-              }
-
-              lastEventCountRef.current = total;
-            }
-          }
-        });
-
-        // Listen for errors
-        wsClient.on("error", (error) => {
-          console.error("❌ WebSocket error:", error);
-          showNotification("Connection error: " + error.message, "error");
-        });
-
-        // Listen for disconnect
-        wsClient.on("disconnect", () => {
-          //console.log("👋 WebSocket disconnected");
-          showNotification("Disconnected from server", "error");
-        });
-
-        showNotification("Connected to game server ✅", "success");
-      } catch (error) {
-        console.error("Failed to connect WebSocket:", error);
-        showNotification(
-          "Failed to connect to server: " + error.message,
-          "error"
-        );
-      }
+    const handleError = (error) => {
+      console.error("❌ WebSocket error:", error);
+      showNotification("Connection error: " + error.message, "error");
     };
 
-    setupWebSocket();
+    const handleDisconnect = () => {
+      showNotification("Disconnected from server", "error");
+    };
 
+    // Register listeners
+    wsClient.on("error", handleError);
+    wsClient.on("disconnect", handleDisconnect);
+
+    // CLEANUP listeners on unmount or re-run
     return () => {
-      wsClient.disconnect();
+      wsClient.off("error", handleError);
+      wsClient.off("disconnect", handleDisconnect);
     };
-  }, [currentGame?.id, currentPlayerId, syncGameFromSocket]);
+  }, [currentGame?.id, currentPlayerId]);
 
   // Reset hasRolled when turn changes
   useEffect(() => {
@@ -353,6 +307,14 @@ const Game = () => {
       setHasRolled(false);
     }
   }, [currentGame?.currentTurnIndex]);
+
+  // Keep a render-friendly copy of players unless we are staging a teleport
+  useEffect(() => {
+    if (pendingTeleport) return;
+    if (currentGame?.players) {
+      setRenderPlayers(currentGame.players);
+    }
+  }, [currentGame?.players, pendingTeleport]);
 
   // Stream events into the local game log whenever the events array grows
   useEffect(() => {
@@ -368,12 +330,57 @@ const Game = () => {
 
     if (total > prevCount) {
       const fresh = currentGame.events.slice(prevCount);
+
+      // Play sounds for all new events
+      try {
+        fresh.forEach((evt) => {
+          switch (evt.type) {
+            case "DICE_ROLLED":
+              playDiceRoll();
+              break;
+            case "PLAYER_MOVED":
+              playMove();
+              break;
+            case "PROPERTY_BOUGHT":
+              playPropertyBought();
+              break;
+            case "PLAYER_SENT_TO_JAIL":
+              playGoToJail();
+              break;
+            case "TURN_ENDED":
+              playTurnEnd();
+              break;
+            case "COMMUNITY_CHEST":
+              if (evt.card?.type === "MONEY") {
+                playMoney(evt.card.amount ?? 0);
+              }
+              break;
+            case "PASSED_GO":
+              playMoney(evt.amount ?? 0);
+              break;
+            case "FREE_PARKING_COLLECTED":
+              playMoney(evt.amount ?? 0);
+              break;
+            case "TAX_PAID":
+              playTax(evt.amount ?? 0);
+              break;
+            case "RENT_PAID":
+              playTax(evt.amount ?? 0);
+              break;
+            default:
+              break;
+          }
+        });
+      } catch (e) {
+        // ignore audio errors
+      }
+
       // Filter out dice rolls, player moved, and turn ended - only log important events
       const importantEvents = fresh.filter(
         (evt) =>
           evt.type !== "DICE_ROLLED" &&
           evt.type !== "PLAYER_MOVED" &&
-          evt.type !== "TURN_ENDED"
+          evt.type !== "TURN_ENDED",
       );
 
       if (importantEvents.length > 0) {
@@ -458,7 +465,7 @@ const Game = () => {
       addLog(
         `${
           currentGame.players[currentGame.currentTurnIndex]?.name
-        }'s turn ended.`
+        }'s turn ended.`,
       );
       setHasRolled(false);
     } catch (error) {
@@ -486,72 +493,25 @@ const Game = () => {
 
   // Helper function to check if property can be bought
   const canBuyProperty = () => {
-    if (!currentGame || !isMyTurn || !hasRolled) return false;
+    if (!currentGame || !isMyTurn) return false;
 
-    const player = currentGame.players?.[currentGame.currentTurnIndex];
-    if (!player) return false;
+    // New backend-driven logic: only show buy button when backend sets pendingAction
+    const pendingAction = currentGame.pendingAction;
 
-    const tileIndex = player.position;
-    const tile = getTileAtPosition(tileIndex);
-
-    // Check if tile is a purchasable type
-    if (!tile || !PURCHASABLE_TYPES.includes(tile.type)) {
-      return false;
-    }
-
-    // Check if property is already owned
-    const isOwned = currentGame.properties?.some(
-      (p) => p.propertyId === tileIndex
+    return (
+      pendingAction?.type === "BUY_PROPERTY" &&
+      pendingAction.playerId === currentPlayerId
     );
-    if (isOwned) {
-      return false;
-    }
-
-    // Check if player has enough money
-    if (player.money < tile.price) {
-      return false;
-    }
-
-    return true;
   };
 
   // Buy Property Function
   const buyProperty = useCallback(async () => {
     if (!currentGame) return;
 
-    const player = currentGame.players?.[currentGame.currentTurnIndex];
-    if (!player) return;
-
-    const tileIndex = player.position;
-    const tile = getTileAtPosition(tileIndex);
-
-    // Check if tile is purchasable
-    if (!tile || !PURCHASABLE_TYPES.includes(tile.type)) {
-      showNotification("This property cannot be purchased!", "error");
-      return;
-    }
-
-    // Check if property is already owned
-    const isOwned = currentGame.properties?.some(
-      (p) => p.propertyId === tileIndex
-    );
-    if (isOwned) {
-      showNotification("This property is already owned!", "error");
-      return;
-    }
-
-    if (player.money < tile.price) {
-      showNotification("Not enough money!", "error");
-      return;
-    }
-
     try {
       setIsLoadingAction(true);
-      await contextBuyProperty(tileIndex);
-      addLog(
-        `${player.name} bought property "${tile.title}" for $${tile.price}`
-      );
-      showNotification(`Property purchased for $${tile.price}!`, "success");
+      await contextBuyProperty();
+      showNotification("Property purchased!", "success");
     } catch (error) {
       showNotification(error.message, "error");
       console.error("Buy property failed:", error);
@@ -586,6 +546,29 @@ const Game = () => {
   useEffect(() => {
     if (!currentGame?.players) return;
 
+    const isGoToJailEventForPlayer = (evt, playerId) => {
+      if (!evt) return false;
+      if (evt.type === "PLAYER_SENT_TO_JAIL") {
+        return !playerId || evt.playerId === playerId;
+      }
+      if (evt.type === "COMMUNITY_CHEST" || evt.type === "CHANCE") {
+        return (
+          evt.card?.type === "GO_TO_JAIL" &&
+          (!playerId || evt.playerId === playerId)
+        );
+      }
+      if (evt.type === "CHANCE_CARD" || evt.type === "COMMUNITY_CHEST_CARD") {
+        return (
+          evt.card?.type === "GO_TO_JAIL" &&
+          (!playerId || evt.playerId === playerId)
+        );
+      }
+      return false;
+    };
+
+    const recentEvents = currentGame.events?.slice(-3) || [];
+    const jailIndex = 10; // canonical jail tile index on the board
+
     const nextSig = currentGame.players.map((p) => p.position).join("-");
     const prevSig = lastPositionsSigRef.current;
 
@@ -598,7 +581,7 @@ const Game = () => {
     // Detect any movement from the previous game snapshot
     const movedPlayers = currentGame.players.filter((p) => {
       const prevPlayer = prevGameRef.current.players?.find(
-        (pp) => pp.id === p.id
+        (pp) => pp.id === p.id,
       );
       return prevPlayer && prevPlayer.position !== p.position;
     });
@@ -608,12 +591,50 @@ const Game = () => {
       const prevPositionsMap = {};
       currentGame.players.forEach((p) => {
         const prevPlayer = prevGameRef.current.players?.find(
-          (pp) => pp.id === p.id
+          (pp) => pp.id === p.id,
         );
         prevPositionsMap[p.id] = prevPlayer ? prevPlayer.position : p.position;
       });
 
+      // Default: use real players list for rendering
+      let stagedPlayers = currentGame.players;
+      let stagedTeleport = null;
+
+      // Detect go-to-jail triggered immediately after landing on Chance/Community Chest/Go To Jail
+      for (const moved of movedPlayers) {
+        const landedInJail = moved.position === jailIndex;
+        if (!landedInJail) continue;
+
+        const relatedEvent = recentEvents.find((evt) =>
+          isGoToJailEventForPlayer(evt, moved.id),
+        );
+
+        if (!relatedEvent) continue;
+
+        const startPos = prevPositionsMap[moved.id] ?? moved.position;
+        const diceSum = currentGame.lastDice
+          ? (currentGame.lastDice.die1 || 0) + (currentGame.lastDice.die2 || 0)
+          : 0;
+
+        if (!diceSum) break; // cannot stage without dice info
+
+        const landingPos = (startPos + diceSum) % TILES_ON_BOARD;
+
+        stagedTeleport = {
+          playerId: moved.id,
+          landingPos,
+          finalPos: moved.position,
+        };
+
+        stagedPlayers = currentGame.players.map((p) =>
+          p.id === moved.id ? { ...p, position: landingPos } : p,
+        );
+
+        break; // only stage the first detected teleport per tick
+      }
+
       setPrevPositions(prevPositionsMap);
+      setRenderPlayers(stagedPlayers);
 
       // Use latest dice from game if present
       if (currentGame.lastDice) {
@@ -623,6 +644,7 @@ const Game = () => {
         });
       }
 
+      setPendingTeleport(stagedTeleport);
       setAnimationStep("rotating");
       setIsAnimating(true);
       setHasRolled(true);
@@ -647,9 +669,28 @@ const Game = () => {
 
     // 2. Token "waving" animation (shake) before moving
     else if (animationStep === "waving") {
-      const waveDuration = diceSum * 100 + 500;
+      const extraHold = pendingTeleport ? 2000 : 0;
+      const waveDuration = diceSum * 100 + 500 + extraHold;
 
       timeout = setTimeout(() => {
+        if (pendingTeleport) {
+          // After showing the landing tile, teleport to jail without wave
+          setPrevPositions((prev) => ({
+            ...prev,
+            [pendingTeleport.playerId]: pendingTeleport.landingPos,
+          }));
+
+          setRenderPlayers((prev) =>
+            prev.map((p) =>
+              p.id === pendingTeleport.playerId
+                ? { ...p, position: pendingTeleport.finalPos }
+                : p,
+            ),
+          );
+
+          setPendingTeleport(null);
+        }
+
         // Movement is handled by backend via rollDice
         // Just update animation
         setAnimationStep("zooming");
@@ -666,25 +707,23 @@ const Game = () => {
     }
 
     return () => clearTimeout(timeout);
-  }, [animationStep, currentDice, isAnimating, currentGame, currentPlayerId]);
+  }, [
+    animationStep,
+    currentDice,
+    isAnimating,
+    currentGame,
+    currentPlayerId,
+    pendingTeleport,
+  ]);
 
   // Determine current player and turn state
   const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];
   const isMyTurn = currentPlayer?.id === currentPlayerId;
 
-  console.log("🎮 Turn Info:", {
-    currentTurnIndex: currentGame?.currentTurnIndex,
-    currentPlayerName: currentPlayer?.name,
-    currentPlayerId: currentPlayer?.id,
-    myPlayerId: currentPlayerId,
-    isMyTurn,
-  });
-
-  console.log(currentDice);
   // Loading state or not in game
   if (!currentGame) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-gradient-to-br from-green-100 to-blue-100">
+      <div className="w-screen h-screen flex items-center justify-center bg-linear-to-br from-green-100 to-blue-100">
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-800 mb-4">
             Loading game...
@@ -697,7 +736,7 @@ const Game = () => {
 
   // Main Game UI
   return (
-    <div className="w-screen h-screen flex items-center justify-center p-6 bg-gradient-to-br from-[#0f172a] via-[#0b1221] to-[#05070d] text-gray-100">
+    <div className="w-screen h-screen flex items-center justify-center p-2 lg:p-6 bg-linear-to-br from-[#0f172a] via-[#0b1221] to-[#05070d] text-gray-100 overflow-hidden">
       {/* Notification Toast */}
       {notification && (
         <div
@@ -705,17 +744,17 @@ const Game = () => {
             notification.type === "success"
               ? "shadow-green-500/30"
               : notification.type === "error"
-              ? "shadow-red-500/30"
-              : "shadow-blue-500/30"
+                ? "shadow-red-500/30"
+                : "shadow-blue-500/30"
           }`}
         >
           {notification.message}
         </div>
       )}
 
-      <div className="w-full h-full flex gap-5">
+      <div className="w-full h-full flex flex-col lg:flex-row gap-2 lg:gap-5 overflow-y-auto lg:overflow-hidden scrollbar-hide">
         {/* Left Sidebar - Players */}
-        <div className="w-64 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-5 overflow-y-auto flex flex-col gap-4 backdrop-blur-lg">
+        <div className="w-full lg:w-64 order-1 lg:order-1 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold tracking-wide text-gray-100">
               Players
@@ -732,7 +771,7 @@ const Game = () => {
             return (
               <div
                 key={p.id}
-                className={`p-4 rounded-xl border transition-all duration-300 bg-gradient-to-br ${
+                className={`p-4 rounded-xl border transition-all duration-300 bg-linear-to-br ${
                   isCurrentTurn
                     ? "from-yellow-500/20 via-amber-400/10 to-amber-300/5 border-amber-300/60 shadow-[0_8px_30px_-12px_rgba(251,191,36,0.7)] scale-[1.01]"
                     : "from-white/5 via-white/2 to-white/0 border-white/10 hover:border-white/20"
@@ -767,13 +806,13 @@ const Game = () => {
             );
           })}
 
-          {/* Game Log */}
           <div className="mt-2 pt-3 border-t border-white/10 relative">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-sm text-gray-200">Game Log</h3>
               <span className="text-[10px] text-gray-400">live</span>
             </div>
-            <div className="space-y-1.5 max-h-44 overflow-hidden text-xs pr-1 relative">
+
+            <div className="space-y-1.5 min-h-44 max-h-44 overflow-y-auto text-xs pr-1 relative scrollbar-hide">
               {_gameLog.map((log) => (
                 <div
                   key={log.id}
@@ -783,17 +822,21 @@ const Game = () => {
                   {log.message}
                 </div>
               ))}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0b1221] via-[#0b1221]/80 to-transparent" />
+
+              {/* fade at bottom */}
+              <div className="pointer-events-none sticky bottom-0 h-8 bg-linear-to-t from-[#181F2E] via-[#181F2E]/80 to-transparent" />
             </div>
           </div>
         </div>
 
         {/* Game Board */}
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 overflow-hidden ">
+        <div className="w-full lg:w-auto lg:flex-1 order-2 lg:order-2 shrink-0 lg:min-h-0 lg:aspect-square flex flex-col items-center justify-center gap-4 p-2 h-auto lg:h-auto overflow-hidden">
           <Board
             isAnimating={isAnimating}
             animationStep={animationStep}
-            players={currentGame.players}
+            players={
+              renderPlayers?.length ? renderPlayers : currentGame.players
+            }
             currentTurnIndex={currentGame.currentTurnIndex}
             currentDice={currentDice}
             isMyTurn={isMyTurn}
@@ -816,7 +859,7 @@ const Game = () => {
         </div>
 
         {/* Right Sidebar - Actions & Info */}
-        <div className="w-80 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-5 flex flex-col gap-4 backdrop-blur-lg">
+        <div className="w-full lg:w-80 order-3 lg:order-3 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
             <h3 className="font-semibold text-lg text-gray-100">Game Panel</h3>
@@ -825,28 +868,60 @@ const Game = () => {
 
           {/* Action Buttons - 2x2 Grid */}
           <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={buyProperty}
-              disabled={!canBuyProperty() || isLoadingAction}
-              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                canBuyProperty() && !isLoadingAction
-                  ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
-                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-              }`}
-            >
-              🏠 Buy
-            </button>
+            {/* Show Buy and Skip buttons when there's a pending property purchase */}
+            {currentGame?.pendingAction?.type === "BUY_PROPERTY" &&
+            currentGame?.pendingAction?.playerId === currentPlayerId ? (
+              <>
+                <button
+                  onClick={buyProperty}
+                  disabled={isLoadingAction}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
+                    !isLoadingAction
+                      ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
+                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  🏠 Buy
+                </button>
 
-            <button
-              disabled={!isMyTurn}
-              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                isMyTurn
-                  ? "bg-orange-500/80 border-orange-400/70 text-white shadow-[0_10px_30px_-15px_rgba(249,115,22,0.8)] hover:-translate-y-0.5"
-                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-              }`}
-            >
-              🏗️ Build
-            </button>
+                <button
+                  onClick={endTurn}
+                  disabled={isLoadingAction}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
+                    !isLoadingAction
+                      ? "bg-red-500/80 border-red-400/70 text-white shadow-[0_10px_30px_-15px_rgba(239,68,68,0.8)] hover:-translate-y-0.5"
+                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  ⏭️ Skip
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={buyProperty}
+                  disabled={!canBuyProperty() || isLoadingAction}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
+                    canBuyProperty() && !isLoadingAction
+                      ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
+                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  🏠 Buy
+                </button>
+
+                <button
+                  disabled={!isMyTurn}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
+                    isMyTurn
+                      ? "bg-orange-500/80 border-orange-400/70 text-white shadow-[0_10px_30px_-15px_rgba(249,115,22,0.8)] hover:-translate-y-0.5"
+                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  🏗️ Build
+                </button>
+              </>
+            )}
 
             <button
               onClick={() => setShowTradeModal(true)}
@@ -886,7 +961,7 @@ const Game = () => {
                     (prop) =>
                       prop.ownerId === currentPlayerId ||
                       prop.owner === currentPlayerId ||
-                      prop.playerId === currentPlayerId
+                      prop.playerId === currentPlayerId,
                   ) || [];
 
                 if (myProperties.length > 0) {
@@ -1009,7 +1084,7 @@ const Game = () => {
                   alt={_showPropertyCard.tile.title}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-4">
+                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex items-end p-4">
                   <div>
                     <h5 className="text-white font-bold text-lg drop-shadow-lg">
                       {_showPropertyCard.tile.title}
@@ -1034,16 +1109,13 @@ const Game = () => {
                   }}
                 >
                   {allPropertyTiles.map((tile, idx) => (
-                    <div
-                      key={idx}
-                      className="w-full h-full relative flex-shrink-0"
-                    >
+                    <div key={idx} className="w-full h-full relative shrink-0">
                       <img
                         src={tile.image}
                         alt={tile.title}
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-4">
+                      <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent flex items-end p-4">
                         <div className="w-full">
                           <h5 className="text-white font-bold text-lg drop-shadow-lg mb-1">
                             {tile.title}
@@ -1077,10 +1149,12 @@ const Game = () => {
 
       {/* Trade Modal */}
       {showTradeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl">
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-[#FFCCCB] rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">Trade with Players</h2>
+              <h2 className="text-2xl text-[#2C4263] font-bold">
+                Trade with Players
+              </h2>
               <button
                 onClick={() => setShowTradeModal(false)}
                 className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
@@ -1092,24 +1166,24 @@ const Game = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 {/* Your Offer */}
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-bold mb-2">Your Offer</h3>
-                  <div className="space-y-2">
+                <div className="border rounded-lg p-4 border-[#2C4263]">
+                  <h3 className="font-bold mb-2 text-[#2C4263]">Your Offer</h3>
+                  <div className="space-y-2 text-[#2C4263]">
                     <input
                       type="number"
                       placeholder="Money amount"
                       className="w-full p-2 border rounded"
                     />
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-[#2C4263]">
                       Select properties to trade
                     </div>
                   </div>
                 </div>
 
                 {/* Their Offer */}
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-bold mb-2">Request</h3>
-                  <select className="w-full p-2 border rounded mb-2">
+                <div className="border rounded-lg p-4 border-[#2C4263]">
+                  <h3 className="font-bold mb-2 text-[#2C4263]">Request</h3>
+                  <select className="w-full p-2 border rounded mb-2 text-[#2C4263]">
                     <option>Select player...</option>
                     {currentGame.players
                       .filter((p) => p.id !== currentPlayer?.id)
@@ -1125,11 +1199,11 @@ const Game = () => {
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setShowTradeModal(false)}
-                  className="px-6 py-2 bg-gray-300 rounded-lg font-semibold hover:bg-gray-400"
+                  className="px-6 py-2 text-[#2C4263] rounded-lg font-semibold hover:bg-gray-400"
                 >
                   Cancel
                 </button>
-                <button className="px-6 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600">
+                <button className="px-6 py-2 bg-[#FF4D4D] text-[#2C4263] rounded-lg font-semibold hover:bg-[#FF0000] hover:text-white">
                   Propose Trade
                 </button>
               </div>

@@ -1170,10 +1170,10 @@ const Game = () => {
 
       {/* Trade Modal */}
       {showTradeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl">
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-[#FFCCCB] rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">Trade with Players</h2>
+              <h2 className="text-2xl text-[#2C4263] font-bold">Trade with Players</h2>
               <button
                 onClick={() => setShowTradeModal(false)}
                 className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
@@ -1185,24 +1185,24 @@ const Game = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 {/* Your Offer */}
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-bold mb-2">Your Offer</h3>
-                  <div className="space-y-2">
+                <div className="border rounded-lg p-4 border-[#2C4263]">
+                  <h3 className="font-bold mb-2 text-[#2C4263]">Your Offer</h3>
+                  <div className="space-y-2 text-[#2C4263]">
                     <input
                       type="number"
                       placeholder="Money amount"
                       className="w-full p-2 border rounded"
                     />
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-[#2C4263]">
                       Select properties to trade
                     </div>
                   </div>
                 </div>
 
                 {/* Their Offer */}
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-bold mb-2">Request</h3>
-                  <select className="w-full p-2 border rounded mb-2">
+                <div className="border rounded-lg p-4 border-[#2C4263]">
+                  <h3 className="font-bold mb-2 text-[#2C4263]">Request</h3>
+                  <select className="w-full p-2 border rounded mb-2 text-[#2C4263]">
                     <option>Select player...</option>
                     {currentGame.players
                       .filter((p) => p.id !== currentPlayer?.id)
@@ -1218,11 +1218,11 @@ const Game = () => {
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setShowTradeModal(false)}
-                  className="px-6 py-2 bg-gray-300 rounded-lg font-semibold hover:bg-gray-400"
+                  className="px-6 py-2 text-[#2C4263] rounded-lg font-semibold hover:bg-gray-400"
                 >
                   Cancel
                 </button>
-                <button className="px-6 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600">
+                <button className="px-6 py-2 bg-[#FF4D4D] text-[#2C4263] rounded-lg font-semibold hover:bg-[#FF0000] hover:text-white">
                   Propose Trade
                 </button>
               </div>

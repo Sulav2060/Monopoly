@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  MapPin, 
-  Dice5, 
-  TrendingUp, 
-  Building2, 
-  ArrowRight, 
-  Globe 
+  Shield, 
+  Castle,
+  Zap,
+  Target, 
+  Box, 
+  ChevronRight, 
+  Terminal, 
+  Cpu, 
+  Activity,
+  Dices
 } from "lucide-react";
 
-// --- 1. New Flip Title Component ---
+// --- Gaming Title Animation ---
 const FlipTitle = () => {
   const words = ["NE-POLY", "NEPAL", "MONOPOLY"];
   const [index, setIndex] = useState(0);
@@ -17,31 +21,22 @@ const FlipTitle = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % words.length);
-    }, 3000); // Change every 3 seconds
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="relative flex flex-col justify-center overflow-hidden h-[1.1em]">
+    <div className="relative flex justify-center items-center h-[80px] lg:h-[120px]">
       <AnimatePresence mode="popLayout">
-        <motion.div
-          key={index} // Key change triggers the animation
-          className="flex gap-[2px]" // Tight spacing for "logo" feel
-        >
+        <motion.div key={index} className="flex gap-2">
           {words[index].split("").map((char, i) => (
             <motion.span
               key={`${index}-${i}`}
-              initial={{ y: 50, opacity: 0, filter: "blur(10px)" }}
-              animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
-              exit={{ y: -50, opacity: 0, filter: "blur(10px)" }}
-              transition={{
-                duration: 0.5,
-                delay: i * 0.05, // The "ripple" effect
-                type: "spring",
-                stiffness: 100,
-                damping: 15
-              }}
-              className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-200 to-emerald-400 font-black"
+              initial={{ y: 80, opacity: 0, scale: 0.5 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: -80, opacity: 0, scale: 0.5 }}
+              transition={{ duration: 0.4, delay: i * 0.04, type: "spring", stiffness: 150 }}
+              className="inline-block text-[3.5rem] lg:text-[6rem] font-black italic tracking-tighter text-[#d4ff00] drop-shadow-[0_0_15px_rgba(212,255,0,0.4)]"
             >
               {char}
             </motion.span>
@@ -52,50 +47,31 @@ const FlipTitle = () => {
   );
 };
 
-// --- Animation Variants ---
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { 
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 }
-  }
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { 
-    y: 0, 
-    opacity: 1, 
-    transition: { type: "spring", stiffness: 50, damping: 20 }
-  }
-};
-
-const Landing = ({
-  onCreateGame,
-  onJoinGame,
-  nameInput,
-  setNameInput,
-  joinGameId,
-  setJoinGameId,
-  isProcessing,
+const Landing = ({ 
+  onCreateGame, 
+  onJoinGame, 
+  nameInput, 
+  setNameInput, 
+  joinGameId, 
+  setJoinGameId, 
+  isProcessing 
 }) => {
   const [activeField, setActiveField] = useState(null);
   const [shouldProceed, setShouldProceed] = useState(false);
 
+  // --- LOGIC: Player Names ---
   const PLAYER_NAMES = [
-    "Bob", "Max", "Leo", "Alex", "Sam",
-    "Emma", "Zoe", "Mia", "Ava", "Ivy",
-    "Jack", "Tom", "Dan", "Ben", "Kai",
-    "Lily", "Eva", "Anna", "Nina", "Ren",
-    "Rio", "Ash", "Rey", "Sage", "Sky",
-    "Nash", "Beck", "Felix", "Rohan", "Sera"
+    "Bob", "Max", "Leo", "Alex", "Sam", "Emma", "Zoe", "Mia", "Ava", "Ivy",
+    "Jack", "Tom", "Dan", "Ben", "Kai", "Lily", "Eva", "Anna", "Nina", "Ren",
+    "Rio", "Ash", "Rey", "Sage", "Sky", "Nash", "Beck", "Felix", "Rohan", "Sera"
   ];
 
   const generateRandomName = () => {
-    return PLAYER_NAMES[Math.floor(Math.random() * PLAYER_NAMES.length)];
+    const randomName = PLAYER_NAMES[Math.floor(Math.random() * PLAYER_NAMES.length)];
+    setNameInput(randomName);
   };
 
-  // Trigger action when name is set and shouldProceed flag is true
+  // --- LOGIC: Handle Action Effect ---
   useEffect(() => {
     if (shouldProceed && nameInput.trim()) {
       if (joinGameId.trim()) {
@@ -108,177 +84,138 @@ const Landing = ({
   }, [nameInput, shouldProceed, joinGameId, onJoinGame, onCreateGame]);
 
   const handleAction = () => {
-    const finalName = nameInput.trim() || generateRandomName();
+    const finalName = nameInput.trim() || PLAYER_NAMES[Math.floor(Math.random() * PLAYER_NAMES.length)];
     setNameInput(finalName);
     setShouldProceed(true);
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#050505] text-slate-200 relative overflow-hidden font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen w-full bg-[#0a0a0b] text-[#808080] font-mono selection:bg-[#d4ff00] selection:text-black overflow-hidden flex flex-col">
       
-      {/* --- Background Ambience --- */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
+      {/* --- HUD BACKGROUND FX --- */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-30" />
+        <div className="absolute inset-0 border-[10px] lg:border-[20px] border-[#1a1a1c]" />
         <motion.div 
-          animate={{ x: [0, 50, 0], y: [0, 30, 0], opacity: [0.3, 0.5, 0.3] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-emerald-900/20 rounded-full blur-[120px]" 
+          animate={{ y: ["0%", "100%"] }} 
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+          className="absolute inset-0 w-full h-[1px] bg-[#d4ff00]/10 z-50" 
         />
-        <motion.div 
-          animate={{ x: [0, -30, 0], y: [0, 50, 0], opacity: [0.2, 0.4, 0.2] }}
-          transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-900/20 rounded-full blur-[120px]" 
-        />
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,black_40%,transparent_100%)]" />
+        <div className="absolute top-8 left-12 flex flex-col gap-1 text-[10px] text-[#d4ff00] font-bold">
+           <span>SYSTEM_8848_ACTIVE</span>
+           <span>LAT_27.71 | LON_85.32</span>
+        </div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-12 lg:py-20 flex flex-col justify-center min-h-screen">
+      {/* --- HEADER --- */}
+      <div className="relative z-10 w-full py-6 px-12 flex justify-between items-center border-b border-white/5 bg-black/40 backdrop-blur-md">
+        <div className="flex items-center gap-4">
+           <div className="p-2 bg-[#d4ff00] text-black">
+              <Terminal size={18} />
+           </div>
+           <div className="text-[10px] font-black tracking-[0.3em] text-white">NE-POLY</div>
+        </div>
+        <div className="hidden sm:flex gap-8 text-[10px] font-bold tracking-widest uppercase">
+          <span className="text-[#d4ff00] flex items-center gap-2"><Activity size={12}/> NEPAL THEMED MONOPOLY</span>
+        </div>
+      </div>
+
+      {/* --- MAIN INTERFACE --- */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4">
         
+        <div className="text-center mb-8">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[10px] font-black tracking-[0.5em] text-[#d4ff00]/60 mb-2 uppercase">
+            Start Your Journey
+          </motion.div>
+          <FlipTitle />
+        </div>
+
+        {/* COMMAND MODULE (INPUT HUB) */}
         <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid lg:grid-cols-12 gap-12 items-center"
+          initial={{ y: 30, opacity: 0 }} 
+          animate={{ y: 0, opacity: 1 }}
+          className="w-full max-w-xl bg-[#121214] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden"
         >
-          
-          {/* Left Column: Typography & Hook */}
-          <div className="lg:col-span-7 space-y-10">
-
-            {/* --- 2. Integrated Title Section --- */}
-            <div className="space-y-2">
-              
-              <div className="text-6xl lg:text-8xl font-bold tracking-tighter leading-none text-white h-[1.1em] flex items-center">
-                {/* Fixed part if you wanted one, but here we perform the full flip */}
-                <FlipTitle />
-              </div>
+          {/* 01: Operator Identity */}
+          <div className={`p-6 flex items-center gap-6 transition-all border-b border-white/5 ${activeField === 'name' ? 'bg-[#d4ff00]/5' : ''}`}>
+            <div className="flex flex-col items-end min-w-[60px]">
+              <span className="text-[10px] font-bold text-[#444]">01</span>
+              <span className="text-[10px] font-black text-[#d4ff00]">NAME</span>
             </div>
-
-            <motion.p variants={itemVariants} className="text-xl text-slate-400 max-w-2xl leading-relaxed font-light">
-              From the bustling streets of <strong className="text-slate-200">Janakpur</strong> to the serene heights of <strong className="text-slate-200">Everest</strong>. Roll the dice, outsmart opponents, and build your empire.
-            </motion.p>
-
-            <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-               <FeatureCard icon={<Globe className="w-5 h-5 text-blue-400" />} title="Real Places" desc="Terai to Himalayas" />
-               <FeatureCard icon={<Building2 className="w-5 h-5 text-amber-400" />} title="Build Assets" desc="Houses & Hotels" />
-               <FeatureCard icon={<Dice5 className="w-5 h-5 text-emerald-400" />} title="Strategy" desc="Trade & Tycoon" />
-            </motion.div>
+            <div className="flex-1 flex items-center gap-2">
+              <input 
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onFocus={() => setActiveField('name')}
+                onBlur={() => setActiveField(null)}
+                placeholder="Player Name"
+                className="w-full bg-transparent border-none outline-none text-white font-black text-xl placeholder:text-white/5 uppercase tracking-tighter"
+              />
+              <button 
+                onClick={generateRandomName}
+                title="Randomize Name"
+                className="p-2 hover:bg-white/5 rounded text-[#444] hover:text-[#d4ff00] transition-colors"
+              >
+                <Dices size={20} />
+              </button>
+            </div>
+            <Cpu size={20} className={activeField === 'name' ? 'text-[#d4ff00]' : 'text-[#222]'} />
           </div>
 
-          {/* Right Column: Glassmorphism Action Card */}
-          <motion.div variants={itemVariants} className="lg:col-span-5">
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
-              
-              <div className="relative bg-[#0F1115]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
-                <div className="space-y-8">
-                  
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-semibold text-white">Start your Journey</h2>
-                    <p className="text-sm text-slate-500">Enter your details to enter the lobby.</p>
-                  </div>
-
-                  <div className="space-y-5">
-                    {/* Name Input */}
-                    <div className="relative">
-                      <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider mb-2 ml-1">
-                        Player Name
-                      </label>
-                      <div className={`relative flex items-center transition-all duration-300 rounded-xl bg-black/50 border ${activeField === 'name' ? 'border-emerald-500 ring-1 ring-emerald-500/20' : 'border-white/10'}`}>
-                        <div className="pl-4 text-slate-500">
-                           <TrendingUp size={18} />
-                        </div>
-                        <input
-                          value={nameInput}
-                          onChange={(e) => setNameInput(e.target.value)}
-                          onFocus={() => setActiveField('name')}
-                          onBlur={() => setActiveField(null)}
-                          placeholder="e.g. Bliss"
-                          className="w-full px-4 py-3.5 bg-transparent text-white placeholder-slate-600 focus:outline-none rounded-xl"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Room Code Input */}
-                    <div className="relative">
-                      <div className="flex justify-between items-center mb-2 ml-1">
-                         <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider">
-                           Room Code <span className="text-slate-600 normal-case tracking-normal">(Optional)</span>
-                         </label>
-                         <span className="text-[10px] bg-white/5 border border-white/5 px-2 py-0.5 rounded text-slate-500">
-                           {joinGameId.trim() ? "Joining Mode" : "Creation Mode"}
-                         </span>
-                      </div>
-                      
-                      <div className={`relative flex items-center transition-all duration-300 rounded-xl bg-black/50 border ${activeField === 'room' ? 'border-amber-500 ring-1 ring-amber-500/20' : 'border-white/10'}`}>
-                        <div className="pl-4 text-slate-500">
-                           <MapPin size={18} />
-                        </div>
-                        <input
-                          value={joinGameId}
-                          onChange={(e) => setJoinGameId(e.target.value)}
-                          onFocus={() => setActiveField('room')}
-                          onBlur={() => setActiveField(null)}
-                          placeholder="e.g. EC8ET3"
-                          className="w-full px-4 py-3.5 bg-transparent text-white placeholder-slate-600 focus:outline-none rounded-xl font-mono text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Main Action Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    disabled={isProcessing}
-                    onClick={handleAction}
-                    className={`group w-full relative overflow-hidden py-4 rounded-xl font-bold text-base transition-all duration-300 shadow-lg ${
-                      isProcessing ? 'opacity-50 cursor-not-allowed' : ''
-                    } ${
-                      joinGameId.trim()
-                        ? "bg-gradient-to-r from-amber-400 to-orange-500 text-black shadow-amber-900/20"
-                        : "bg-gradient-to-r from-emerald-500 to-teal-400 text-black shadow-emerald-900/20"
-                    }`}
-                  >
-                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
-                    <span className="relative flex items-center justify-center gap-2">
-                      {isProcessing ? (
-                        "Processing..."
-                      ) : joinGameId.trim() ? (
-                        <>Join Room<ArrowRight size={18} /></>
-                      ) : (
-                        <>Create New Game <ArrowRight size={18} /></>
-                      )}
-                    </span>
-                  </motion.button>
-
-                </div>
-              </div>
+          {/* 02: Deployment Sector */}
+          <div className={`p-6 flex items-center gap-6 transition-all border-b border-white/5 ${activeField === 'room' ? 'bg-[#d4ff00]/5' : ''}`}>
+             <div className="flex flex-col items-end min-w-[60px]">
+              <span className="text-[10px] font-bold text-[#444]">02</span>
+              <span className="text-[10px] font-black text-amber-500">ROOM ID</span>
             </div>
-          </motion.div>
-        </motion.div>
+            <input 
+              value={joinGameId}
+              onChange={(e) => setJoinGameId(e.target.value)}
+              onFocus={() => setActiveField('room')}
+              onBlur={() => setActiveField(null)}
+              placeholder="ENTER ROOM CODE (OR LEAVE BLANK)"
+              className="flex-1 bg-transparent border-none outline-none text-white font-bold text-sm placeholder:text-white/5 tracking-widest uppercase"
+            />
+            <Box size={20} className={activeField === 'room' ? 'text-amber-500' : 'text-[#222]'} />
+          </div>
 
-        {/* --- Footer / Showcase --- */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 1 }}
-          className="absolute bottom-6 left-0 right-0 text-center pointer-events-none"
-        >
-           
+          {/* 03: Execute Button */}
+          <button 
+            onClick={handleAction}
+            disabled={isProcessing}
+            className="w-full group relative h-20 bg-[#d4ff00] disabled:bg-[#1a1a1c] disabled:text-[#444] transition-all flex items-center justify-center overflow-hidden"
+          >
+            {/* Button Background Pattern */}
+            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity">
+               <div className="w-full h-full bg-[linear-gradient(45deg,black_25%,transparent_25%,transparent_50%,black_50%,black_75%,transparent_75%,transparent)] bg-[length:4px_4px]" />
+            </div>
+            
+            <span className="relative z-10 text-black font-black italic text-2xl tracking-[0.2em] flex items-center gap-4">
+              {isProcessing ? "PROCESSING..." : (joinGameId.trim() ? "JOIN_EXISTING_LOBBY" : "CREATE_NEW_LOBBY")}
+              <ChevronRight className="group-hover:translate-x-2 transition-transform" />
+            </span>
+          </button>
         </motion.div>
+      </main>
 
-      </div>
+      {/* --- HUD STATS FOOTER --- */}
+      <footer className="relative z-10 bg-[#0a0a0b] border-t border-white/5 px-12 py-8 grid grid-cols-2 lg:grid-cols-4 gap-8">
+        <StatBlock icon={<Shield size={16}/>} label="MAP_INTEGRITY" value="100%_NEPAL" />
+        <StatBlock icon={<Zap size={16}/>} label="TASK" value="ROLL_TRADE" />
+        <StatBlock icon={<Target size={16}/>} label="MISSION" value="PROPERTY_WAR" />
+        <StatBlock icon={<Castle size={16}/>} label="GOAL" value="CREATE_EMPIRE" />
+      </footer>
     </div>
   );
 };
 
-const FeatureCard = ({ icon, title, desc }) => (
-  <div className="group flex flex-col p-4 rounded-xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.06] hover:border-white/10 transition-all cursor-default">
-    <div className="mb-3 opacity-80 group-hover:scale-110 transition-transform duration-300 origin-left">
-      {icon}
+const StatBlock = ({ icon, label, value }) => (
+  <div className="flex items-center gap-4 border-l border-white/5 pl-6 hover:border-[#d4ff00] transition-colors group">
+    <div className="text-[#333] group-hover:text-[#d4ff00] transition-colors">{icon}</div>
+    <div className="flex flex-col">
+      <span className="text-[9px] font-bold tracking-[0.2em] text-[#444] uppercase">{label}</span>
+      <span className="text-sm font-black text-white group-hover:text-[#d4ff00] uppercase">{value}</span>
     </div>
-    <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
-    <p className="text-xs text-slate-500 mt-1">{desc}</p>
   </div>
 );
 

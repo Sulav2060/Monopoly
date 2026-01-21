@@ -166,7 +166,7 @@ const Landing = ({
           <div className={`p-6 flex items-center gap-6 transition-all border-b border-white/5 ${activeField === 'room' ? 'bg-[#d4ff00]/5' : ''}`}>
              <div className="flex flex-col items-end min-w-[60px]">
               <span className="text-[10px] font-bold text-[#444]">02</span>
-              <span className="text-[10px] font-black text-amber-500">ROOM ID</span>
+              <span className="text-[10px] font-black text-amber-500">ROOM CODE</span>
             </div>
             <input 
               value={joinGameId}

@@ -25,6 +25,7 @@ describe("handleFreeParking", () => {
         { type: "MOVE", position: 12 },
       ],
       communityChestIndex: 0,
+      pendingAction: null,
     };
 
     const result = handleFreeParking(state);
@@ -55,6 +56,7 @@ describe("handleFreeParking", () => {
         { type: "MOVE", position: 12 },
       ],
       communityChestIndex: 0,
+      pendingAction: null,
     };
 
     const result = handleFreeParking(state);
@@ -91,6 +93,7 @@ describe("handleFreeParking", () => {
         { type: "MOVE", position: 12 },
       ],
       communityChestIndex: 0,
+      pendingAction: null,
     };
 
     handleFreeParking(state);

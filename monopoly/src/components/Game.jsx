@@ -222,7 +222,7 @@ const Game = () => {
       case "TAX_PAID": {
         const player = players.find((p) => p.id === event.playerId);
         const amount = event.amount || 0;
-        return `💰 ${player?.name || "Player"} paid $${amount} in taxes`;
+        return `💰 ${player?.name || "Player"} paid Rs. ${amount} in taxes`;
       }
 
       case "FREE_PARKING_COLLECTED": {
@@ -238,7 +238,7 @@ const Game = () => {
         const label = tile?.type === "chance" ? "Chance" : "Community Chest";
         if (event.card?.type === "MONEY") {
           const amt = event.card.amount ?? 0;
-          return `🎁 ${name} received $${amt} from ${label}`;
+          return `🎁 ${name} received Rs. ${amt} from ${label}`;
         }
         if (event.card?.type === "MOVE") {
           return `🎁 ${name} drew ${label} and moved`;
@@ -805,7 +805,7 @@ const Game = () => {
                   <div className="flex flex-col items-end rounded-lg bg-white/5 px-3 py-2 border border-white/10">
                     <span className="text-[11px] text-gray-400">Balance</span>
                     <span className="font-semibold text-sm text-emerald-300">
-                      ${p.money.toLocaleString()}
+                      Rs. {p.money.toLocaleString()}
                     </span>
                   </div>
                 </div>

@@ -662,12 +662,29 @@ const Game = () => {
       setPendingTeleport(stagedTeleport);
       setAnimationStep("rotating");
       setIsAnimating(true);
-      setHasRolled(true);
+      // direct setHasRolled(true) here was causing issues with doubles;; once rolled turn ends
+      //can find better approach to this...
+      const turnPlayer = currentGame.players[currentGame.currentTurnIndex];
+      const isMyTurn = turnPlayer && turnPlayer.id === currentPlayerId;
+
+      if (isMyTurn) {
+        const d = currentGame.lastDice;
+        const isDoubles = d && d.die1 === d.die2;
+        const meNow = currentGame.players.find((p) => p.id === currentPlayerId);
+        // If it's a double and I'm not in jail (e.g. from 3 doubles), I can roll again
+        if (isDoubles && meNow && !meNow.inJail) {
+          setHasRolled(false);
+        } else {
+          setHasRolled(true);
+        }
+      } else {
+        setHasRolled(true);
+      }
     }
 
     prevGameRef.current = currentGame;
     lastPositionsSigRef.current = nextSig;
-  }, [currentGame]);
+  }, [currentGame, currentPlayerId]);
   // Handle Animation Steps
   useEffect(() => {
     if (!isAnimating || !currentGame) return;

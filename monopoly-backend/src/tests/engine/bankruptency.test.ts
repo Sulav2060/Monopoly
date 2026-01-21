@@ -13,7 +13,7 @@ test("player goes bankrupt if cannot pay rent", () => {
         id: "p1",
         name: "A",
         position: 1,
-        money: 30,
+        money: 15,
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
@@ -42,6 +42,7 @@ test("player goes bankrupt if cannot pay rent", () => {
   const tile = BOARD[5] as PropertyTile;
 
   const result = payRent(state, tile);
+  console.log("Resulting State:", result);
 
   const p1 = result.players.find((p) => p.id === "p1")!;
   const p2 = result.players.find((p) => p.id === "p2")!;
@@ -49,7 +50,7 @@ test("player goes bankrupt if cannot pay rent", () => {
   expect(p1.isBankrupt).toBe(true);
   expect(p1.money).toBe(0);
 
-  expect(p2.money).toBe(1530);
+  expect(p2.money).toBe(1515);
 
   expect(result.events).toContainEqual({
     type: "PLAYER_BANKRUPT",

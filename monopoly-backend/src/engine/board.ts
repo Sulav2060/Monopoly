@@ -14,7 +14,7 @@ export const BOARD: Tile[] = [
   { tileIndex: 4, type: "TAX", amount: 200 },
 
   // Rail
-  { tileIndex: 5, type: "PROPERTY", id: "south_railway", name: "South Railway", price: 200, baseRent: 25 },
+  { tileIndex: 5, type: "PROPERTY", id: "south_airport", name: "South airport", price: 200, baseRent: 25 },
 
   // Light Blue – Lakes
   { tileIndex: 6, type: "PROPERTY", id: "phewa", name: "Phewa Lake", price: 100, baseRent: 6 },
@@ -31,7 +31,7 @@ export const BOARD: Tile[] = [
   { tileIndex: 14, type: "PROPERTY", id: "swayambhu", name: "Swayambhu", price: 160, baseRent: 16 },
 
   // Rail
-  { tileIndex: 15, type: "PROPERTY", id: "east_railway", name: "East Railway", price: 200, baseRent: 25 },
+  { tileIndex: 15, type: "PROPERTY", id: "east_airport", name: "East airport", price: 200, baseRent: 25 },
 
   // Orange – National Parks
   { tileIndex: 16, type: "PROPERTY", id: "chitwan", name: "Chitwan", price: 180, baseRent: 18 },
@@ -48,7 +48,7 @@ export const BOARD: Tile[] = [
   { tileIndex: 24, type: "PROPERTY", id: "patan", name: "Patan", price: 240, baseRent: 28 },
 
   // Rail
-  { tileIndex: 25, type: "PROPERTY", id: "west_railway", name: "West Railway", price: 200, baseRent: 25 },
+  { tileIndex: 25, type: "PROPERTY", id: "west_airport", name: "West airport", price: 200, baseRent: 25 },
 
   // Yellow – Viewpoints
   { tileIndex: 26, type: "PROPERTY", id: "nagarkot", name: "Nagarkot", price: 260, baseRent: 32 },
@@ -65,7 +65,7 @@ export const BOARD: Tile[] = [
   { tileIndex: 34, type: "PROPERTY", id: "manaslu", name: "Manaslu", price: 320, baseRent: 28 },
 
   // Rail
-  { tileIndex: 35, type: "PROPERTY", id: "north_railway", name: "North Railway", price: 200, baseRent: 25 },
+  { tileIndex: 35, type: "PROPERTY", id: "north_airport", name: "North airport", price: 200, baseRent: 25 },
 
   { tileIndex: 36, type: "CHANCE" },
 

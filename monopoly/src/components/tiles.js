@@ -63,7 +63,7 @@ export const tiles = {
     },
     {
       type: "railroad",
-      title: "South Railway",
+      title: "South airport",
       price: 200,
       rent: [25, 50, 100, 200],
       rotation: 0,
@@ -149,11 +149,11 @@ export const tiles = {
     },
     {
       type: "railroad",
-      title: "East Railway",
+      title: "East airport",
       price: 200,
       rent: [25, 50, 100, 200],
       rotation: 90,
-      image: "https://images.unsplash.com/photo-1763809677234-09562e05035a?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // Railway
+      image: "https://images.unsplash.com/photo-1763809677234-09562e05035a?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=800&q=80" // airport
     },
     // Group 4: NATIONAL PARKS (Orange)
     {
@@ -233,7 +233,7 @@ export const tiles = {
     },
     {
       type: "railroad",
-      title: "West Railway",
+      title: "West airport",
       price: 200,
       rent: [25, 50, 100, 200],
       rotation: 180,
@@ -318,7 +318,7 @@ export const tiles = {
   },
   {
     type: "railroad",
-    title: "North Railway",
+    title: "North airport",
     price: 200,
     rent: [25, 50, 100, 200],
     houseCost: 0,

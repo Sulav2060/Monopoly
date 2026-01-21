@@ -62,13 +62,13 @@ export const GameProvider = ({ children }) => {
           const ownedTiles = properties
             .filter((prop) => {
               const ownerIds = [prop.ownerId, prop.owner, prop.playerId].filter(
-                Boolean
+                Boolean,
               );
               return ownerIds.includes(player.id);
             })
             .map((prop) => {
               const idx = [prop.tileIndex, prop.propertyId, prop.tile].find(
-                (v) => Number.isFinite(v)
+                (v) => Number.isFinite(v),
               );
               return idx;
             })
@@ -231,54 +231,51 @@ export const GameProvider = ({ children }) => {
   /**
    * Buy property
    */
-  const buyProperty = useCallback(
-    async (propertyIndex) => {
-      try {
-        setGameError(null);
+  const buyProperty = useCallback(async () => {
+    try {
+      setGameError(null);
 
-        if (!currentGame || !currentPlayerId) {
-          throw new Error("Game not started or player not found");
-        }
-
-        // WebSocket-only path
-        if (!wsClient.isConnected()) {
-          throw new Error("WebSocket not connected");
-        }
-
-        return new Promise((resolve, reject) => {
-          const handleGameStateUpdate = (newState) => {
-            console.log("🏠 Property bought via WebSocket");
-            const decorated = decorateGameState(newState);
-            setCurrentGame((prev) => ({
-              ...decorated,
-              id: prev?.id || currentGame?.id,
-            }));
-            wsClient.off("gameStateUpdate", handleGameStateUpdate);
-            resolve(decorated);
-          };
-
-          wsClient.on("gameStateUpdate", handleGameStateUpdate);
-
-          try {
-            wsClient.buyProperty(propertyIndex);
-          } catch (error) {
-            wsClient.off("gameStateUpdate", handleGameStateUpdate);
-            reject(error);
-          }
-
-          // Timeout after 10 seconds
-          setTimeout(() => {
-            wsClient.off("gameStateUpdate", handleGameStateUpdate);
-            reject(new Error("Buy property request timeout"));
-          }, 10000);
-        });
-      } catch (error) {
-        setGameError(error.message);
-        throw error;
+      if (!currentGame || !currentPlayerId) {
+        throw new Error("Game not started or player not found");
       }
-    },
-    [currentGame, currentPlayerId, decorateGameState]
-  );
+
+      // WebSocket-only path
+      if (!wsClient.isConnected()) {
+        throw new Error("WebSocket not connected");
+      }
+
+      return new Promise((resolve, reject) => {
+        const handleGameStateUpdate = (newState) => {
+          console.log("🏠 Property bought via WebSocket");
+          const decorated = decorateGameState(newState);
+          setCurrentGame((prev) => ({
+            ...decorated,
+            id: prev?.id || currentGame?.id,
+          }));
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          resolve(decorated);
+        };
+
+        wsClient.on("gameStateUpdate", handleGameStateUpdate);
+
+        try {
+          wsClient.buyProperty();
+        } catch (error) {
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          reject(error);
+        }
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          wsClient.off("gameStateUpdate", handleGameStateUpdate);
+          reject(new Error("Buy property request timeout"));
+        }, 10000);
+      });
+    } catch (error) {
+      setGameError(error.message);
+      throw error;
+    }
+  }, [currentGame, currentPlayerId, decorateGameState]);
 
   /**
    * Pay rent
@@ -379,7 +376,7 @@ export const GameProvider = ({ children }) => {
       // Keep room.game in sync so lobby views stay current
       // setCurrentRoom((prev) => (prev ? { ...prev, game: decorated } : prev));
     },
-    [decorateGameState, currentRoom]
+    [decorateGameState, currentRoom],
   );
 
   const value = {
@@ -389,7 +386,7 @@ export const GameProvider = ({ children }) => {
     roomError,
     createGame, // Replaced createRoom
     createRoom: createGame, // Alias for backward compatibility
-    joinGame,   // Replaced joinRoom
+    joinGame, // Replaced joinRoom
     joinRoom: joinGame, // Alias for backward compatibility
     leaveRoom,
     refreshRoom,

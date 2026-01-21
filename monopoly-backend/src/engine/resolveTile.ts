@@ -25,8 +25,23 @@ export function resolveCurrentTile(state: GameState): GameState {
       const owner = getPropertyOwner(state, tile.tileIndex);
 
       if (!owner) {
-        // Property is available for purchase - wait for player to buy manually
-        return state;
+        return {
+          ...state,
+          pendingAction: {
+            type: "BUY_PROPERTY",
+            playerId: player.id,
+            tileIndex: tile.tileIndex,
+          },
+          events: [
+            ...state.events,
+            {
+              type: "PROPERTY_OFFERED",
+              playerId: player.id,
+              tileIndex: tile.tileIndex,
+              price: tile.price,
+            },
+          ],
+        };
       }
 
       if (owner.ownerId !== player.id) {

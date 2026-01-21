@@ -35,7 +35,9 @@ class GameSocketManager {
           this.gameId === gameId &&
           this.playerId === playerId
         ) {
-          console.log("🔄 WebSocket already connected/connecting to this game session");
+          console.log(
+            "🔄 WebSocket already connected/connecting to this game session",
+          );
           resolve();
           return;
         }
@@ -70,7 +72,7 @@ class GameSocketManager {
               gameId,
               playerId: this.playerId,
               playerName: this.playerName,
-            })
+            }),
           );
 
           this._trigger("connect");
@@ -162,7 +164,9 @@ class GameSocketManager {
    */
   endTurn() {
     if (!this.gameId || !this.playerId) {
-      throw new Error(`Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`);
+      throw new Error(
+        `Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`,
+      );
     }
 
     this.send({
@@ -177,7 +181,9 @@ class GameSocketManager {
    */
   rollDice() {
     if (!this.gameId || !this.playerId) {
-      throw new Error(`Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`);
+      throw new Error(
+        `Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`,
+      );
     }
 
     this.send({
@@ -190,16 +196,17 @@ class GameSocketManager {
   /**
    * Buy property (sends BUY_PROPERTY message)
    */
-  buyProperty(propertyIndex) {
+  buyProperty() {
     if (!this.gameId || !this.playerId) {
-      throw new Error(`Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`);
+      throw new Error(
+        `Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`,
+      );
     }
 
     this.send({
       type: "BUY_PROPERTY",
       gameId: this.gameId,
       playerId: this.playerId,
-      propertyIndex: propertyIndex,
     });
   }
 
@@ -266,7 +273,7 @@ class GameSocketManager {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * this.reconnectAttempts;
       console.log(
-        `🔄 Reconnecting in ${delay}ms... (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+        `🔄 Reconnecting in ${delay}ms... (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
       );
 
       setTimeout(() => {

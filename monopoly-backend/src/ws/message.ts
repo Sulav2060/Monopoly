@@ -25,7 +25,6 @@ export type ClientMessage =
       type: "BUY_PROPERTY";
       gameId: string;
       playerId: string;
-      propertyIndex: number;
     };
 
 export type ServerMessage =

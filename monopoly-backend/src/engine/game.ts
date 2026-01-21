@@ -9,6 +9,7 @@ const initialCommunityChestDeck: CommunityChestCard[] = [
 
 export function createInitialGameState(): GameState {
   return {
+    pendingAction:null,
     players: [],
     currentTurnIndex: 0,
     events: [],

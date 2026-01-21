@@ -3,6 +3,7 @@ import { GameState } from "../../types/game";
 
 export function createBaseState(): GameState {
   return {
+    pendingAction:null,
     currentTurnIndex: 0,
     communityChestDeck: [],
     communityChestIndex: 0,

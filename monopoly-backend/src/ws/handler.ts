@@ -86,7 +86,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             id: msg.playerId ?? randomUUID(),
             name: msg.playerName,
             position: 0,
-            money: 50,
+            money: 500,
             inJail: false,
             jailTurns: 0,
             isBankrupt: false,
@@ -237,6 +237,7 @@ export function setupWebSocket(wss: WebSocketServer) {
            BUY PROPERTY
         ======================= */
         if (msg.type === "BUY_PROPERTY") {
+          console.log("recieved buy property request", msg);
           const game = getGame(msg.gameId);
           if (!game) {
             safeSend(socket, { type: "ERROR", message: "Game not found" });
@@ -264,7 +265,7 @@ export function setupWebSocket(wss: WebSocketServer) {
           // Buy the pending property
           const newState = buyPendingProperty(game.state);
           updateGame(msg.gameId, newState);
-
+          console.log("updated game state after buying property", newState);
           safeBroadcast(wss, {
             type: "GAME_STATE_UPDATE",
             gameId: msg.gameId,

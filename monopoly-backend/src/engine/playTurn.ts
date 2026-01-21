@@ -80,6 +80,8 @@ export function playTurn(state: GameState, dice: DiceRoll): GameState {
   // Resolve tile effects
   nextState = resolveCurrentTile(nextState);
 
+  //once player is bankrupt stop the game.check bankruptcy when he/she pays or buys property or wheenever it is relevant
+
   // Do NOT auto-advance turn here.
   // Leave turn index unchanged; frontend will call END_TURN explicitly.
   // Maintain doublesCount so rules can allow extra rolls for doubles.

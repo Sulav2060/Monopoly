@@ -11,6 +11,12 @@ export type PlayerState = {
   isBankrupt: boolean;
 };
 
+export type PendingAction = {
+  type: "BUY_PROPERTY";
+  playerId: string;
+  tileIndex: number;
+} | null;
+
 export type DiceRoll = {
   die1: number;
   die2: number;
@@ -26,7 +32,7 @@ export type GameEvent =
   | { type: "PLAYER_MOVED"; from: number; to: number }
   | { type: "PASSED_GO"; amount: number }
   | { type: "TURN_ENDED"; nextPlayerId: PlayerId }
-  | { type: "PROPERTY_BOUGHT"; tile: string } //FIXME:fix the tile type to be specifically one of the tile names from the board
+  | { type: "PROPERTY_BOUGHT"; tile: number } //FIXME:fix the tile type to be specifically one of the tile names from the board
   | {
       type: "RENT_PAID";
       from: PlayerId;
@@ -51,6 +57,14 @@ export type GameEvent =
   | {
       type: "COMMUNITY_CHEST";
       card: CommunityChestCard;
+    }
+  //player  buying property regarding events
+  | { type: "PROPERTY_SKIPPED"; playerId: PlayerId; tileIndex: number }
+  | {
+      type: "PROPERTY_OFFERED";
+      playerId: PlayerId;
+      tileIndex: number;
+      price: number;
     };
 
 export type GameState = {
@@ -65,6 +79,7 @@ export type GameState = {
   freeParkingPot?: number;
   communityChestDeck: CommunityChestCard[];
   communityChestIndex: number;
+  pendingAction: PendingAction;
 };
 
 export type PropertyOwnership = {

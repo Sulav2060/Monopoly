@@ -2,12 +2,12 @@ import { WebSocketServer, WebSocket } from "ws";
 import { randomUUID } from "crypto";
 import { ClientMessage, ServerMessage } from "./message";
 import { getGame, updateGame } from "./gameStore";
-import { rollDice } from "./dice";
+import { rollDice } from "../engine/dice";
 import { playTurn } from "../engine/playTurn";
 import { getCurrentPlayerSafe } from "../engine/assertions";
 import { endTurn } from "../engine/endTurn";
-import { BOARD } from "../engine/board";
-import { buyProperty } from "../engine/buyProperty";
+import { skipProperty } from "../engine/skipProperty";
+import { buyPendingProperty } from "../engine/buyPendingProperty";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -46,7 +46,7 @@ export function setupWebSocket(wss: WebSocketServer) {
 
           // Reuse existing player entry if the client reconnects with the same id
           const existingPlayer = game.state.players.find(
-            (p) => p.id === msg.playerId
+            (p) => p.id === msg.playerId,
           );
 
           if (existingPlayer) {
@@ -63,7 +63,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             });
 
             console.log(
-              `♻️ Player ${existingPlayer.name} reconnected to game ${msg.gameId}`
+              `♻️ Player ${existingPlayer.name} reconnected to game ${msg.gameId}`,
             );
             return;
           }
@@ -86,7 +86,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             id: msg.playerId ?? randomUUID(),
             name: msg.playerName,
             position: 0,
-            money: 1500,
+            money: 500,
             inJail: false,
             jailTurns: 0,
             isBankrupt: false,
@@ -160,7 +160,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             "Current player:",
             currentPlayer.id,
             "Message player:",
-            msg.playerId
+            msg.playerId,
           );
 
           if (currentPlayer.id !== msg.playerId) {
@@ -183,75 +183,7 @@ export function setupWebSocket(wss: WebSocketServer) {
           });
 
           console.log(
-            `🎲 ${currentPlayer.name} rolled dice in game ${msg.gameId}`
-          );
-          return;
-        }
-
-        /* =======================
-           BUY PROPERTY
-        ======================= */
-        if (msg.type === "BUY_PROPERTY") {
-          const game = getGame(msg.gameId);
-          if (!game) {
-            safeSend(socket, { type: "ERROR", message: "Game not found" });
-            return;
-          }
-
-          const currentPlayer = getCurrentPlayerSafe(game.state);
-          if (currentPlayer.id !== msg.playerId) {
-            safeSend(socket, {
-              type: "ERROR",
-              message: "Not your turn",
-            });
-            return;
-          }
-
-          // Validate property purchase
-          const tile = BOARD[msg.propertyIndex];
-          if (!tile || tile.type !== "PROPERTY") {
-            safeSend(socket, {
-              type: "ERROR",
-              message: "Invalid property",
-            });
-            return;
-          }
-
-          // Check if property is already owned
-          const existingOwner = game.state.properties.find(
-            (p) => p.tileIndex === msg.propertyIndex
-          );
-          if (existingOwner) {
-            safeSend(socket, {
-              type: "ERROR",
-              message: "Property already owned",
-            });
-            return;
-          }
-
-          // Check if player has enough money
-          if (currentPlayer.money < tile.price) {
-            safeSend(socket, {
-              type: "ERROR",
-              message: "Not enough money",
-            });
-            return;
-          }
-
-          // Execute purchase
-          // const { buyProperty } = require("../engine/buyProperty");
-          const newState = buyProperty(game.state, tile);
-
-          updateGame(msg.gameId, newState);
-
-          safeBroadcast(wss, {
-            type: "GAME_STATE_UPDATE",
-            gameId: msg.gameId,
-            state: newState,
-          });
-
-          console.log(
-            `🏠 ${currentPlayer.name} bought property ${tile.name} in game ${msg.gameId}`
+            `🎲 ${currentPlayer.name} rolled dice in game ${msg.gameId}`,
           );
           return;
         }
@@ -274,25 +206,75 @@ export function setupWebSocket(wss: WebSocketServer) {
             });
             return;
           }
-          const gameState = endTurn(game.state);
-
+          // 👇 NEW LOGIC
+          let currentState;
+          if (game.state.pendingAction?.type === "BUY_PROPERTY") {
+            currentState = skipProperty(game.state);
+          } else {
+            currentState = endTurn(game.state);
+          }
           // Persist the turn change to game store
-          updateGame(msg.gameId, gameState);
+          updateGame(msg.gameId, currentState);
 
           safeBroadcast(wss, {
             type: "GAME_STATE_UPDATE",
             gameId: msg.gameId,
-            state: gameState,
+            state: currentState,
           });
 
-          const currentTurnIndex = gameState.currentTurnIndex;
+          const currentTurnIndex = currentState.currentTurnIndex;
 
-          const nextPlayer = gameState.players[currentTurnIndex];
+          const nextPlayer = currentState.players[currentTurnIndex];
           if (nextPlayer) {
             console.log(
-              `⏭️ Turn changed to ${nextPlayer.name} in game ${msg.gameId}`
+              `⏭️ Turn changed to ${nextPlayer.name} in game ${msg.gameId}`,
             );
           }
+          return;
+        }
+
+        /* =======================
+           BUY PROPERTY
+        ======================= */
+        if (msg.type === "BUY_PROPERTY") {
+          console.log("recieved buy property request", msg);
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const currentPlayer = getCurrentPlayerSafe(game.state);
+          if (currentPlayer.id !== msg.playerId) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Not your turn",
+            });
+            return;
+          }
+
+          // Verify there's a pending buy action
+          if (game.state.pendingAction?.type !== "BUY_PROPERTY") {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "No property purchase pending",
+            });
+            return;
+          }
+
+          // Buy the pending property
+          const newState = buyPendingProperty(game.state);
+          updateGame(msg.gameId, newState);
+          console.log("updated game state after buying property", newState);
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🏠 ${currentPlayer.name} bought property in game ${msg.gameId}`,
+          );
           return;
         }
 
@@ -337,7 +319,7 @@ function safeSend(ws: WebSocket, message: ServerMessage) {
 
 function safeBroadcast(wss: WebSocketServer, message: ServerMessage) {
   const data = JSON.stringify(message);
-  
+
   // Extract target game ID if applicable
   let targetGameId: string | undefined;
   if (message.type === "GAME_STATE_UPDATE") {

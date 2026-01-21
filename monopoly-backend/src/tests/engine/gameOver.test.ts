@@ -10,7 +10,7 @@ test("emits GAME_OVER when only one player remains", () => {
         id: "p1",
         name: "A",
         position: 0,
-        money: 0,
+        money: -50,
         inJail: false,
         jailTurns: 0,
         isBankrupt: true,
@@ -28,6 +28,13 @@ test("emits GAME_OVER when only one player remains", () => {
     currentTurnIndex: 1,
     events: [],
     properties: [],
+    communityChestDeck: [
+      { type: "MONEY", amount: 200 },
+      { type: "GO_TO_JAIL" },
+      { type: "MOVE", position: 12 },
+    ],
+    communityChestIndex: 0,
+    pendingAction: null,
   };
 
   const result = checkGameOver(state);

@@ -773,46 +773,60 @@ const Game = () => {
             </span>
           </div>
 
-          {currentGame.players.map((p, index) => {
-            const isCurrentTurn = index === currentGame.currentTurnIndex;
-            const isYou = p.id === currentPlayerId;
+         {currentGame.players.map((p, index) => {
+  const isCurrentTurn = index === currentGame.currentTurnIndex;
+  const isYou = p.id === currentPlayerId;
 
-            return (
-              <div
-                key={p.id}
-                className={`p-4 rounded-xl border transition-all duration-300 bg-linear-to-br ${isCurrentTurn
-                    ? "from-yellow-500/20 via-amber-400/10 to-amber-300/5 border-amber-300/60 shadow-[0_8px_30px_-12px_rgba(251,191,36,0.7)] scale-[1.01]"
-                    : "from-white/5 via-white/2 to-white/0 border-white/10 hover:border-white/20"
-                  }`}
-              >
-                {/* Top row */}
-                <div className="flex items-center justify-between">
-                  {/* Left: Name + status */}
-                  <div className="flex flex-col leading-tight">
-                    <span className="font-semibold text-gray-100 text-sm">
-                      {p.name}
-                      {isYou && <span className="text-amber-300"> (You)</span>}
-                    </span>
-                    <span
-                      className={`text-xs ${isCurrentTurn ? "text-amber-300" : "text-gray-400"
-                        }`}
-                    >
-                      {isCurrentTurn ? "On turn" : "Waiting"}
-                    </span>
-                  </div>
+  return (
+    <div
+      key={p.id}
+      className={`relative group py-2 px-4 transition-all duration-500 overflow-hidden`}
+    >
+      {/* Active Turn Glow Indicator */}
+      {isCurrentTurn && (
+        <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.8)]" />
+      )}
 
-                  {/* Right: Balance */}
-                  <div className="flex flex-col items-end rounded-lg bg-white/5 px-3 py-2 border border-white/10">
-                    <span className="text-[11px] text-gray-400">Balance</span>
-                    <span className="font-semibold text-sm text-emerald-300">
-                      ${p.money.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+      <div className="flex items-center justify-between relative z-10">
+        {/* Left: Player Avatar & Info */}
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            {/* Pulsing ring for current turn */}
+            {isCurrentTurn && (
+              <div className="absolute inset-0 rounded-full bg-amber-500 animate-ping opacity-20" />
+            )}
+            <div 
+              className={`w-7 h-7 rounded-full flex items-center justify-center border-2 shadow-inner ${PLAYER_COLORS[index]?.color} ${PLAYER_COLORS[index]?.borderColor}`}
+            >
+            </div>
+          </div>
 
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              <span className={`font-bold text-sm tracking-wide text-gray-100}`}>
+                {p.name}
+              </span>
+              {isYou && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold uppercase tracking-tighter">
+                  You
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Balance Display */}
+        <div className="text-right">
+          <div className="flex items-center gap-1 justify-end">
+            <span className={`text-sm font-mono font-bold ${isCurrentTurn ? "text-emerald-400" : "text-emerald-500/70"}`}>
+              ${p.money.toLocaleString()}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+})}
           <div className="mt-2 pt-3 border-t border-white/10 relative">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-sm text-gray-200">Game Log</h3>

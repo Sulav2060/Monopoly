@@ -154,9 +154,8 @@ const Game = () => {
         const d2 = event.dice?.die2 ?? "?";
         const total = d1 + d2;
         const isDoubles = d1 === d2;
-        return `🎲 ${name} rolled ${d1} + ${d2} = ${total}${
-          isDoubles ? " (Doubles!)" : ""
-        }`;
+        return `🎲 ${name} rolled ${d1} + ${d2} = ${total}${isDoubles ? " (Doubles!)" : ""
+          }`;
       }
 
       case "PLAYER_MOVED": {
@@ -178,9 +177,8 @@ const Game = () => {
         const payer = players.find((p) => p.id === event.from);
         const receiver = players.find((p) => p.id === event.to);
         const amount = event.amount || 0;
-        return `💸 ${payer?.name || "Player"} paid $${amount} rent to ${
-          receiver?.name || "Player"
-        }`;
+        return `💸 ${payer?.name || "Player"} paid $${amount} rent to ${receiver?.name || "Player"
+          }`;
       }
 
       case "PROPERTY_SKIPPED": {
@@ -230,9 +228,8 @@ const Game = () => {
       case "FREE_PARKING_COLLECTED": {
         const player = players.find((p) => p.id === event.playerId);
         const amount = event.amount || 0;
-        return `🅿️ ${
-          player?.name || "Player"
-        } collected $${amount} from Free Parking!`;
+        return `🅿️ ${player?.name || "Player"
+          } collected $${amount} from Free Parking!`;
       }
 
       case "COMMUNITY_CHEST": {
@@ -258,9 +255,8 @@ const Game = () => {
           ? players.find((p) => p.id === event.causedBy)
           : null;
         if (causedBy) {
-          return `💔 ${player?.name || "Player"} went bankrupt to ${
-            causedBy.name
-          }`;
+          return `💔 ${player?.name || "Player"} went bankrupt to ${causedBy.name
+            }`;
         }
         return `💔 ${player?.name || "Player"} went bankrupt`;
       }
@@ -271,9 +267,8 @@ const Game = () => {
       }
 
       default:
-        return `📋 ${
-          event.type?.replace(/_/g, " ").toLowerCase() || "Game event"
-        }`;
+        return `📋 ${event.type?.replace(/_/g, " ").toLowerCase() || "Game event"
+          }`;
     }
   };
 
@@ -393,9 +388,8 @@ const Game = () => {
           const message = formatEventMessage(evt, currentGame);
           logIdCounterRef.current += 1;
           return {
-            id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${
-              logIdCounterRef.current
-            }`,
+            id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${logIdCounterRef.current
+              }`,
             message,
             time: new Date().toLocaleTimeString(),
           };
@@ -646,12 +640,29 @@ const Game = () => {
       setPendingTeleport(stagedTeleport);
       setAnimationStep("rotating");
       setIsAnimating(true);
-      setHasRolled(true);
+      // direct setHasRolled(true) here was causing issues with doubles;; once rolled turn ends
+      //can find better approach to this... 
+      const turnPlayer = currentGame.players[currentGame.currentTurnIndex];
+      const isMyTurn = turnPlayer && turnPlayer.id === currentPlayerId;
+
+      if (isMyTurn) {
+        const d = currentGame.lastDice;
+        const isDoubles = d && d.die1 === d.die2;
+        const meNow = currentGame.players.find((p) => p.id === currentPlayerId);
+        // If it's a double and I'm not in jail (e.g. from 3 doubles), I can roll again
+        if (isDoubles && meNow && !meNow.inJail) {
+          setHasRolled(false);
+        } else {
+          setHasRolled(true);
+        }
+      } else {
+        setHasRolled(true);
+      }
     }
 
     prevGameRef.current = currentGame;
     lastPositionsSigRef.current = nextSig;
-  }, [currentGame]);
+  }, [currentGame, currentPlayerId]);
   // Handle Animation Steps
   useEffect(() => {
     if (!isAnimating || !currentGame) return;
@@ -739,13 +750,12 @@ const Game = () => {
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-xl shadow-2xl border border-white/10 backdrop-blur-md bg-white/10 text-white font-semibold ${
-            notification.type === "success"
+          className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-xl shadow-2xl border border-white/10 backdrop-blur-md bg-white/10 text-white font-semibold ${notification.type === "success"
               ? "shadow-green-500/30"
               : notification.type === "error"
                 ? "shadow-red-500/30"
                 : "shadow-blue-500/30"
-          }`}
+            }`}
         >
           {notification.message}
         </div>
@@ -770,11 +780,10 @@ const Game = () => {
             return (
               <div
                 key={p.id}
-                className={`p-4 rounded-xl border transition-all duration-300 bg-linear-to-br ${
-                  isCurrentTurn
+                className={`p-4 rounded-xl border transition-all duration-300 bg-linear-to-br ${isCurrentTurn
                     ? "from-yellow-500/20 via-amber-400/10 to-amber-300/5 border-amber-300/60 shadow-[0_8px_30px_-12px_rgba(251,191,36,0.7)] scale-[1.01]"
                     : "from-white/5 via-white/2 to-white/0 border-white/10 hover:border-white/20"
-                }`}
+                  }`}
               >
                 {/* Top row */}
                 <div className="flex items-center justify-between">
@@ -785,9 +794,8 @@ const Game = () => {
                       {isYou && <span className="text-amber-300"> (You)</span>}
                     </span>
                     <span
-                      className={`text-xs ${
-                        isCurrentTurn ? "text-amber-300" : "text-gray-400"
-                      }`}
+                      className={`text-xs ${isCurrentTurn ? "text-amber-300" : "text-gray-400"
+                        }`}
                     >
                       {isCurrentTurn ? "On turn" : "Waiting"}
                     </span>
@@ -869,16 +877,15 @@ const Game = () => {
           <div className="grid grid-cols-2 gap-3">
             {/* Show Buy and Skip buttons when there's a pending property purchase */}
             {currentGame?.pendingAction?.type === "BUY_PROPERTY" &&
-            currentGame?.pendingAction?.playerId === currentPlayerId ? (
+              currentGame?.pendingAction?.playerId === currentPlayerId ? (
               <>
                 <button
                   onClick={buyProperty}
                   disabled={isLoadingAction}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                    !isLoadingAction
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${!isLoadingAction
                       ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
                       : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   🏠 Buy
                 </button>
@@ -886,11 +893,10 @@ const Game = () => {
                 <button
                   onClick={endTurn}
                   disabled={isLoadingAction}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                    !isLoadingAction
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${!isLoadingAction
                       ? "bg-red-500/80 border-red-400/70 text-white shadow-[0_10px_30px_-15px_rgba(239,68,68,0.8)] hover:-translate-y-0.5"
                       : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   ⏭️ Skip
                 </button>
@@ -900,22 +906,20 @@ const Game = () => {
                 <button
                   onClick={buyProperty}
                   disabled={!canBuyProperty() || isLoadingAction}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                    canBuyProperty() && !isLoadingAction
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${canBuyProperty() && !isLoadingAction
                       ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
                       : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   🏠 Buy
                 </button>
 
                 <button
                   disabled={!isMyTurn}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                    isMyTurn
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${isMyTurn
                       ? "bg-orange-500/80 border-orange-400/70 text-white shadow-[0_10px_30px_-15px_rgba(249,115,22,0.8)] hover:-translate-y-0.5"
                       : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                  }`}
+                    }`}
                 >
                   🏗️ Build
                 </button>
@@ -925,22 +929,20 @@ const Game = () => {
             <button
               onClick={() => setShowTradeModal(true)}
               disabled={!isMyTurn}
-              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                isMyTurn
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${isMyTurn
                   ? "bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5"
                   : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-              }`}
+                }`}
             >
               🤝 Trade
             </button>
 
             <button
               disabled={!isMyTurn}
-              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                isMyTurn
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${isMyTurn
                   ? "bg-amber-500/80 border-amber-400/70 text-white shadow-[0_10px_30px_-15px_rgba(251,191,36,0.8)] hover:-translate-y-0.5"
                   : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-              }`}
+                }`}
             >
               💰 Mortgage
             </button>
@@ -1098,11 +1100,10 @@ const Game = () => {
               // Slideshow carousel
               <div className="relative h-48 rounded-xl overflow-hidden">
                 <div
-                  className={`flex h-full w-full ${
-                    isTransitioning
+                  className={`flex h-full w-full ${isTransitioning
                       ? "transition-transform duration-700 ease-in-out"
                       : ""
-                  }`}
+                    }`}
                   style={{
                     transform: `translateX(-${carouselIndex * 100}%)`,
                   }}
@@ -1132,11 +1133,10 @@ const Game = () => {
                   {allPropertyTiles.slice(0, 10).map((_, idx) => (
                     <div
                       key={idx}
-                      className={`h-1.5 rounded-full transition-all ${
-                        idx === carouselIndex % 10
+                      className={`h-1.5 rounded-full transition-all ${idx === carouselIndex % 10
                           ? "w-6 bg-white"
                           : "w-1.5 bg-white/40"
-                      }`}
+                        }`}
                     />
                   ))}
                 </div>

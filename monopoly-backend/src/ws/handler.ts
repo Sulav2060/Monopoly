@@ -2,7 +2,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { randomUUID } from "crypto";
 import { ClientMessage, ServerMessage } from "./message";
 import { getGame, updateGame } from "./gameStore";
-import { rollDice } from "./dice";
+import { rollDice } from "../engine/dice";
 import { playTurn } from "../engine/playTurn";
 import { getCurrentPlayerSafe } from "../engine/assertions";
 import { endTurn } from "../engine/endTurn";

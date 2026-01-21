@@ -497,7 +497,12 @@ const Game = () => {
     // New backend-driven logic: only show buy button when backend sets pendingAction
     const pendingAction = currentGame.pendingAction;
 
-    if (!(pendingAction?.type === "BUY_PROPERTY" && pendingAction.playerId === currentPlayerId)) {
+    if (
+      !(
+        pendingAction?.type === "BUY_PROPERTY" &&
+        pendingAction.playerId === currentPlayerId
+      )
+    ) {
       return false;
     }
 

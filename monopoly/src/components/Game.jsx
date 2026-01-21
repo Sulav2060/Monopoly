@@ -497,10 +497,21 @@ const Game = () => {
     // New backend-driven logic: only show buy button when backend sets pendingAction
     const pendingAction = currentGame.pendingAction;
 
-    return (
-      pendingAction?.type === "BUY_PROPERTY" &&
-      pendingAction.playerId === currentPlayerId
-    );
+    if (!(pendingAction?.type === "BUY_PROPERTY" && pendingAction.playerId === currentPlayerId)) {
+      return false;
+    }
+
+    // Check if player has enough money
+    const player = currentGame.players?.[currentGame.currentTurnIndex];
+    if (!player) return false;
+
+    const tileIndex = player.position;
+    const tile = getTileAtPosition(tileIndex);
+    const price = tile?.price ?? null;
+
+    if (price === null || price === undefined) return false;
+
+    return player.money >= price;
   };
 
   // Buy Property Function
@@ -873,9 +884,9 @@ const Game = () => {
               <>
                 <button
                   onClick={buyProperty}
-                  disabled={isLoadingAction}
+                  disabled={!canBuyProperty() || isLoadingAction}
                   className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                    !isLoadingAction
+                    canBuyProperty() && !isLoadingAction
                       ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
                       : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
                   }`}

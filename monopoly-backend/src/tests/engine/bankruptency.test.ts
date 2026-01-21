@@ -36,6 +36,7 @@ test("player goes bankrupt if cannot pay rent", () => {
       },
     ],
     events: [],
+    pendingAction: null,
   };
 
   const tile = BOARD[5] as PropertyTile;
@@ -92,6 +93,7 @@ test("skips bankrupt players when ending turn", () => {
     currentTurnIndex: 0,
     events: [],
     properties: [],
+    pendingAction: null,
   };
 
   const result = endTurn(state);

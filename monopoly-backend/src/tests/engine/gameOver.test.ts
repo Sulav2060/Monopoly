@@ -3,8 +3,6 @@ import { GameState } from "../../types/game";
 
 test("emits GAME_OVER when only one player remains", () => {
   const state: GameState = {
-    communityChestDeck: [],
-    communityChestIndex: 0,
     players: [
       {
         id: "p1",

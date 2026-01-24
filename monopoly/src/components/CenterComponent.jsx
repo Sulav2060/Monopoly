@@ -50,8 +50,9 @@ const CenterComponent = ({
               dice2={currentDice.d2}
               isRolling={isRolling}
               onRollComplete={onRollComplete}
-              currentTurnIndex={currentTurnIndex}
+              currentPlayerIndex={currentTurnIndex}
               totalPlayers={totalPlayers}
+              onDiceClick={!hasRolled && isMyTurn && !isAnimating ? onRollDice : undefined}
             />
         </div>
       )}

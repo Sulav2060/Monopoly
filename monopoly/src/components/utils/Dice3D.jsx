@@ -238,8 +238,10 @@ const DiceScene = ({
 
   return (
     <>
-      {/* Environment Map adds realistic reflections of a studio */}
-      <Environment preset="studio" />
+      {/* Environment Map adds realistic reflections of a studio - commented out for offline support */}
+      {/* <Environment preset="studio" />  */}
+      {/* todo: take feedback and use previous with offline support/new dice */}
+      <ambientLight intensity={0.5} />
 
       {/* Main Directional Light for casting shadows */}
       <directionalLight

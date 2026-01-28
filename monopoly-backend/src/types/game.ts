@@ -20,7 +20,7 @@ export type AuctionState = {
 };
 
 export type PendingAction =
-  | { type: "BUY_PROPERTY"; property: PropertyTile }
+  | { type: "BUY_PROPERTY"; playerId: PlayerId; tileIndex: number }
   | { type: "AUCTION"; auction: AuctionState }
   | null;
 

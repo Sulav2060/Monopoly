@@ -59,7 +59,7 @@ const Tile = ({
           <div className="font-bold text-[0.6rem] sm:text-xs tracking-tight text-center truncate w-full px-0.5">{title}</div>
           {price && (
             <div className="text-[0.5rem] sm:text-xs font-semibold bg-black/40 px-1.5 py-0.5 rounded-full text-white">
-              ${price}
+              Rs. {price}
             </div>
           )}
         </div>
@@ -74,7 +74,7 @@ const Tile = ({
           </div>
           {price && (
             <div className="text-[0.5rem] sm:text-xs font-semibold bg-black/40 px-1.5 py-0.5 rounded-full text-white">
-              ${price}
+              Rs. {price}
             </div>
           )}
         </div>
@@ -89,7 +89,7 @@ const Tile = ({
         </div>
         {price && (
           <div className="text-[0.5rem] sm:text-xs font-semibold bg-black/50 px-1.5 py-0.5 rounded-full text-white">
-            ${price}
+            Rs. {price}
           </div>
         )}
       </div>

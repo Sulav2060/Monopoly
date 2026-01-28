@@ -27,5 +27,6 @@ export function baseGameState(): GameState {
     currentTurnIndex: 0,
     properties: [],
     events: [],
+    pendingAction: null,
   };
 }

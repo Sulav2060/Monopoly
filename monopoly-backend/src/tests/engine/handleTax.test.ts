@@ -22,6 +22,7 @@ describe("handleTax", () => {
 
       communityChestDeck: [],
       communityChestIndex: 0,
+      pendingAction: null,
     };
 
     const result = handleTax(state, 200);
@@ -50,6 +51,7 @@ describe("handleTax", () => {
 
       communityChestDeck: [],
       communityChestIndex: 0,
+      pendingAction: null,
     };
 
     const result = handleTax(state, 150);
@@ -82,6 +84,7 @@ describe("handleTax", () => {
 
       communityChestDeck: [],
       communityChestIndex: 0,
+      pendingAction: null,
     };
 
     handleTax(state, 100);

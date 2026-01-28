@@ -11,11 +11,18 @@ export type PlayerState = {
   isBankrupt: boolean;
 };
 
-export type PendingAction = {
-  type: "BUY_PROPERTY";
-  playerId: string;
-  tileIndex: number;
-} | null;
+export type AuctionState = {
+  property: PropertyTile;
+  highestBid: number;
+  highestBidderId?: PlayerId;
+  activePlayerIds: PlayerId[]; // players still in auction
+  currentBidderIndex: number;
+};
+
+export type PendingAction =
+  | { type: "BUY_PROPERTY"; property: PropertyTile }
+  | { type: "AUCTION"; auction: AuctionState }
+  | null;
 
 export type DiceRoll = {
   die1: number;
@@ -65,7 +72,18 @@ export type GameEvent =
       playerId: PlayerId;
       tileIndex: number;
       price: number;
-    };
+    }
+  //auction regarding events
+  | { type: "AUCTION_STARTED"; property: PropertyTile }
+  | { type: "AUCTION_BID_PLACED"; playerId: PlayerId; amount: number }
+  | { type: "AUCTION_PLAYER_PASSED"; playerId: PlayerId }
+  | {
+      type: "AUCTION_WON";
+      playerId: PlayerId;
+      tileIndex: number;
+      amount: number;
+    }
+  | { type: "AUCTION_UNSOLD"; tileIndex: number };
 
 export type GameState = {
   players: PlayerState[];

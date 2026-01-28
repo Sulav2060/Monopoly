@@ -25,7 +25,9 @@ export type ClientMessage =
       type: "BUY_PROPERTY";
       gameId: string;
       playerId: string;
-    };
+    }
+  | { type: "AUCTION_TIMEOUT"; gameId: string }
+  | { type: "PLACE_BID"; gameId: string; playerId: string; amount: number };
 
 export type ServerMessage =
   | {

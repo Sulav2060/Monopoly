@@ -8,6 +8,8 @@ import { getCurrentPlayerSafe } from "../engine/assertions";
 import { endTurn } from "../engine/endTurn";
 import { skipProperty } from "../engine/skipProperty";
 import { buyPendingProperty } from "../engine/buyPendingProperty";
+import { resolveAuctionTimeout } from "../engine/resolveAuctionTimeout";
+import { placeBid } from "../engine/placeBid";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -171,6 +173,14 @@ export function setupWebSocket(wss: WebSocketServer) {
             return;
           }
 
+          if (game.state.pendingAction) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Please complete pending action first",
+            });
+            return;
+          }
+
           const dice = rollDice();
           const newState = playTurn(game.state, dice);
 
@@ -275,6 +285,40 @@ export function setupWebSocket(wss: WebSocketServer) {
           console.log(
             `🏠 ${currentPlayer.name} bought property in game ${msg.gameId}`,
           );
+          return;
+        }
+
+        if (msg.type === "AUCTION_TIMEOUT") {
+          const game = getGame(msg.gameId);
+          if (!game) return;
+
+          const newState = resolveAuctionTimeout(game.state);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+          return;
+        }
+
+        if (msg.type === "PLACE_BID") {
+          const game = getGame(msg.gameId);
+          if (!game) return;
+
+          //check if the player is part of the game
+          const player = game.state.players.find((p) => p.id === msg.playerId);
+          if (!player) return;
+
+          const newState = placeBid(game.state, msg.playerId, msg.amount);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
           return;
         }
 

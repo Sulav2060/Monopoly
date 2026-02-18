@@ -16,8 +16,8 @@ export function skipProperty(state: GameState): GameState {
         ...state.events,
         {
           type: "PROPERTY_SKIPPED",
-          playerId: pending.playerId,
-          tileIndex: pending.tileIndex,
+          playerId: pending.property.playerId,
+          tileIndex: pending.property.tileIndex,
         },
       ],
     }),

@@ -19,8 +19,10 @@ export type AuctionState = {
   currentBidderIndex: number;
 };
 
+export type Buy_Property_PendingAction_Data=PropertyTile & {playerId:PlayerId}
+
 export type PendingAction =
-  | { type: "BUY_PROPERTY"; property: PropertyTile }
+  | { type: "BUY_PROPERTY"; property: Buy_Property_PendingAction_Data }
   | { type: "AUCTION"; auction: AuctionState }
   | null;
 

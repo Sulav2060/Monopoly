@@ -279,7 +279,10 @@ export function setupWebSocket(wss: WebSocketServer) {
           );
           return;
         }
-
+        //TODO: Do we even need auction_timeout event at the buy property step?
+         /* =======================
+           AUCTION_TIMEOUT
+        ======================= */
         if (msg.type === "AUCTION_TIMEOUT") {
           const game = getGame(msg.gameId);
           if (!game) return;
@@ -293,6 +296,10 @@ export function setupWebSocket(wss: WebSocketServer) {
             state: newState,
           });
         }
+        
+         /* =======================
+           PLACE_BID
+        ======================= */
         if (msg.type === "PLACE_BID") {
           const game = getGame(msg.gameId);
           if (!game) return;

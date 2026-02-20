@@ -387,6 +387,7 @@ const Board = ({
               startPosition={prevPos}
               moveSteps={steps}
               tilesCount={tilesCount}
+              inJail={player.inJail}
             />
           );
         })}

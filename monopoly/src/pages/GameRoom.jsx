@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import { wsClient } from "../services/wsClient";
@@ -16,6 +16,9 @@ const GameRoom = () => {
   } = useGame();
 
   const [gameStarted, setGameStarted] = useState(false);
+  // Use a ref so the listener closure always has the latest value
+  // without needing to be re-registered every time gameStarted changes
+  const gameStartedRef = useRef(false);
 
   // Redirect to home if no player context (e.g. hard refresh)
   useEffect(() => {
@@ -24,21 +27,28 @@ const GameRoom = () => {
     }
   }, [currentPlayerId, currentPlayerName]);
 
-  // Set up WebSocket game state listener
+  // Set up WebSocket game state listener ONCE — ref keeps it fresh
   useEffect(() => {
-    if (!currentGame || !currentPlayerId || !currentPlayerName) return;
+    if (!currentPlayerId || !currentPlayerName) return;
 
-    wsClient.on("gameStateUpdate", (newState) => {
-      if (newState.hasStarted && !gameStarted) {
+    const handleGameStateUpdate = (newState) => {
+      // Sync player list + all state for ALL players, not just host
+      syncGameFromSocket(newState);
+
+      if (newState.hasStarted && !gameStartedRef.current) {
+        gameStartedRef.current = true;
         setGameStarted(true);
       }
-      syncGameFromSocket(newState);
-    });
+    };
+
+    wsClient.on("gameStateUpdate", handleGameStateUpdate);
 
     return () => {
-      // Don't disconnect here — wsClient persists across renders
+      // Clean up the specific handler so it doesn't stack on re-renders
+      wsClient.off("gameStateUpdate", handleGameStateUpdate);
     };
-  }, [currentGame?.id, currentPlayerId, currentPlayerName, gameStarted]);
+  // Only depends on player identity — NOT on currentGame or gameStarted
+  }, [currentPlayerId, currentPlayerName]);
 
   if (!currentGame) {
     return (

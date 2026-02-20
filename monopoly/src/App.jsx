@@ -50,7 +50,7 @@ function App() {
           wsUrl,
           currentGame.id,
           currentPlayerId,
-          currentPlayerName
+          currentPlayerName,
         );
 
         // Listen for game state updates

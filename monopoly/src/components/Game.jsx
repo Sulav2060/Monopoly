@@ -988,6 +988,16 @@ const Game = () => {
   // Determine current player and turn state
   const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];
   const isMyTurn = currentPlayer?.id === currentPlayerId;
+  const gameOverEvent = currentGame?.events
+    ?.slice()
+    .reverse()
+    .find((event) => event.type === "GAME_OVER");
+  const winnerId =
+    gameOverEvent?.winnerId || currentGame?.winnerId || currentGame?.winner?.id;
+  const winner = currentGame?.players?.find((p) => p.id === winnerId);
+  const otherPlayers = (currentGame?.players || []).filter(
+    (p) => p.id !== winnerId,
+  );
 
   // Loading state or not in game
   if (!currentGame) {
@@ -998,6 +1008,96 @@ const Game = () => {
             Loading game...
           </p>
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameOverEvent) {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,#1f2937_0%,#0b1221_45%,#05070d_100%)] text-gray-100 p-6 overflow-hidden relative">
+        {/* Glow Background Effect */}
+        <div className="absolute top-[-200px] w-[600px] h-[600px] bg-emerald-500/20 blur-[140px] rounded-full animate-pulse" />
+
+        <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-white/5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] backdrop-blur-xl p-8 sm:p-10 animate-[fadeIn_.6s_ease-out]">
+          {/* Header */}
+          <div className="flex flex-col items-center text-center gap-3">
+            <div className="text-6xl animate-bounce">🏆</div>
+
+            <h1 className="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-emerald-300 to-teal-400 bg-clip-text text-transparent">
+              Game Over
+            </h1>
+
+            <p className="text-lg sm:text-xl text-emerald-300 font-semibold">
+              {winner?.name || "Winner"} Wins!
+            </p>
+
+            <div className="h-px w-32 bg-gradient-to-r from-transparent via-white/40 to-transparent mt-2" />
+          </div>
+
+          {/* Winner Spotlight */}
+          <div className="mt-10 relative">
+            <div className="absolute inset-0 bg-emerald-500/10 blur-2xl rounded-3xl" />
+
+            <div className="relative rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-6 flex flex-col items-center text-center gap-3 shadow-lg">
+              <div className="text-sm uppercase tracking-widest text-emerald-300">
+                Champion
+              </div>
+
+              <div className="text-2xl font-extrabold text-white">
+                {winner?.name || "Winner"}
+              </div>
+
+              {winner?.money !== undefined && (
+                <div className="text-emerald-300 text-sm font-medium">
+                  Rs. {winner.money.toLocaleString()}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Other Players Ranking */}
+          {otherPlayers.length > 0 && (
+            <div className="mt-10">
+              <div className="text-xs uppercase tracking-widest text-gray-400 mb-4 text-center">
+                Final Standings
+              </div>
+
+              <div className="space-y-3">
+                {otherPlayers.map((player, index) => (
+                  <div
+                    key={player.id}
+                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:bg-white/10 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="text-xs font-bold text-gray-400">
+                        #{index + 2}
+                      </div>
+                      <span className="text-sm font-semibold text-gray-100">
+                        {player.name}
+                      </span>
+                    </div>
+
+                    {player.money !== undefined && (
+                      <span className="text-xs text-gray-300">
+                        Rs. {player.money.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action Button */}
+          <div className="mt-10 flex justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all duration-200 font-semibold text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50"
+            >
+              Play Again
+            </button>
+          </div>
         </div>
       </div>
     );

@@ -501,7 +501,7 @@ const Game = () => {
     if (
       !(
         pendingAction?.type === "BUY_PROPERTY" &&
-        pendingAction.playerId === currentPlayerId
+        pendingAction.property?.playerId === currentPlayerId
       )
     ) {
       return false;
@@ -922,7 +922,7 @@ const Game = () => {
           <div className="grid grid-cols-2 gap-3">
             {/* Show Buy and Skip buttons when there's a pending property purchase */}
             {currentGame?.pendingAction?.type === "BUY_PROPERTY" &&
-            currentGame?.pendingAction?.playerId === currentPlayerId ? (
+            currentGame?.pendingAction?.property?.playerId === currentPlayerId ? (
               <>
                 <button
                   onClick={buyProperty}

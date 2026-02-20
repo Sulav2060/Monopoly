@@ -533,7 +533,7 @@ const Game = () => {
       );
 
       // Check for events that should show a card
-      const cardEvents = fresh.filter(
+      let cardEvents = fresh.filter(
         (evt) =>
           evt.type === "COMMUNITY_CHEST" ||
           evt.type === "PLAYER_SENT_TO_JAIL" ||
@@ -545,6 +545,28 @@ const Game = () => {
           evt.type === "JAIL_EXITED" ||
           evt.type === "JAIL_TURN_FAILED",
       );
+
+      // If there is a COMMUNITY_CHEST event that sends to jail, filter out the redundant PLAYER_SENT_TO_JAIL card
+      const hasCommunityChestJail = cardEvents.some(
+        (evt) =>
+          evt.type === "COMMUNITY_CHEST" && evt.card?.type === "GO_TO_JAIL",
+      );
+      if (hasCommunityChestJail) {
+        cardEvents = cardEvents.filter(
+          (evt) => evt.type !== "PLAYER_SENT_TO_JAIL",
+        );
+      }
+
+      // If time served frees the player, hide the final failed-attempt card
+      const hasTimeServedExit = cardEvents.some(
+        (evt) => evt.type === "JAIL_EXITED" && evt.reason !== "DOUBLES",
+      );
+      if (hasTimeServedExit) {
+        cardEvents = cardEvents.filter(
+          (evt) =>
+            !(evt.type === "JAIL_TURN_FAILED" && Number(evt.attempt) >= 3),
+        );
+      }
 
       if (cardEvents.length > 0) {
         // Immediately show PASSED_GO, queue others
@@ -596,7 +618,7 @@ const Game = () => {
 
   // Process pending event cards and sounds when animation is complete
   useEffect(() => {
-    if (animationStep === "idle") {
+    if (animationStep === "idle" || animationStep === "showing_card") {
       if (pendingEventCards.length > 0) {
         setEventCards((prev) => {
           // Filter out any existing PASSED_GO cards to avoid duplicates if multiple events fire
@@ -907,9 +929,20 @@ const Game = () => {
 
     // 2. Token "waving" animation (shake) before moving
     else if (animationStep === "waving") {
-      const extraHold = pendingTeleport ? 2000 : 0;
-      const waveDuration = diceSum * 100 + 500 + extraHold;
+      const waveDuration = diceSum * 100 + 500;
 
+      timeout = setTimeout(() => {
+        if (pendingTeleport || pendingEventCards.length > 0) {
+          setAnimationStep("showing_card");
+        } else {
+          setAnimationStep("zooming");
+        }
+      }, waveDuration);
+    }
+
+    // 2.5 Show card before teleporting
+    else if (animationStep === "showing_card") {
+      const extraHold = 2000;
       timeout = setTimeout(() => {
         if (pendingTeleport) {
           // After showing the landing tile, teleport to jail without wave
@@ -928,11 +961,8 @@ const Game = () => {
 
           setPendingTeleport(null);
         }
-
-        // Movement is handled by backend via rollDice
-        // Just update animation
         setAnimationStep("zooming");
-      }, waveDuration);
+      }, extraHold);
     }
 
     // 3. Camera zoom animation
@@ -952,6 +982,7 @@ const Game = () => {
     currentGame,
     currentPlayerId,
     pendingTeleport,
+    pendingEventCards,
   ]);
 
   // Determine current player and turn state
@@ -1054,7 +1085,7 @@ const Game = () => {
               </div>
             );
           })}
-          <div className="mt-2 pt-3 border-t border-white/10 relative flex-1 flex flex-col min-h-0">
+          <div className="mt-2 pt-3 border-t border-white/10 relative flex-1 flex flex-col min-h-0 max-h-[50%]">
             <div className="flex items-center justify-between mb-2 shrink-0">
               <h3 className="font-semibold text-sm text-gray-200">Game Log</h3>
               <span className="text-[10px] text-gray-400">live</span>
@@ -1148,7 +1179,7 @@ const Game = () => {
         </div>
 
         {/* Right Sidebar - Actions & Info */}
-        <div className="w-full lg:w-80 order-3 lg:order-3 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
+        <div className="w-full lg:w-72 order-3 lg:order-3 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
             <div>

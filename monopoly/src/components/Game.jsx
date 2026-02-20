@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Board from "./Board";
 import AuctionModal from "./AuctionModal";
+import Rules from "./Rules";
 import { tiles, corners } from "./tiles";
 import { useGame } from "../context/GameContext";
 import { wsClient } from "../services/wsClient";
@@ -71,6 +72,7 @@ const Game = () => {
   const [_showPropertyCard, setShowPropertyCard] = useState(null);
   const [showBuildMenu, setShowBuildMenu] = useState(false);
   const [showTradeModal, setShowTradeModal] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const [notification, setNotification] = useState(null);
   const [_gameLog, setGameLog] = useState([]);
   const lastEventCountRef = useRef(0);
@@ -803,7 +805,7 @@ const Game = () => {
               >
                 {/* Active Turn Glow Indicator */}
                 {isCurrentTurn && (
-                  <div className="absolute top-0 left-0 w-1 h-full bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.8)]" />
+                  <div className="absolute top-0 left-0 w-1 h-full rounded-3xl bg-amber-500 " />
                 )}
 
                 <div className="flex items-center justify-between relative z-10">
@@ -826,11 +828,6 @@ const Game = () => {
                         >
                           {p.name}
                         </span>
-                        {isYou && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 font-bold uppercase tracking-tighter">
-                            You
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -909,8 +906,34 @@ const Game = () => {
         <div className="w-full lg:w-80 order-3 lg:order-3 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <h3 className="font-semibold text-lg text-gray-100">Game Panel</h3>
-            <span className="text-[11px] text-gray-400">Tools & Info</span>
+            <div>
+              <h3 className="font-semibold text-lg text-gray-100">
+                Game Panel
+              </h3>
+              <span className="text-[11px] text-gray-400">Tools & Info</span>
+            </div>
+            <button
+              onClick={() => setShowRules(true)}
+              className="p-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 hover:border-amber-500 transition-all group"
+              title="Game Rules"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-amber-500 group-hover:scale-110 transition-transform"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+            </button>
           </div>
 
           {/* Action Buttons - 2x2 Grid */}
@@ -1204,7 +1227,6 @@ const Game = () => {
         </div>
       </div>
 
-
       {/* Auction Modal */}
       {currentGame?.pendingAction?.type === "AUCTION" && (
         <AuctionModal
@@ -1340,6 +1362,9 @@ const Game = () => {
           </div>
         </div>
       )}
+
+      {/* Rules Modal */}
+      <Rules isOpen={showRules} onClose={() => setShowRules(false)} />
     </div>
   );
 };

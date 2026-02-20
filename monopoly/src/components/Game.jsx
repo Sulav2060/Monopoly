@@ -72,6 +72,10 @@ const Game = () => {
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [eventCards, setEventCards] = useState([]);
+  const [pendingEventCards, setPendingEventCards] = useState([]);
+  const [pendingSounds, setPendingSounds] = useState([]);
+  const eventCardTimeoutRef = useRef(null);
   const [_gameLog, setGameLog] = useState([]);
   const lastEventCountRef = useRef(0);
   const logIdCounterRef = useRef(0);
@@ -240,14 +244,24 @@ const Game = () => {
 
       case "COMMUNITY_CHEST": {
         const name = current?.name || "Player";
-        const tile = getTileAtPosition(current?.position);
+        const moveEvent = game?.events
+          ?.slice()
+          .reverse()
+          .find(
+            (e) => e.type === "PLAYER_MOVED" && e.to !== event.card?.position,
+          );
+        const tilePos = moveEvent ? moveEvent.to : current?.position;
+        const tile = getTileAtPosition(tilePos);
         const label = tile?.type === "chance" ? "Chance" : "Community Chest";
         if (event.card?.type === "MONEY") {
           const amt = event.card.amount ?? 0;
           return `🎁 ${name} received Rs. ${amt} from ${label}`;
         }
         if (event.card?.type === "MOVE") {
-          return `🎁 ${name} drew ${label} and moved`;
+          const targetTile = getTileAtPosition(event.card.position);
+          const targetName =
+            targetTile?.title || `Position ${event.card.position}`;
+          return `🎁 ${name} drew ${label} and moved to ${targetName}`;
         }
         if (event.card?.type === "GO_TO_JAIL") {
           return `🎁 ${name} drew ${label}: Go To Jail!`;
@@ -283,6 +297,144 @@ const Game = () => {
   const showNotification = (message, type = "info") => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
+  };
+
+  const getEventCardDetails = (event) => {
+    if (!event) return null;
+    const players = currentGame?.players || [];
+    const current = players[currentGame?.currentTurnIndex || 0];
+    const name = current?.name || "Player";
+
+    switch (event.type) {
+      case "COMMUNITY_CHEST": {
+        // Try to find the previous PLAYER_MOVED event to determine if it was Chance or Community Chest
+        const moveEvent = currentGame?.events
+          ?.slice()
+          .reverse()
+          .find(
+            (e) => e.type === "PLAYER_MOVED" && e.to !== event.card?.position,
+          );
+        const tilePos = moveEvent ? moveEvent.to : current?.position;
+        const tile = getTileAtPosition(tilePos);
+        const label = tile?.type === "chance" ? "Chance" : "Community Chest";
+        const icon = tile?.type === "chance" ? "❓" : "🎁";
+
+        if (event.card?.type === "MONEY") {
+          return {
+            title: label,
+            icon,
+            message: `You received Rs. ${event.card.amount}`,
+            color: "bg-green-500",
+          };
+        }
+        if (event.card?.type === "MOVE") {
+          const targetTile = getTileAtPosition(event.card.position);
+          const targetName =
+            targetTile?.title || `Position ${event.card.position}`;
+          return {
+            title: label,
+            icon,
+            message: `Advance to ${targetName}`,
+            color: "bg-blue-500",
+          };
+        }
+        if (event.card?.type === "GO_TO_JAIL") {
+          return {
+            title: label,
+            icon,
+            message: `Go directly to Jail!`,
+            color: "bg-red-500",
+          };
+        }
+        return {
+          title: label,
+          icon,
+          message: `You drew a card`,
+          color: "bg-purple-500",
+        };
+      }
+      case "PLAYER_SENT_TO_JAIL": {
+        const player = players.find((p) => p.id === event.playerId);
+        return {
+          title: "Go To Jail!",
+          icon: "🚔",
+          message: `${player?.name || "Player"} was sent to jail!`,
+          color: "bg-red-600",
+        };
+      }
+      case "JAIL_EXITED": {
+        const reason =
+          event.reason === "DOUBLES"
+            ? "by rolling doubles"
+            : "after serving time";
+        return {
+          title: "Out of Jail!",
+          icon: "🔓",
+          message: `${name} got out of jail ${reason}`,
+          color: "bg-green-500",
+        };
+      }
+      case "JAIL_TURN_FAILED": {
+        return {
+          title: "Still in Jail",
+          icon: "🔒",
+          message: `${name} failed to roll doubles (Attempt ${event.attempt || 0}/3)`,
+          color: "bg-gray-600",
+        };
+      }
+      case "PASSED_GO": {
+        return {
+          title: "Passed GO",
+          icon: "✨",
+          message: `Collected $${event.amount || 200}`,
+          color: "bg-yellow-500",
+        };
+      }
+      case "FREE_PARKING_COLLECTED": {
+        const player = players.find((p) => p.id === event.playerId);
+        return {
+          title: "Free Parking",
+          icon: "🅿️",
+          message: `${player?.name || "Player"} collected $${event.amount || 0}!`,
+          color: "bg-green-400",
+        };
+      }
+      case "TAX_PAID": {
+        const player = players.find((p) => p.id === event.playerId);
+        return {
+          title: "Tax Paid",
+          icon: "💰",
+          message: `${player?.name || "Player"} paid Rs. ${event.amount || 0} in taxes`,
+          color: "bg-red-400",
+        };
+      }
+      case "PLAYER_BANKRUPT": {
+        const player = players.find((p) => p.id === event.playerId);
+        const causedBy = event.causedBy
+          ? players.find((p) => p.id === event.causedBy)
+          : null;
+        const message = causedBy
+          ? `${player?.name || "Player"} went bankrupt to ${causedBy.name}`
+          : `${player?.name || "Player"} went bankrupt`;
+        return {
+          title: "Bankrupt!",
+          icon: "💔",
+          message,
+          color: "bg-gray-800",
+        };
+      }
+      case "GAME_OVER": {
+        const winner = players.find((p) => p.id === event.winnerId);
+        return {
+          title: "Game Over!",
+          icon: "🏆",
+          message: `${winner?.name || "Player"} wins!`,
+          color: "bg-yellow-400",
+        };
+      }
+      default:
+        return null;
+    }
   };
 
   // WebSocket connection for real-time updates
@@ -354,28 +506,18 @@ const Game = () => {
             case "PROPERTY_BOUGHT":
               playPropertyBought();
               break;
-            case "PLAYER_SENT_TO_JAIL":
-              playGoToJail();
-              break;
             case "TURN_ENDED":
               playTurnEnd();
               break;
+            case "PLAYER_SENT_TO_JAIL":
             case "COMMUNITY_CHEST":
-              if (evt.card?.type === "MONEY") {
-                playMoney(evt.card.amount ?? 0);
-              }
+            case "FREE_PARKING_COLLECTED":
+            case "TAX_PAID":
+            case "RENT_PAID":
+              setPendingSounds((prev) => [...prev, evt]);
               break;
             case "PASSED_GO":
               playMoney(evt.amount ?? 0);
-              break;
-            case "FREE_PARKING_COLLECTED":
-              playMoney(evt.amount ?? 0);
-              break;
-            case "TAX_PAID":
-              playTax(evt.amount ?? 0);
-              break;
-            case "RENT_PAID":
-              playTax(evt.amount ?? 0);
               break;
             default:
               break;
@@ -389,6 +531,46 @@ const Game = () => {
       const importantEvents = fresh.filter(
         (evt) => evt.type !== "DICE_ROLLED" && evt.type !== "PLAYER_MOVED",
       );
+
+      // Check for events that should show a card
+      const cardEvents = fresh.filter(
+        (evt) =>
+          evt.type === "COMMUNITY_CHEST" ||
+          evt.type === "PLAYER_SENT_TO_JAIL" ||
+          evt.type === "PASSED_GO" ||
+          evt.type === "FREE_PARKING_COLLECTED" ||
+          evt.type === "TAX_PAID" ||
+          evt.type === "PLAYER_BANKRUPT" ||
+          evt.type === "GAME_OVER" ||
+          evt.type === "JAIL_EXITED" ||
+          evt.type === "JAIL_TURN_FAILED",
+      );
+
+      if (cardEvents.length > 0) {
+        // Immediately show PASSED_GO, queue others
+        const passedGoEvents = cardEvents.filter((e) => e.type === "PASSED_GO");
+        const otherEvents = cardEvents.filter((e) => e.type !== "PASSED_GO");
+
+        if (passedGoEvents.length > 0) {
+          setEventCards((prev) => {
+            // Filter out any existing PASSED_GO cards to avoid duplicates if multiple events fire
+            const filteredPrev = prev.filter(c => c.type !== "PASSED_GO");
+            const newCards = [...filteredPrev, ...passedGoEvents];
+            if (eventCardTimeoutRef.current) {
+              clearTimeout(eventCardTimeoutRef.current);
+            }
+            eventCardTimeoutRef.current = setTimeout(
+              () => setEventCards([]),
+              4000,
+            );
+            return newCards;
+          });
+        }
+
+        if (otherEvents.length > 0) {
+          setPendingEventCards((prev) => [...prev, ...otherEvents]);
+        }
+      }
 
       if (importantEvents.length > 0) {
         const newLogs = importantEvents.map((evt, idx) => {
@@ -411,6 +593,55 @@ const Game = () => {
       lastEventCountRef.current = total;
     }
   }, [currentGame?.events, currentGame]);
+
+  // Process pending event cards and sounds when animation is complete
+  useEffect(() => {
+    if (animationStep === "idle") {
+      if (pendingEventCards.length > 0) {
+        setEventCards((prev) => {
+          // Filter out any existing PASSED_GO cards to avoid duplicates if multiple events fire
+          const filteredPrev = prev.filter(c => c.type !== "PASSED_GO");
+          const newCards = [...filteredPrev, ...pendingEventCards];
+          if (eventCardTimeoutRef.current) {
+            clearTimeout(eventCardTimeoutRef.current);
+          }
+          eventCardTimeoutRef.current = setTimeout(
+            () => setEventCards([]),
+            4000,
+          );
+          return newCards;
+        });
+        setPendingEventCards([]);
+      }
+
+      if (pendingSounds.length > 0) {
+        pendingSounds.forEach((evt) => {
+          switch (evt.type) {
+            case "PLAYER_SENT_TO_JAIL":
+              playGoToJail();
+              break;
+            case "COMMUNITY_CHEST":
+              if (evt.card?.type === "MONEY") {
+                playMoney(evt.card.amount ?? 0);
+              }
+              break;
+            case "FREE_PARKING_COLLECTED":
+              playMoney(evt.amount ?? 0);
+              break;
+            case "TAX_PAID":
+              playTax(evt.amount ?? 0);
+              break;
+            case "RENT_PAID":
+              playTax(evt.amount ?? 0);
+              break;
+            default:
+              break;
+          }
+        });
+        setPendingSounds([]);
+      }
+    }
+  }, [animationStep, pendingEventCards, pendingSounds]);
 
   // Roll Dice + Start Animation
   // Roll Dice - CAPTURE POSITION BEFORE ROLLING
@@ -564,28 +795,7 @@ const Game = () => {
   useEffect(() => {
     if (!currentGame?.players) return;
 
-    const isGoToJailEventForPlayer = (evt, playerId) => {
-      if (!evt) return false;
-      if (evt.type === "PLAYER_SENT_TO_JAIL") {
-        return !playerId || evt.playerId === playerId;
-      }
-      if (evt.type === "COMMUNITY_CHEST" || evt.type === "CHANCE") {
-        return (
-          evt.card?.type === "GO_TO_JAIL" &&
-          (!playerId || evt.playerId === playerId)
-        );
-      }
-      if (evt.type === "CHANCE_CARD" || evt.type === "COMMUNITY_CHEST_CARD") {
-        return (
-          evt.card?.type === "GO_TO_JAIL" &&
-          (!playerId || evt.playerId === playerId)
-        );
-      }
-      return false;
-    };
-
     const recentEvents = currentGame.events?.slice(-3) || [];
-    const jailIndex = 10; // canonical jail tile index on the board
 
     const nextSig = currentGame.players.map((p) => p.position).join("-");
     const prevSig = lastPositionsSigRef.current;
@@ -618,17 +828,8 @@ const Game = () => {
       let stagedPlayers = currentGame.players;
       let stagedTeleport = null;
 
-      // Detect go-to-jail triggered immediately after landing on Chance/Community Chest/Go To Jail
+      // Detect teleport triggered immediately after landing on Chance/Community Chest/Go To Jail
       for (const moved of movedPlayers) {
-        const landedInJail = moved.position === jailIndex;
-        if (!landedInJail) continue;
-
-        const relatedEvent = recentEvents.find((evt) =>
-          isGoToJailEventForPlayer(evt, moved.id),
-        );
-
-        if (!relatedEvent) continue;
-
         const startPos = prevPositionsMap[moved.id] ?? moved.position;
         const diceSum = currentGame.lastDice
           ? (currentGame.lastDice.die1 || 0) + (currentGame.lastDice.die2 || 0)
@@ -638,17 +839,19 @@ const Game = () => {
 
         const landingPos = (startPos + diceSum) % TILES_ON_BOARD;
 
-        stagedTeleport = {
-          playerId: moved.id,
-          landingPos,
-          finalPos: moved.position,
-        };
+        if (moved.position !== landingPos) {
+          stagedTeleport = {
+            playerId: moved.id,
+            landingPos,
+            finalPos: moved.position,
+          };
 
-        stagedPlayers = currentGame.players.map((p) =>
-          p.id === moved.id ? { ...p, position: landingPos } : p,
-        );
+          stagedPlayers = currentGame.players.map((p) =>
+            p.id === moved.id ? { ...p, position: landingPos } : p,
+          );
 
-        break; // only stage the first detected teleport per tick
+          break; // only stage the first detected teleport per tick
+        }
       }
 
       setPrevPositions(prevPositionsMap);
@@ -851,13 +1054,13 @@ const Game = () => {
               </div>
             );
           })}
-          <div className="mt-2 pt-3 border-t border-white/10 relative">
-            <div className="flex items-center justify-between mb-2">
+          <div className="mt-2 pt-3 border-t border-white/10 relative flex-1 flex flex-col min-h-0">
+            <div className="flex items-center justify-between mb-2 shrink-0">
               <h3 className="font-semibold text-sm text-gray-200">Game Log</h3>
               <span className="text-[10px] text-gray-400">live</span>
             </div>
 
-            <div className="space-y-1.5 min-h-44 max-h-44 overflow-y-auto text-xs pr-1 relative scrollbar-hide">
+            <div className="space-y-1.5 flex-1 overflow-y-auto text-xs pr-1 relative scrollbar-hide">
               {_gameLog.map((log) => (
                 <div
                   key={log.id}
@@ -872,6 +1075,43 @@ const Game = () => {
               <div className="pointer-events-none sticky bottom-0 h-8 bg-linear-to-t from-[#181F2E] via-[#181F2E]/80 to-transparent" />
             </div>
           </div>
+
+          {/* Event Card Display (Bottom Left) */}
+          {eventCards.length > 0 && (
+            <div className="mt-4 shrink-0 relative flex flex-col gap-2">
+              {eventCards.map((card, idx) => {
+                const details = getEventCardDetails(card);
+                if (!details) return null;
+                return (
+                  <div
+                    key={idx}
+                    className="relative transform transition-all duration-500 scale-100 opacity-100 bg-white rounded-xl p-4 shadow-lg border-2 border-white/20 text-center overflow-hidden"
+                  >
+                    {/* Decorative background elements */}
+                    <div
+                      className={`absolute -top-12 -right-12 w-24 h-24 rounded-full opacity-20 blur-xl ${details.color}`}
+                    />
+                    <div
+                      className={`absolute -bottom-12 -left-12 w-24 h-24 rounded-full opacity-20 blur-xl ${details.color}`}
+                    />
+
+                    <div className="relative z-10 flex flex-col items-center">
+                      <div className="text-3xl mb-2 animate-bounce">
+                        {details.icon}
+                      </div>
+                      <h3 className="text-lg font-black text-gray-800 mb-1 uppercase tracking-wider">
+                        {details.title}
+                      </h3>
+                      <div className="w-8 h-0.5 bg-gray-200 mx-auto mb-2 rounded-full" />
+                      <p className="text-sm text-gray-600 font-medium leading-snug">
+                        {details.message}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Game Board */}

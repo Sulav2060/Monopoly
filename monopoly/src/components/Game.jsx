@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Board from "./Board";
 import AuctionModal from "./AuctionModal";
 import Rules from "./Rules";
@@ -50,7 +50,7 @@ const PURCHASABLE_TYPES = ["property", "railroad", "utility"];
 
 const Game = () => {
   const {
-    currentGame,
+    currentGame: _currentGame,
     currentPlayerId,
     currentRoom,
     rollDice: contextRollDice,
@@ -58,6 +58,32 @@ const Game = () => {
     endTurn: contextEndTurn,
     syncGameFromSocket,
   } = useGame();
+
+  const currentGame = useMemo(() => {
+  if (!_currentGame) return null;
+  return {
+    ..._currentGame,
+    properties: [
+      ...(_currentGame.properties ?? []),
+      { tileIndex: 11, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 12, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 13, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 14, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 15, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 16, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 17, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 18, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 19, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 20, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 21, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 22, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 23, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 24, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+      { tileIndex: 25, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
+
+    ],
+  };
+}, [_currentGame, currentPlayerId]);
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationStep, setAnimationStep] = useState("idle");
@@ -1353,6 +1379,7 @@ const Game = () => {
 
                 <button
                   onClick={() => {
+                    console.log("properties:", currentGame.properties);
                     if (!isMyTurn) return;
                     const COLOR_GROUP_SIZES = { brown: 2, lightblue: 3, pink: 3, orange: 3, red: 3, yellow: 3, green: 3, blue: 2 };
                     const myProps = currentGame.properties?.filter(p => p.ownerId === currentPlayerId) || [];
@@ -1361,13 +1388,13 @@ const Game = () => {
                       if (tile?.color) acc[tile.color] = (acc[tile.color] || 0) + 1;
                       return acc;
                     }, {});
-                    const hasMonopoly = Object.entries(colorCounts).some(
-                      ([color, count]) => count === COLOR_GROUP_SIZES[color]
-                    );
-                    if (!hasMonopoly) {
-                      showNotification("You need a full color set to build!", "info");
-                      return;
-                    }
+                    // const hasMonopoly = Object.entries(colorCounts).some(
+                    //   ([color, count]) => count === COLOR_GROUP_SIZES[color]
+                    // );
+                    // if (!hasMonopoly) {
+                    //   showNotification("You need a full color set to build!", "info");
+                    //   return;
+                    // }
                     setShowBuildMenu(true);
                   }}
                   disabled={!isMyTurn}
@@ -1649,7 +1676,7 @@ const Game = () => {
                 return {
                   id: prop.tileIndex,
                   name: tile?.title,
-                  color: tile?.color,
+                  color: tile?.group,
                   housePrice: tile?.houseCost,
                   houses: prop.houses ?? 0,
                   hotel: prop.hotel ?? 0,
@@ -1659,11 +1686,10 @@ const Game = () => {
               })}
               onBuild={(propertyId, buildType) => {
                 wsClient.send({
-                  type: "BUILD_STRUCTURE",
+                  type: "BUILD_PROPERTY",
                   gameId: currentGame.id,
                   playerId: currentPlayerId,
-                  propertyId,
-                  buildType,
+                  tileIndex: propertyId,
                 });
                 setShowBuildMenu(false);
               }}

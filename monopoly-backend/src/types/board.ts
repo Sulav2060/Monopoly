@@ -15,6 +15,10 @@ export type PropertyTile = {
   price: number;
   tileIndex: number;
   baseRent: number;
+  group: string;
+  houseRent: number[];
+  hotelRent: number;
+  houseBuildCost: number;
 };
 
 export type Tile =

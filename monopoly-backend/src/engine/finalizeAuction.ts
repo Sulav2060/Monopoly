@@ -6,7 +6,8 @@ export function finalizeAuction(state: GameState): GameState {
   if (state.pendingAction?.type !== "AUCTION") return state;
 
   const auction = state.pendingAction.auction;
-  if (!auction.highestBidderId) return state;
+  if (!auction.highestBidderId)
+    throw new Error("Cannot finalize auction without a highest bidder");
 
   return {
     ...state,
@@ -20,6 +21,8 @@ export function finalizeAuction(state: GameState): GameState {
       {
         tileIndex: auction.property.tileIndex,
         ownerId: auction.highestBidderId,
+        houses: 0,
+        isMortaged: false,
       },
     ],
     pendingAction: null,

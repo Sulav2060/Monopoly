@@ -14,6 +14,11 @@ export function placeBid(
 
   if (amount <= auction.highestBid) return state;
 
+  // Prevent same player from bidding consecutively
+  if (auction.highestBidderId && playerId === auction.highestBidderId) {
+    return state;
+  }
+
   return {
     ...state,
     pendingAction: {

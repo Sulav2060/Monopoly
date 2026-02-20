@@ -19,8 +19,12 @@ export type AuctionState = {
   currentBidderIndex: number;
 };
 
+export type Buy_Property_PendingAction_Data = PropertyTile & {
+  playerId: PlayerId;
+};
+
 export type PendingAction =
-  | { type: "BUY_PROPERTY"; playerId: PlayerId; tileIndex: number }
+  | { type: "BUY_PROPERTY"; property: Buy_Property_PendingAction_Data }
   | { type: "AUCTION"; auction: AuctionState }
   | null;
 
@@ -73,6 +77,14 @@ export type GameEvent =
       tileIndex: number;
       price: number;
     }
+  //property building regarding events
+  | {
+      type: "PROPERTY_BUILT";
+      playerId: PlayerId;
+      tileIndex: number;
+      houses: number;
+      cost: number;
+    }
   //auction regarding events
   | { type: "AUCTION_STARTED"; property: PropertyTile }
   | { type: "AUCTION_BID_PLACED"; playerId: PlayerId; amount: number }
@@ -103,4 +115,6 @@ export type GameState = {
 export type PropertyOwnership = {
   tileIndex: number;
   ownerId: PlayerId;
+  houses: number; // 0-4 houses, 5 means hotel
+  isMortaged: boolean;
 };

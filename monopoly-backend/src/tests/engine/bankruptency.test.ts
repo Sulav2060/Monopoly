@@ -33,6 +33,8 @@ test("player goes bankrupt if cannot pay rent", () => {
       {
         tileIndex: 5,
         ownerId: "p2",
+        houses: 0,
+        isMortaged: false,
       },
     ],
     events: [],

@@ -10,6 +10,7 @@ import { skipProperty } from "../engine/skipProperty";
 import { buyPendingProperty } from "../engine/buyPendingProperty";
 import { resolveAuctionTimeout } from "../engine/resolveAuctionTimeout";
 import { placeBid } from "../engine/placeBid";
+import { buildProperty } from "../engine/buildProperty";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -287,7 +288,10 @@ export function setupWebSocket(wss: WebSocketServer) {
           );
           return;
         }
-
+        //TODO: Do we even need auction_timeout event at the buy property step?
+        /* =======================
+           AUCTION_TIMEOUT
+        ======================= */
         if (msg.type === "AUCTION_TIMEOUT") {
           const game = getGame(msg.gameId);
           if (!game) return;
@@ -303,6 +307,9 @@ export function setupWebSocket(wss: WebSocketServer) {
           return;
         }
 
+        /* =======================
+           PLACE_BID
+        ======================= */
         if (msg.type === "PLACE_BID") {
           const game = getGame(msg.gameId);
           if (!game) return;
@@ -319,6 +326,44 @@ export function setupWebSocket(wss: WebSocketServer) {
             gameId: msg.gameId,
             state: newState,
           });
+          return;
+        }
+
+        /* =======================
+           BUILD_PROPERTY
+        ======================= */
+        if (msg.type === "BUILD_PROPERTY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const currentPlayer = getCurrentPlayerSafe(game.state);
+          if (currentPlayer.id !== msg.playerId) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Not your turn",
+            });
+            return;
+          }
+
+          const newState = buildProperty(
+            game.state,
+            msg.playerId,
+            msg.tileIndex,
+          );
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🏠 ${currentPlayer.name} built on property ${msg.tileIndex} in game ${msg.gameId}`,
+          );
           return;
         }
 

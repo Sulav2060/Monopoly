@@ -23,8 +23,19 @@ describe("buyPendingProperty", () => {
       communityChestIndex: 0,
       pendingAction: {
         type: "BUY_PROPERTY",
-        playerId: "p1",
-        tileIndex: 37,
+        property: {
+          type: "PROPERTY",
+          id: "makalu",
+          name: "Makalu",
+          price: 350,
+          tileIndex: 37,
+          baseRent: 35,
+          group: "peak",
+          houseRent: [175, 500, 1100, 1300],
+          hotelRent: 1500,
+          playerId: "p1",
+          houseBuildCost: 70,
+        },
       },
     };
 
@@ -34,6 +45,8 @@ describe("buyPendingProperty", () => {
     expect(result.properties[0]).toEqual({
       tileIndex: 37,
       ownerId: "p1",
+      houses: 0,
+      isMortaged: false,
     });
 
     expect(result.players[0]!.money).toBe(150);
@@ -121,8 +134,19 @@ describe("buyPendingProperty", () => {
       properties: [],
       pendingAction: {
         type: "BUY_PROPERTY",
-        tileIndex: 37,
-        playerId: "p1",
+        property: {
+          type: "PROPERTY",
+          id: "makalu",
+          name: "Makalu",
+          price: 350,
+          tileIndex: 37,
+          baseRent: 35,
+          group: "peak",
+          houseRent: [175, 500, 1100, 1300],
+          hotelRent: 1500,
+          playerId: "p1",
+          houseBuildCost: 70,
+        },
       },
       communityChestDeck: [],
       communityChestIndex: 0,
@@ -154,8 +178,19 @@ describe("buyPendingProperty", () => {
       properties: [],
       pendingAction: {
         type: "BUY_PROPERTY",
-        tileIndex: 37,
-        playerId: "p1",
+        property: {
+          type: "PROPERTY",
+          id: "makalu",
+          name: "Makalu",
+          price: 350,
+          tileIndex: 37,
+          baseRent: 35,
+          group: "peak",
+          houseRent: [175, 500, 1100, 1300],
+          hotelRent: 1500,
+          playerId: "p1",
+          houseBuildCost: 70,
+        },
       },
       communityChestDeck: [],
       communityChestIndex: 0,

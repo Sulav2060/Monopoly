@@ -12,7 +12,7 @@ export function skipProperty(state: GameState): GameState {
   }
 
   // Instead of just skipping and ending turn, we start an auction
-  const tile = BOARD[pending.tileIndex];
+  const tile = BOARD[pending.property.tileIndex];
   
   if (tile && tile.type === "PROPERTY") {
     return startAuction(state, tile as PropertyTile);
@@ -27,8 +27,8 @@ export function skipProperty(state: GameState): GameState {
         ...state.events,
         {
           type: "PROPERTY_SKIPPED",
-          playerId: pending.playerId,
-          tileIndex: pending.tileIndex,
+          playerId: pending.property.playerId,
+          tileIndex: pending.property.tileIndex,
         },
       ],
     }),

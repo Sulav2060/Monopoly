@@ -74,6 +74,10 @@ const Game = () => {
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [eventCards, setEventCards] = useState([]);
+  const [pendingEventCards, setPendingEventCards] = useState([]);
+  const [pendingSounds, setPendingSounds] = useState([]);
+  const eventCardTimeoutRef = useRef(null);
   const [_gameLog, setGameLog] = useState([]);
   const lastEventCountRef = useRef(0);
   const logIdCounterRef = useRef(0);
@@ -239,14 +243,24 @@ const Game = () => {
 
       case "COMMUNITY_CHEST": {
         const name = current?.name || "Player";
-        const tile = getTileAtPosition(current?.position);
+        const moveEvent = game?.events
+          ?.slice()
+          .reverse()
+          .find(
+            (e) => e.type === "PLAYER_MOVED" && e.to !== event.card?.position,
+          );
+        const tilePos = moveEvent ? moveEvent.to : current?.position;
+        const tile = getTileAtPosition(tilePos);
         const label = tile?.type === "chance" ? "Chance" : "Community Chest";
         if (event.card?.type === "MONEY") {
           const amt = event.card.amount ?? 0;
           return `🎁 ${name} received Rs. ${amt} from ${label}`;
         }
         if (event.card?.type === "MOVE") {
-          return `🎁 ${name} drew ${label} and moved`;
+          const targetTile = getTileAtPosition(event.card.position);
+          const targetName =
+            targetTile?.title || `Position ${event.card.position}`;
+          return `🎁 ${name} drew ${label} and moved to ${targetName}`;
         }
         if (event.card?.type === "GO_TO_JAIL") {
           return `🎁 ${name} drew ${label}: Go To Jail!`;
@@ -280,6 +294,144 @@ const Game = () => {
   const showNotification = (message, type = "info") => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
+  };
+
+  const getEventCardDetails = (event) => {
+    if (!event) return null;
+    const players = currentGame?.players || [];
+    const current = players[currentGame?.currentTurnIndex || 0];
+    const name = current?.name || "Player";
+
+    switch (event.type) {
+      case "COMMUNITY_CHEST": {
+        // Try to find the previous PLAYER_MOVED event to determine if it was Chance or Community Chest
+        const moveEvent = currentGame?.events
+          ?.slice()
+          .reverse()
+          .find(
+            (e) => e.type === "PLAYER_MOVED" && e.to !== event.card?.position,
+          );
+        const tilePos = moveEvent ? moveEvent.to : current?.position;
+        const tile = getTileAtPosition(tilePos);
+        const label = tile?.type === "chance" ? "Chance" : "Community Chest";
+        const icon = tile?.type === "chance" ? "❓" : "🎁";
+
+        if (event.card?.type === "MONEY") {
+          return {
+            title: label,
+            icon,
+            message: `You received Rs. ${event.card.amount}`,
+            color: "bg-green-500",
+          };
+        }
+        if (event.card?.type === "MOVE") {
+          const targetTile = getTileAtPosition(event.card.position);
+          const targetName =
+            targetTile?.title || `Position ${event.card.position}`;
+          return {
+            title: label,
+            icon,
+            message: `Advance to ${targetName}`,
+            color: "bg-blue-500",
+          };
+        }
+        if (event.card?.type === "GO_TO_JAIL") {
+          return {
+            title: label,
+            icon,
+            message: `Go directly to Jail!`,
+            color: "bg-red-500",
+          };
+        }
+        return {
+          title: label,
+          icon,
+          message: `You drew a card`,
+          color: "bg-purple-500",
+        };
+      }
+      case "PLAYER_SENT_TO_JAIL": {
+        const player = players.find((p) => p.id === event.playerId);
+        return {
+          title: "Go To Jail!",
+          icon: "🚔",
+          message: `${player?.name || "Player"} was sent to jail!`,
+          color: "bg-red-600",
+        };
+      }
+      case "JAIL_EXITED": {
+        const reason =
+          event.reason === "DOUBLES"
+            ? "by rolling doubles"
+            : "after serving time";
+        return {
+          title: "Out of Jail!",
+          icon: "🔓",
+          message: `${name} got out of jail ${reason}`,
+          color: "bg-green-500",
+        };
+      }
+      case "JAIL_TURN_FAILED": {
+        return {
+          title: "Still in Jail",
+          icon: "🔒",
+          message: `${name} failed to roll doubles (Attempt ${event.attempt || 0}/3)`,
+          color: "bg-gray-600",
+        };
+      }
+      case "PASSED_GO": {
+        return {
+          title: "Passed GO",
+          icon: "✨",
+          message: `Collected $${event.amount || 200}`,
+          color: "bg-yellow-500",
+        };
+      }
+      case "FREE_PARKING_COLLECTED": {
+        const player = players.find((p) => p.id === event.playerId);
+        return {
+          title: "Free Parking",
+          icon: "🅿️",
+          message: `${player?.name || "Player"} collected $${event.amount || 0}!`,
+          color: "bg-green-400",
+        };
+      }
+      case "TAX_PAID": {
+        const player = players.find((p) => p.id === event.playerId);
+        return {
+          title: "Tax Paid",
+          icon: "💰",
+          message: `${player?.name || "Player"} paid Rs. ${event.amount || 0} in taxes`,
+          color: "bg-red-400",
+        };
+      }
+      case "PLAYER_BANKRUPT": {
+        const player = players.find((p) => p.id === event.playerId);
+        const causedBy = event.causedBy
+          ? players.find((p) => p.id === event.causedBy)
+          : null;
+        const message = causedBy
+          ? `${player?.name || "Player"} went bankrupt to ${causedBy.name}`
+          : `${player?.name || "Player"} went bankrupt`;
+        return {
+          title: "Bankrupt!",
+          icon: "💔",
+          message,
+          color: "bg-gray-800",
+        };
+      }
+      case "GAME_OVER": {
+        const winner = players.find((p) => p.id === event.winnerId);
+        return {
+          title: "Game Over!",
+          icon: "🏆",
+          message: `${winner?.name || "Player"} wins!`,
+          color: "bg-yellow-400",
+        };
+      }
+      default:
+        return null;
+    }
   };
 
   // WebSocket connection for real-time updates
@@ -351,28 +503,18 @@ const Game = () => {
             case "PROPERTY_BOUGHT":
               playPropertyBought();
               break;
-            case "PLAYER_SENT_TO_JAIL":
-              playGoToJail();
-              break;
             case "TURN_ENDED":
               playTurnEnd();
               break;
+            case "PLAYER_SENT_TO_JAIL":
             case "COMMUNITY_CHEST":
-              if (evt.card?.type === "MONEY") {
-                playMoney(evt.card.amount ?? 0);
-              }
+            case "FREE_PARKING_COLLECTED":
+            case "TAX_PAID":
+            case "RENT_PAID":
+              setPendingSounds((prev) => [...prev, evt]);
               break;
             case "PASSED_GO":
               playMoney(evt.amount ?? 0);
-              break;
-            case "FREE_PARKING_COLLECTED":
-              playMoney(evt.amount ?? 0);
-              break;
-            case "TAX_PAID":
-              playTax(evt.amount ?? 0);
-              break;
-            case "RENT_PAID":
-              playTax(evt.amount ?? 0);
               break;
             default:
               break;
@@ -386,6 +528,68 @@ const Game = () => {
       const importantEvents = fresh.filter(
         (evt) => evt.type !== "DICE_ROLLED" && evt.type !== "PLAYER_MOVED",
       );
+
+      // Check for events that should show a card
+      let cardEvents = fresh.filter(
+        (evt) =>
+          evt.type === "COMMUNITY_CHEST" ||
+          evt.type === "PLAYER_SENT_TO_JAIL" ||
+          evt.type === "PASSED_GO" ||
+          evt.type === "FREE_PARKING_COLLECTED" ||
+          evt.type === "TAX_PAID" ||
+          evt.type === "PLAYER_BANKRUPT" ||
+          evt.type === "GAME_OVER" ||
+          evt.type === "JAIL_EXITED" ||
+          evt.type === "JAIL_TURN_FAILED",
+      );
+
+      // If there is a COMMUNITY_CHEST event that sends to jail, filter out the redundant PLAYER_SENT_TO_JAIL card
+      const hasCommunityChestJail = cardEvents.some(
+        (evt) =>
+          evt.type === "COMMUNITY_CHEST" && evt.card?.type === "GO_TO_JAIL",
+      );
+      if (hasCommunityChestJail) {
+        cardEvents = cardEvents.filter(
+          (evt) => evt.type !== "PLAYER_SENT_TO_JAIL",
+        );
+      }
+
+      // If time served frees the player, hide the final failed-attempt card
+      const hasTimeServedExit = cardEvents.some(
+        (evt) => evt.type === "JAIL_EXITED" && evt.reason !== "DOUBLES",
+      );
+      if (hasTimeServedExit) {
+        cardEvents = cardEvents.filter(
+          (evt) =>
+            !(evt.type === "JAIL_TURN_FAILED" && Number(evt.attempt) >= 3),
+        );
+      }
+
+      if (cardEvents.length > 0) {
+        // Immediately show PASSED_GO, queue others
+        const passedGoEvents = cardEvents.filter((e) => e.type === "PASSED_GO");
+        const otherEvents = cardEvents.filter((e) => e.type !== "PASSED_GO");
+
+        if (passedGoEvents.length > 0) {
+          setEventCards((prev) => {
+            // Filter out any existing PASSED_GO cards to avoid duplicates if multiple events fire
+            const filteredPrev = prev.filter((c) => c.type !== "PASSED_GO");
+            const newCards = [...filteredPrev, ...passedGoEvents];
+            if (eventCardTimeoutRef.current) {
+              clearTimeout(eventCardTimeoutRef.current);
+            }
+            eventCardTimeoutRef.current = setTimeout(
+              () => setEventCards([]),
+              4000,
+            );
+            return newCards;
+          });
+        }
+
+        if (otherEvents.length > 0) {
+          setPendingEventCards((prev) => [...prev, ...otherEvents]);
+        }
+      }
 
       if (importantEvents.length > 0) {
         const newLogs = importantEvents.map((evt, idx) => {
@@ -407,6 +611,55 @@ const Game = () => {
       lastEventCountRef.current = total;
     }
   }, [currentGame?.events, currentGame]);
+
+  // Process pending event cards and sounds when animation is complete
+  useEffect(() => {
+    if (animationStep === "idle" || animationStep === "showing_card") {
+      if (pendingEventCards.length > 0) {
+        setEventCards((prev) => {
+          // Filter out any existing PASSED_GO cards to avoid duplicates if multiple events fire
+          const filteredPrev = prev.filter((c) => c.type !== "PASSED_GO");
+          const newCards = [...filteredPrev, ...pendingEventCards];
+          if (eventCardTimeoutRef.current) {
+            clearTimeout(eventCardTimeoutRef.current);
+          }
+          eventCardTimeoutRef.current = setTimeout(
+            () => setEventCards([]),
+            4000,
+          );
+          return newCards;
+        });
+        setPendingEventCards([]);
+      }
+
+      if (pendingSounds.length > 0) {
+        pendingSounds.forEach((evt) => {
+          switch (evt.type) {
+            case "PLAYER_SENT_TO_JAIL":
+              playGoToJail();
+              break;
+            case "COMMUNITY_CHEST":
+              if (evt.card?.type === "MONEY") {
+                playMoney(evt.card.amount ?? 0);
+              }
+              break;
+            case "FREE_PARKING_COLLECTED":
+              playMoney(evt.amount ?? 0);
+              break;
+            case "TAX_PAID":
+              playTax(evt.amount ?? 0);
+              break;
+            case "RENT_PAID":
+              playTax(evt.amount ?? 0);
+              break;
+            default:
+              break;
+          }
+        });
+        setPendingSounds([]);
+      }
+    }
+  }, [animationStep, pendingEventCards, pendingSounds]);
 
   // Roll Dice + Start Animation
   // Roll Dice - CAPTURE POSITION BEFORE ROLLING
@@ -560,28 +813,7 @@ const Game = () => {
   useEffect(() => {
     if (!currentGame?.players) return;
 
-    const isGoToJailEventForPlayer = (evt, playerId) => {
-      if (!evt) return false;
-      if (evt.type === "PLAYER_SENT_TO_JAIL") {
-        return !playerId || evt.playerId === playerId;
-      }
-      if (evt.type === "COMMUNITY_CHEST" || evt.type === "CHANCE") {
-        return (
-          evt.card?.type === "GO_TO_JAIL" &&
-          (!playerId || evt.playerId === playerId)
-        );
-      }
-      if (evt.type === "CHANCE_CARD" || evt.type === "COMMUNITY_CHEST_CARD") {
-        return (
-          evt.card?.type === "GO_TO_JAIL" &&
-          (!playerId || evt.playerId === playerId)
-        );
-      }
-      return false;
-    };
-
     const recentEvents = currentGame.events?.slice(-3) || [];
-    const jailIndex = 10; // canonical jail tile index on the board
 
     const nextSig = currentGame.players.map((p) => p.position).join("-");
     const prevSig = lastPositionsSigRef.current;
@@ -614,17 +846,8 @@ const Game = () => {
       let stagedPlayers = currentGame.players;
       let stagedTeleport = null;
 
-      // Detect go-to-jail triggered immediately after landing on Chance/Community Chest/Go To Jail
+      // Detect teleport triggered immediately after landing on Chance/Community Chest/Go To Jail
       for (const moved of movedPlayers) {
-        const landedInJail = moved.position === jailIndex;
-        if (!landedInJail) continue;
-
-        const relatedEvent = recentEvents.find((evt) =>
-          isGoToJailEventForPlayer(evt, moved.id),
-        );
-
-        if (!relatedEvent) continue;
-
         const startPos = prevPositionsMap[moved.id] ?? moved.position;
         const diceSum = currentGame.lastDice
           ? (currentGame.lastDice.die1 || 0) + (currentGame.lastDice.die2 || 0)
@@ -634,17 +857,19 @@ const Game = () => {
 
         const landingPos = (startPos + diceSum) % TILES_ON_BOARD;
 
-        stagedTeleport = {
-          playerId: moved.id,
-          landingPos,
-          finalPos: moved.position,
-        };
+        if (moved.position !== landingPos) {
+          stagedTeleport = {
+            playerId: moved.id,
+            landingPos,
+            finalPos: moved.position,
+          };
 
-        stagedPlayers = currentGame.players.map((p) =>
-          p.id === moved.id ? { ...p, position: landingPos } : p,
-        );
+          stagedPlayers = currentGame.players.map((p) =>
+            p.id === moved.id ? { ...p, position: landingPos } : p,
+          );
 
-        break; // only stage the first detected teleport per tick
+          break; // only stage the first detected teleport per tick
+        }
       }
 
       setPrevPositions(prevPositionsMap);
@@ -700,9 +925,20 @@ const Game = () => {
 
     // 2. Token "waving" animation (shake) before moving
     else if (animationStep === "waving") {
-      const extraHold = pendingTeleport ? 2000 : 0;
-      const waveDuration = diceSum * 100 + 500 + extraHold;
+      const waveDuration = diceSum * 100 + 500;
 
+      timeout = setTimeout(() => {
+        if (pendingTeleport || pendingEventCards.length > 0) {
+          setAnimationStep("showing_card");
+        } else {
+          setAnimationStep("zooming");
+        }
+      }, waveDuration);
+    }
+
+    // 2.5 Show card before teleporting
+    else if (animationStep === "showing_card") {
+      const extraHold = 2000;
       timeout = setTimeout(() => {
         if (pendingTeleport) {
           // After showing the landing tile, teleport to jail without wave
@@ -721,11 +957,8 @@ const Game = () => {
 
           setPendingTeleport(null);
         }
-
-        // Movement is handled by backend via rollDice
-        // Just update animation
         setAnimationStep("zooming");
-      }, waveDuration);
+      }, extraHold);
     }
 
     // 3. Camera zoom animation
@@ -745,11 +978,22 @@ const Game = () => {
     currentGame,
     currentPlayerId,
     pendingTeleport,
+    pendingEventCards,
   ]);
 
   // Determine current player and turn state
   const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];
   const isMyTurn = currentPlayer?.id === currentPlayerId;
+  const gameOverEvent = currentGame?.events
+    ?.slice()
+    .reverse()
+    .find((event) => event.type === "GAME_OVER");
+  const winnerId =
+    gameOverEvent?.winnerId || currentGame?.winnerId || currentGame?.winner?.id;
+  const winner = currentGame?.players?.find((p) => p.id === winnerId);
+  const otherPlayers = (currentGame?.players || []).filter(
+    (p) => p.id !== winnerId,
+  );
 
   // Loading state or not in game
   if (!currentGame) {
@@ -760,6 +1004,96 @@ const Game = () => {
             Loading game...
           </p>
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameOverEvent) {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,#1f2937_0%,#0b1221_45%,#05070d_100%)] text-gray-100 p-6 overflow-hidden relative">
+        {/* Glow Background Effect */}
+        <div className="absolute top-[-200px] w-[600px] h-[600px] bg-emerald-500/20 blur-[140px] rounded-full animate-pulse" />
+
+        <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-white/5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] backdrop-blur-xl p-8 sm:p-10 animate-[fadeIn_.6s_ease-out]">
+          {/* Header */}
+          <div className="flex flex-col items-center text-center gap-3">
+            <div className="text-6xl animate-bounce">🏆</div>
+
+            <h1 className="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-emerald-300 to-teal-400 bg-clip-text text-transparent">
+              Game Over
+            </h1>
+
+            <p className="text-lg sm:text-xl text-emerald-300 font-semibold">
+              {winner?.name || "Winner"} Wins!
+            </p>
+
+            <div className="h-px w-32 bg-gradient-to-r from-transparent via-white/40 to-transparent mt-2" />
+          </div>
+
+          {/* Winner Spotlight */}
+          <div className="mt-10 relative">
+            <div className="absolute inset-0 bg-emerald-500/10 blur-2xl rounded-3xl" />
+
+            <div className="relative rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-6 flex flex-col items-center text-center gap-3 shadow-lg">
+              <div className="text-sm uppercase tracking-widest text-emerald-300">
+                Champion
+              </div>
+
+              <div className="text-2xl font-extrabold text-white">
+                {winner?.name || "Winner"}
+              </div>
+
+              {winner?.money !== undefined && (
+                <div className="text-emerald-300 text-sm font-medium">
+                  Rs. {winner.money.toLocaleString()}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Other Players Ranking */}
+          {otherPlayers.length > 0 && (
+            <div className="mt-10">
+              <div className="text-xs uppercase tracking-widest text-gray-400 mb-4 text-center">
+                Final Standings
+              </div>
+
+              <div className="space-y-3">
+                {otherPlayers.map((player, index) => (
+                  <div
+                    key={player.id}
+                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:bg-white/10 transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="text-xs font-bold text-gray-400">
+                        #{index + 2}
+                      </div>
+                      <span className="text-sm font-semibold text-gray-100">
+                        {player.name}
+                      </span>
+                    </div>
+
+                    {player.money !== undefined && (
+                      <span className="text-xs text-gray-300">
+                        Rs. {player.money.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Action Button */}
+          <div className="mt-10 flex justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all duration-200 font-semibold text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50"
+            >
+              Play Again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -846,13 +1180,13 @@ const Game = () => {
               </div>
             );
           })}
-          <div className="mt-2 pt-3 border-t border-white/10 relative">
-            <div className="flex items-center justify-between mb-2">
+          <div className="mt-2 pt-3 border-t border-white/10 relative flex-1 flex flex-col min-h-0 max-h-[50%]">
+            <div className="flex items-center justify-between mb-2 shrink-0">
               <h3 className="font-semibold text-sm text-gray-200">Game Log</h3>
               <span className="text-[10px] text-gray-400">live</span>
             </div>
 
-            <div className="space-y-1.5 min-h-44 max-h-44 overflow-y-auto text-xs pr-1 relative scrollbar-hide">
+            <div className="space-y-1.5 flex-1 overflow-y-auto text-xs pr-1 relative scrollbar-hide">
               {_gameLog.map((log) => (
                 <div
                   key={log.id}
@@ -867,6 +1201,43 @@ const Game = () => {
               <div className="pointer-events-none sticky bottom-0 h-8 bg-linear-to-t from-[#181F2E] via-[#181F2E]/80 to-transparent" />
             </div>
           </div>
+
+          {/* Event Card Display (Bottom Left) */}
+          {eventCards.length > 0 && (
+            <div className="mt-4 shrink-0 relative flex flex-col gap-2">
+              {eventCards.map((card, idx) => {
+                const details = getEventCardDetails(card);
+                if (!details) return null;
+                return (
+                  <div
+                    key={idx}
+                    className="relative transform transition-all duration-500 scale-100 opacity-100 bg-white rounded-xl p-4 shadow-lg border-2 border-white/20 text-center overflow-hidden"
+                  >
+                    {/* Decorative background elements */}
+                    <div
+                      className={`absolute -top-12 -right-12 w-24 h-24 rounded-full opacity-20 blur-xl ${details.color}`}
+                    />
+                    <div
+                      className={`absolute -bottom-12 -left-12 w-24 h-24 rounded-full opacity-20 blur-xl ${details.color}`}
+                    />
+
+                    <div className="relative z-10 flex flex-col items-center">
+                      <div className="text-3xl mb-2 animate-bounce">
+                        {details.icon}
+                      </div>
+                      <h3 className="text-lg font-black text-gray-800 mb-1 uppercase tracking-wider">
+                        {details.title}
+                      </h3>
+                      <div className="w-8 h-0.5 bg-gray-200 mx-auto mb-2 rounded-full" />
+                      <p className="text-sm text-gray-600 font-medium leading-snug">
+                        {details.message}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Game Board */}
@@ -903,7 +1274,7 @@ const Game = () => {
         </div>
 
         {/* Right Sidebar - Actions & Info */}
-        <div className="w-full lg:w-80 order-3 lg:order-3 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
+        <div className="w-full lg:w-72 order-3 lg:order-3 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
             <div>

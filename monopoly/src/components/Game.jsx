@@ -554,7 +554,7 @@ const Game = () => {
         if (passedGoEvents.length > 0) {
           setEventCards((prev) => {
             // Filter out any existing PASSED_GO cards to avoid duplicates if multiple events fire
-            const filteredPrev = prev.filter(c => c.type !== "PASSED_GO");
+            const filteredPrev = prev.filter((c) => c.type !== "PASSED_GO");
             const newCards = [...filteredPrev, ...passedGoEvents];
             if (eventCardTimeoutRef.current) {
               clearTimeout(eventCardTimeoutRef.current);
@@ -600,7 +600,7 @@ const Game = () => {
       if (pendingEventCards.length > 0) {
         setEventCards((prev) => {
           // Filter out any existing PASSED_GO cards to avoid duplicates if multiple events fire
-          const filteredPrev = prev.filter(c => c.type !== "PASSED_GO");
+          const filteredPrev = prev.filter((c) => c.type !== "PASSED_GO");
           const newCards = [...filteredPrev, ...pendingEventCards];
           if (eventCardTimeoutRef.current) {
             clearTimeout(eventCardTimeoutRef.current);

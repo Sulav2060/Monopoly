@@ -13,6 +13,7 @@ import {
   playMoney,
   playTax,
 } from "../services/sound";
+import BuildMenu from "./BuildMenu";
 
 const TILES_ON_BOARD =
   tiles.bottom.length +
@@ -68,6 +69,7 @@ const Game = () => {
 
   // UI States
   const [_showPropertyCard, setShowPropertyCard] = useState(null);
+  const [showBuildMenu, setShowBuildMenu] = useState(false);
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [notification, setNotification] = useState(null);
   const [_gameLog, setGameLog] = useState([]);
@@ -155,9 +157,8 @@ const Game = () => {
         const d2 = event.dice?.die2 ?? "?";
         const total = d1 + d2;
         const isDoubles = d1 === d2;
-        return `🎲 ${name} rolled ${d1} + ${d2} = ${total}${
-          isDoubles ? " (Doubles!)" : ""
-        }`;
+        return `🎲 ${name} rolled ${d1} + ${d2} = ${total}${isDoubles ? " (Doubles!)" : ""
+          }`;
       }
 
       case "PLAYER_MOVED": {
@@ -179,9 +180,8 @@ const Game = () => {
         const payer = players.find((p) => p.id === event.from);
         const receiver = players.find((p) => p.id === event.to);
         const amount = event.amount || 0;
-        return `💸 ${payer?.name || "Player"} paid $${amount} rent to ${
-          receiver?.name || "Player"
-        }`;
+        return `💸 ${payer?.name || "Player"} paid $${amount} rent to ${receiver?.name || "Player"
+          }`;
       }
 
       case "PROPERTY_SKIPPED": {
@@ -231,9 +231,8 @@ const Game = () => {
       case "FREE_PARKING_COLLECTED": {
         const player = players.find((p) => p.id === event.playerId);
         const amount = event.amount || 0;
-        return `🅿️ ${
-          player?.name || "Player"
-        } collected $${amount} from Free Parking!`;
+        return `🅿️ ${player?.name || "Player"
+          } collected $${amount} from Free Parking!`;
       }
 
       case "COMMUNITY_CHEST": {
@@ -259,9 +258,8 @@ const Game = () => {
           ? players.find((p) => p.id === event.causedBy)
           : null;
         if (causedBy) {
-          return `💔 ${player?.name || "Player"} went bankrupt to ${
-            causedBy.name
-          }`;
+          return `💔 ${player?.name || "Player"} went bankrupt to ${causedBy.name
+            }`;
         }
         return `💔 ${player?.name || "Player"} went bankrupt`;
       }
@@ -272,9 +270,8 @@ const Game = () => {
       }
 
       default:
-        return `📋 ${
-          event.type?.replace(/_/g, " ").toLowerCase() || "Game event"
-        }`;
+        return `📋 ${event.type?.replace(/_/g, " ").toLowerCase() || "Game event"
+          }`;
     }
   };
 
@@ -394,9 +391,8 @@ const Game = () => {
           const message = formatEventMessage(evt, currentGame);
           logIdCounterRef.current += 1;
           return {
-            id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${
-              logIdCounterRef.current
-            }`,
+            id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${logIdCounterRef.current
+              }`,
             message,
             time: new Date().toLocaleTimeString(),
           };
@@ -773,13 +769,12 @@ const Game = () => {
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-xl shadow-2xl border border-white/10 backdrop-blur-md bg-white/10 text-white font-semibold ${
-            notification.type === "success"
-              ? "shadow-green-500/30"
-              : notification.type === "error"
-                ? "shadow-red-500/30"
-                : "shadow-blue-500/30"
-          }`}
+          className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-xl shadow-2xl border border-white/10 backdrop-blur-md bg-white/10 text-white font-semibold ${notification.type === "success"
+            ? "shadow-green-500/30"
+            : notification.type === "error"
+              ? "shadow-red-500/30"
+              : "shadow-blue-500/30"
+            }`}
         >
           {notification.message}
         </div>
@@ -922,16 +917,15 @@ const Game = () => {
           <div className="grid grid-cols-2 gap-3">
             {/* Show Buy and Skip buttons when there's a pending property purchase */}
             {currentGame?.pendingAction?.type === "BUY_PROPERTY" &&
-            currentGame?.pendingAction?.playerId === currentPlayerId ? (
+              currentGame?.pendingAction?.playerId === currentPlayerId ? (
               <>
                 <button
                   onClick={buyProperty}
                   disabled={!canBuyProperty() || isLoadingAction}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                    canBuyProperty() && !isLoadingAction
-                      ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
-                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                  }`}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${canBuyProperty() && !isLoadingAction
+                    ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
+                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                    }`}
                 >
                   🏠 Buy
                 </button>
@@ -939,11 +933,10 @@ const Game = () => {
                 <button
                   onClick={endTurn}
                   disabled={isLoadingAction}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                    !isLoadingAction
-                      ? "bg-amber-600/80 border-amber-500/70 text-white shadow-[0_10px_30px_-15px_rgba(245,158,11,0.8)] hover:-translate-y-0.5"
-                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                  }`}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${!isLoadingAction
+                    ? "bg-amber-600/80 border-amber-500/70 text-white shadow-[0_10px_30px_-15px_rgba(245,158,11,0.8)] hover:-translate-y-0.5"
+                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                    }`}
                 >
                   🔨 Auction
                 </button>
@@ -953,22 +946,38 @@ const Game = () => {
                 <button
                   onClick={buyProperty}
                   disabled={!canBuyProperty() || isLoadingAction}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                    canBuyProperty() && !isLoadingAction
-                      ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
-                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                  }`}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${canBuyProperty() && !isLoadingAction
+                    ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
+                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                    }`}
                 >
                   🏠 Buy
                 </button>
 
                 <button
+                  onClick={() => {
+                    if (!isMyTurn) return;
+                    const COLOR_GROUP_SIZES = { brown: 2, lightblue: 3, pink: 3, orange: 3, red: 3, yellow: 3, green: 3, blue: 2 };
+                    const myProps = currentGame.properties?.filter(p => p.ownerId === currentPlayerId) || [];
+                    const colorCounts = myProps.reduce((acc, p) => {
+                      const tile = getTileAtIndex(p.tileIndex);
+                      if (tile?.color) acc[tile.color] = (acc[tile.color] || 0) + 1;
+                      return acc;
+                    }, {});
+                    const hasMonopoly = Object.entries(colorCounts).some(
+                      ([color, count]) => count === COLOR_GROUP_SIZES[color]
+                    );
+                    if (!hasMonopoly) {
+                      showNotification("You need a full color set to build!", "info");
+                      return;
+                    }
+                    setShowBuildMenu(true);
+                  }}
                   disabled={!isMyTurn}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                    isMyTurn
-                      ? "bg-orange-500/80 border-orange-400/70 text-white shadow-[0_10px_30px_-15px_rgba(249,115,22,0.8)] hover:-translate-y-0.5"
-                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                  }`}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${isMyTurn
+                    ? "bg-orange-500/80 border-orange-400/70 text-white shadow-[0_10px_30px_-15px_rgba(249,115,22,0.8)] hover:-translate-y-0.5"
+                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                    }`}
                 >
                   🏗️ Build
                 </button>
@@ -978,22 +987,20 @@ const Game = () => {
             <button
               onClick={() => setShowTradeModal(true)}
               disabled={!isMyTurn}
-              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                isMyTurn
-                  ? "bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5"
-                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-              }`}
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${isMyTurn
+                ? "bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5"
+                : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                }`}
             >
               🤝 Trade
             </button>
 
             <button
               disabled={!isMyTurn}
-              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                isMyTurn
-                  ? "bg-amber-500/80 border-amber-400/70 text-white shadow-[0_10px_30px_-15px_rgba(251,191,36,0.8)] hover:-translate-y-0.5"
-                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-              }`}
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${isMyTurn
+                ? "bg-amber-500/80 border-amber-400/70 text-white shadow-[0_10px_30px_-15px_rgba(251,191,36,0.8)] hover:-translate-y-0.5"
+                : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                }`}
             >
               💰 Mortgage
             </button>
@@ -1151,11 +1158,10 @@ const Game = () => {
               // Slideshow carousel
               <div className="relative h-48 rounded-xl overflow-hidden">
                 <div
-                  className={`flex h-full w-full ${
-                    isTransitioning
-                      ? "transition-transform duration-700 ease-in-out"
-                      : ""
-                  }`}
+                  className={`flex h-full w-full ${isTransitioning
+                    ? "transition-transform duration-700 ease-in-out"
+                    : ""
+                    }`}
                   style={{
                     transform: `translateX(-${carouselIndex * 100}%)`,
                   }}
@@ -1185,11 +1191,10 @@ const Game = () => {
                   {allPropertyTiles.slice(0, 10).map((_, idx) => (
                     <div
                       key={idx}
-                      className={`h-1.5 rounded-full transition-all ${
-                        idx === carouselIndex % 10
-                          ? "w-6 bg-white"
-                          : "w-1.5 bg-white/40"
-                      }`}
+                      className={`h-1.5 rounded-full transition-all ${idx === carouselIndex % 10
+                        ? "w-6 bg-white"
+                        : "w-1.5 bg-white/40"
+                        }`}
                     />
                   ))}
                 </div>
@@ -1200,29 +1205,78 @@ const Game = () => {
       </div>
 
 
-            {/* Auction Modal */}
-            {currentGame?.pendingAction?.type === "AUCTION" && (
-              <AuctionModal
-                auction={currentGame.pendingAction.auction}
-                currentPlayerId={currentPlayerId}
-                onPlaceBid={(amount) => {
-                  wsClient.send({
-                    type: "PLACE_BID",
-                    gameId: currentGame.id,
-                    playerId: currentPlayerId,
-                    amount: amount,
-                  });
-                }}
-                onTimeout={() => {
-                  wsClient.send({
-                    type: "AUCTION_TIMEOUT",
-                    gameId: currentGame.id,
-                  });
-                }}
-              />
-            )}
+      {/* Auction Modal */}
+      {currentGame?.pendingAction?.type === "AUCTION" && (
+        <AuctionModal
+          auction={currentGame.pendingAction.auction}
+          currentPlayerId={currentPlayerId}
+          onPlaceBid={(amount) => {
+            wsClient.send({
+              type: "PLACE_BID",
+              gameId: currentGame.id,
+              playerId: currentPlayerId,
+              amount: amount,
+            });
+          }}
+          onTimeout={() => {
+            wsClient.send({
+              type: "AUCTION_TIMEOUT",
+              gameId: currentGame.id,
+            });
+          }}
+        />
+      )}
 
-            {/* Trade Modal */}
+      {/* Build Menu Modal */}
+      {showBuildMenu && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowBuildMenu(false)} // click backdrop to close
+        >
+          <div
+            className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()} // prevent backdrop click from firing inside
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-white font-bold text-lg">🏗️ Build Structures</h2>
+              <button
+                onClick={() => setShowBuildMenu(false)}
+                className="text-gray-400 hover:text-white text-2xl font-bold leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <BuildMenu
+              currentPlayerId={currentPlayerId}
+              properties={currentGame.properties.map(prop => {
+                const tile = getTileAtIndex(prop.tileIndex);
+                return {
+                  id: prop.tileIndex,
+                  name: tile?.title,
+                  color: tile?.color,
+                  housePrice: tile?.houseCost,
+                  houses: prop.houses ?? 0,
+                  hotel: prop.hotel ?? 0,
+                  isMortgaged: prop.isMortgaged ?? false,
+                  ownerId: prop.ownerId,
+                };
+              })}
+              onBuild={(propertyId, buildType) => {
+                wsClient.send({
+                  type: "BUILD_STRUCTURE",
+                  gameId: currentGame.id,
+                  playerId: currentPlayerId,
+                  propertyId,
+                  buildType,
+                });
+                setShowBuildMenu(false);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Trade Modal */}
       {showTradeModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="bg-[#FFCCCB] rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl">

@@ -1,4 +1,5 @@
 import ReactDOM from "react-dom/client";
+import "./index.css";
 import { BrowserRouter } from "react-router-dom";
 import { GameProvider } from "./context/GameContext";
 import App from "./App";

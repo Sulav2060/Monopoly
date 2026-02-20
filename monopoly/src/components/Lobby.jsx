@@ -34,7 +34,7 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
 
   const copyToClipboard = () => {
     if (currentGame?.id) {
-      const shareUrl = `${window.location.origin}/game/${currentGame.id}`;
+      const shareUrl = `${window.location.origin}/?join=${currentGame.id}`;
       navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

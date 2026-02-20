@@ -1,26 +1,30 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useGame } from "../context/GameContext";
 import { wsClient } from "../services/wsClient";
 import Landing from "../components/Landing";
 
 const Home = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const {
-    currentGame,
-    setCurrentGame,
     currentPlayerId,
     setCurrentPlayerId,
-    currentPlayerName,
     setCurrentPlayerName,
     createGame,
+    joinGame,
   } = useGame();
 
   const [nameInput, setNameInput] = useState("");
-  const [joinGameId, setJoinGameId] = useState("");
+  const [joinGameId, setJoinGameId] = useState(searchParams.get("join") || ""); // 👈 pre-fill from URL
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Initialize player ID on mount
+  // Keep in sync if query param changes
+  useEffect(() => {
+    const joinId = searchParams.get("join");
+    if (joinId) setJoinGameId(joinId);
+  }, [searchParams]);
+
   useEffect(() => {
     if (currentPlayerId) return;
     let storedId = sessionStorage.getItem("monopoly_player_id");
@@ -37,12 +41,9 @@ const Home = () => {
       setIsProcessing(true);
       const playerId = sessionStorage.getItem("monopoly_player_id");
       setCurrentPlayerName(nameInput.trim());
-
       const gameId = await createGame(nameInput.trim());
-
       const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:4000";
       await wsClient.connect(wsUrl, gameId, playerId, nameInput.trim());
-
       navigate(`/game/${gameId}/play`);
     } catch (err) {
       alert("Failed to create game");
@@ -54,7 +55,24 @@ const Home = () => {
   const handleJoinGame = async (e) => {
     e.preventDefault();
     if (!joinGameId.trim() || !nameInput.trim()) return;
-    navigate(`/game/${joinGameId.trim()}`);
+    try {
+      setIsProcessing(true);
+      const playerId = sessionStorage.getItem("monopoly_player_id");
+      setCurrentPlayerName(nameInput.trim());
+
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
+      const res = await fetch(`${apiUrl}/game/${joinGameId.trim()}`);
+      if (!res.ok) { alert("Game not found"); return; }
+
+      await joinGame(joinGameId.trim());
+      const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:4000";
+      await wsClient.connect(wsUrl, joinGameId.trim(), playerId, nameInput.trim());
+      navigate(`/game/${joinGameId.trim()}/play`);
+    } catch (err) {
+      alert("Failed to join game");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (

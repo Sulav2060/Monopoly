@@ -50,7 +50,7 @@ const PURCHASABLE_TYPES = ["property", "railroad", "utility"];
 
 const Game = () => {
   const {
-    currentGame: _currentGame,
+    currentGame,
     currentPlayerId,
     currentRoom,
     rollDice: contextRollDice,
@@ -58,32 +58,6 @@ const Game = () => {
     endTurn: contextEndTurn,
     syncGameFromSocket,
   } = useGame();
-
-  const currentGame = useMemo(() => {
-  if (!_currentGame) return null;
-  return {
-    ..._currentGame,
-    properties: [
-      ...(_currentGame.properties ?? []),
-      { tileIndex: 11, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 12, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 13, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 14, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 15, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 16, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 17, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 18, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 19, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 20, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 21, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 22, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 23, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 24, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-      { tileIndex: 25, ownerId: currentPlayerId, houses: 0, hotel: 0, isMortgaged: false },
-
-    ],
-  };
-}, [_currentGame, currentPlayerId]);
 
   const [isAnimating, setIsAnimating] = useState(false);
   const [animationStep, setAnimationStep] = useState("idle");

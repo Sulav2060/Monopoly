@@ -27,7 +27,13 @@ export type ClientMessage =
       playerId: string;
     }
   | { type: "AUCTION_TIMEOUT"; gameId: string }
-  | { type: "PLACE_BID"; gameId: string; playerId: string; amount: number };
+  | { type: "PLACE_BID"; gameId: string; playerId: string; amount: number }
+  | {
+      type: "BUILD_PROPERTY";
+      gameId: string;
+      playerId: string;
+      tileIndex: number;
+    }; //houses: number of houses to build, 5 means hotel
 
 export type ServerMessage =
   | {

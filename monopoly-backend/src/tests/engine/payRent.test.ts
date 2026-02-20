@@ -20,8 +20,10 @@ describe("payRent", () => {
     }
     state.properties = [
       {
-        tileIndex: 1, 
+        tileIndex: 1,
         ownerId: "p1",
+        houses: 0,
+        isMortaged: false,
       },
     ];
 

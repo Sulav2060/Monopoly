@@ -18,6 +18,7 @@ export type PropertyTile = {
   group: string;
   houseRent: number[];
   hotelRent: number;
+  houseBuildCost: number;
 };
 
 export type Tile =

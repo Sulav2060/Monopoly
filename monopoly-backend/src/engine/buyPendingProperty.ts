@@ -32,6 +32,8 @@ export function buyPendingProperty(state: GameState): GameState {
       {
         tileIndex: property.tileIndex,
         ownerId: player.id,
+        houses: 0,
+        isMortaged: false,
       },
     ],
     events: [

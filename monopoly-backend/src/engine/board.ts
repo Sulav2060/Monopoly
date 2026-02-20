@@ -7,7 +7,7 @@ export const GO_TO_JAIL_INDEX = 30;
 export const BOARD: Tile[] = [
   { tileIndex: 0, type: "GO" },
 
- // TODO: Remove the airport having multiple houses and put real prices
+  // TODO: Remove the airport having multiple houses and put real prices
   // Dark Purple – Terai Cities
   {
     tileIndex: 1,
@@ -18,6 +18,7 @@ export const BOARD: Tile[] = [
     baseRent: 2,
     houseRent: [10, 30, 90, 160],
     hotelRent: 250,
+    houseBuildCost: 12,
     group: "terai",
   },
   { tileIndex: 2, type: "COMMUNITY_CHEST" },
@@ -30,6 +31,7 @@ export const BOARD: Tile[] = [
     baseRent: 4,
     houseRent: [20, 60, 180, 320],
     hotelRent: 450,
+    houseBuildCost: 12,
     group: "terai",
   },
   { tileIndex: 4, type: "TAX", amount: 200 },
@@ -42,6 +44,7 @@ export const BOARD: Tile[] = [
     name: "South airport",
     price: 200,
     baseRent: 25,
+    houseBuildCost: 40,
     group: "airport",
     houseRent: [20, 60, 180, 320],
     hotelRent: 450,
@@ -57,6 +60,7 @@ export const BOARD: Tile[] = [
     baseRent: 6,
     houseRent: [30, 90, 270, 400],
     hotelRent: 550,
+    houseBuildCost: 20,
     group: "lake",
   },
   { tileIndex: 7, type: "CHANCE" },
@@ -69,6 +73,7 @@ export const BOARD: Tile[] = [
     baseRent: 8,
     houseRent: [40, 100, 300, 450],
     hotelRent: 600,
+    houseBuildCost: 20,
     group: "lake",
   },
   {
@@ -80,6 +85,7 @@ export const BOARD: Tile[] = [
     baseRent: 10,
     houseRent: [50, 150, 450, 625],
     hotelRent: 750,
+    houseBuildCost: 24,
     group: "lake",
   },
 
@@ -95,6 +101,7 @@ export const BOARD: Tile[] = [
     baseRent: 12,
     houseRent: [60, 180, 500, 700],
     hotelRent: 900,
+    houseBuildCost: 28,
     group: "temple",
   },
   {
@@ -104,6 +111,7 @@ export const BOARD: Tile[] = [
     name: "Hydropower",
     price: 150,
     baseRent: 4,
+    houseBuildCost: 30,
     group: "utility",
     houseRent: [20, 60, 180, 320],
     hotelRent: 450,
@@ -117,6 +125,7 @@ export const BOARD: Tile[] = [
     baseRent: 14,
     houseRent: [70, 200, 550, 750],
     hotelRent: 950,
+    houseBuildCost: 28,
     group: "temple",
   },
   {
@@ -128,6 +137,7 @@ export const BOARD: Tile[] = [
     baseRent: 16,
     houseRent: [80, 220, 600, 800],
     hotelRent: 1000,
+    houseBuildCost: 32,
     group: "temple",
   },
 
@@ -139,6 +149,7 @@ export const BOARD: Tile[] = [
     name: "East airport",
     price: 200,
     baseRent: 25,
+    houseBuildCost: 40,
     group: "airport",
     houseRent: [20, 60, 180, 320],
     hotelRent: 450,
@@ -154,6 +165,7 @@ export const BOARD: Tile[] = [
     baseRent: 18,
     houseRent: [90, 250, 700, 875],
     hotelRent: 1050,
+    houseBuildCost: 36,
     group: "national_park",
   },
   { tileIndex: 17, type: "COMMUNITY_CHEST" },
@@ -166,6 +178,7 @@ export const BOARD: Tile[] = [
     baseRent: 20,
     houseRent: [100, 300, 750, 925],
     hotelRent: 1100,
+    houseBuildCost: 36,
     group: "national_park",
   },
   {
@@ -177,6 +190,7 @@ export const BOARD: Tile[] = [
     baseRent: 22,
     houseRent: [110, 330, 800, 975],
     hotelRent: 1150,
+    houseBuildCost: 40,
     group: "national_park",
   },
 
@@ -192,6 +206,7 @@ export const BOARD: Tile[] = [
     baseRent: 24,
     houseRent: [120, 360, 850, 1025],
     hotelRent: 1200,
+    houseBuildCost: 44,
     group: "valley",
   },
   { tileIndex: 22, type: "CHANCE" },
@@ -204,6 +219,7 @@ export const BOARD: Tile[] = [
     baseRent: 26,
     houseRent: [130, 390, 900, 1100],
     hotelRent: 1275,
+    houseBuildCost: 44,
     group: "valley",
   },
   {
@@ -215,6 +231,7 @@ export const BOARD: Tile[] = [
     baseRent: 28,
     houseRent: [140, 400, 950, 1150],
     hotelRent: 1350,
+    houseBuildCost: 48,
     group: "valley",
   },
 
@@ -226,6 +243,7 @@ export const BOARD: Tile[] = [
     name: "West airport",
     price: 200,
     baseRent: 25,
+    houseBuildCost: 40,
     group: "airport",
     houseRent: [20, 60, 180, 320],
     hotelRent: 450,
@@ -241,6 +259,7 @@ export const BOARD: Tile[] = [
     baseRent: 32,
     houseRent: [160, 500, 1100, 1300],
     hotelRent: 1500,
+    houseBuildCost: 52,
     group: "viewpoint",
   },
   {
@@ -252,6 +271,7 @@ export const BOARD: Tile[] = [
     baseRent: 34,
     houseRent: [170, 520, 1150, 1350],
     hotelRent: 1550,
+    houseBuildCost: 52,
     group: "viewpoint",
   },
   {
@@ -261,6 +281,7 @@ export const BOARD: Tile[] = [
     name: "Telecom",
     price: 150,
     baseRent: 4,
+    houseBuildCost: 30,
     group: "utility",
     houseRent: [20, 60, 180, 320],
     hotelRent: 450,
@@ -274,6 +295,7 @@ export const BOARD: Tile[] = [
     baseRent: 36,
     houseRent: [180, 540, 1200, 1400],
     hotelRent: 1600,
+    houseBuildCost: 56,
     group: "viewpoint",
   },
 
@@ -289,6 +311,7 @@ export const BOARD: Tile[] = [
     baseRent: 26,
     houseRent: [130, 390, 900, 1100],
     hotelRent: 1275,
+    houseBuildCost: 60,
     group: "mountain",
   },
   {
@@ -300,6 +323,7 @@ export const BOARD: Tile[] = [
     baseRent: 26,
     houseRent: [130, 390, 900, 1100],
     hotelRent: 1275,
+    houseBuildCost: 60,
     group: "mountain",
   },
   { tileIndex: 33, type: "COMMUNITY_CHEST" },
@@ -312,6 +336,7 @@ export const BOARD: Tile[] = [
     baseRent: 28,
     houseRent: [150, 450, 1000, 1200],
     hotelRent: 1400,
+    houseBuildCost: 64,
     group: "mountain",
   },
 
@@ -323,6 +348,7 @@ export const BOARD: Tile[] = [
     name: "North airport",
     price: 200,
     baseRent: 25,
+    houseBuildCost: 40,
     group: "airport",
     houseRent: [20, 60, 180, 320],
     hotelRent: 450,
@@ -340,6 +366,7 @@ export const BOARD: Tile[] = [
     baseRent: 35,
     houseRent: [175, 500, 1100, 1300],
     hotelRent: 1500,
+    houseBuildCost: 70,
     group: "peak",
   },
   { tileIndex: 38, type: "TAX", amount: 100 },
@@ -352,6 +379,7 @@ export const BOARD: Tile[] = [
     baseRent: 50,
     houseRent: [200, 600, 1400, 1700],
     hotelRent: 2000,
+    houseBuildCost: 80,
     group: "peak",
   },
 ];

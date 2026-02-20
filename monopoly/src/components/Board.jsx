@@ -309,7 +309,7 @@ const Board = ({
 
   return (
     <div
-      className={`w-full h-full flex ${isMobile ? "items-start" : "items-center"} justify-center overflow-hidden`}
+      className={`w-full h-full flex ${isMobile ? "items-start" : "items-center"} justify-center overflow-hidden relative isolate`}
       style={
         isMobile
           ? {

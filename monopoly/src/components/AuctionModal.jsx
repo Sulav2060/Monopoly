@@ -7,8 +7,8 @@ const AuctionModal = ({ auction, currentPlayerId, onPlaceBid, onTimeout }) => {
 
   // Reset timer and bid input when highest bid changes
   useEffect(() => {
-    setTimeLeft(10);
-    setBidAmount(Math.max(bidAmount, auction.highestBid + 10));
+    setTimeLeft(5);
+    setBidAmount(Math.max(bidAmount, auction.highestBid + 3));
   }, [auction.highestBid]);
 
   // Timer countdown

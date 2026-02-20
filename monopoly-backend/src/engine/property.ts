@@ -25,7 +25,7 @@ export function handleProperty(
           ownerId: player.id,
         },
       ],
-      events: [...state.events, { type: "PROPERTY_BOUGHT", tile: tile.name }],
+      events: [...state.events, { type: "PROPERTY_BOUGHT", tile: player.position }],
     };
   }
 

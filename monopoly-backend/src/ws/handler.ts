@@ -173,6 +173,14 @@ export function setupWebSocket(wss: WebSocketServer) {
             return;
           }
 
+          if (game.state.pendingAction) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Please complete pending action first",
+            });
+            return;
+          }
+
           const dice = rollDice();
           const newState = playTurn(game.state, dice);
 
@@ -295,6 +303,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             gameId: msg.gameId,
             state: newState,
           });
+          return;
         }
         
          /* =======================
@@ -316,6 +325,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             gameId: msg.gameId,
             state: newState,
           });
+          return;
         }
 
         /* =======================

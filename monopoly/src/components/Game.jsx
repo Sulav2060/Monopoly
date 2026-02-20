@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Board from "./Board";
+import AuctionModal from "./AuctionModal";
 import { tiles, corners } from "./tiles";
 import { useGame } from "../context/GameContext";
 import { wsClient } from "../services/wsClient";
@@ -224,7 +225,7 @@ const Game = () => {
       case "TAX_PAID": {
         const player = players.find((p) => p.id === event.playerId);
         const amount = event.amount || 0;
-        return `💰 ${player?.name || "Player"} paid $${amount} in taxes`;
+        return `💰 ${player?.name || "Player"} paid Rs. ${amount} in taxes`;
       }
 
       case "FREE_PARKING_COLLECTED": {
@@ -241,7 +242,7 @@ const Game = () => {
         const label = tile?.type === "chance" ? "Chance" : "Community Chest";
         if (event.card?.type === "MONEY") {
           const amt = event.card.amount ?? 0;
-          return `🎁 ${name} received $${amt} from ${label}`;
+          return `🎁 ${name} received Rs. ${amt} from ${label}`;
         }
         if (event.card?.type === "MOVE") {
           return `🎁 ${name} drew ${label} and moved`;
@@ -845,7 +846,7 @@ const Game = () => {
                       <span
                         className={`text-sm font-mono font-bold ${isCurrentTurn ? "text-emerald-400" : "text-emerald-500/70"}`}
                       >
-                        ${p.money.toLocaleString()}
+                        Rs. {p.money.toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -888,6 +889,10 @@ const Game = () => {
             currentDice={currentDice}
             isMyTurn={isMyTurn}
             hasRolled={hasRolled}
+            isPendingAction={
+              !!currentGame?.pendingAction &&
+              currentGame.pendingAction.type !== "AUCTION" // AUCTION handles itself via modal
+            }
             onRollDice={rollDice}
             onEndTurn={endTurn}
             onRollComplete={() => {
@@ -936,11 +941,11 @@ const Game = () => {
                   disabled={isLoadingAction}
                   className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
                     !isLoadingAction
-                      ? "bg-red-500/80 border-red-400/70 text-white shadow-[0_10px_30px_-15px_rgba(239,68,68,0.8)] hover:-translate-y-0.5"
+                      ? "bg-amber-600/80 border-amber-500/70 text-white shadow-[0_10px_30px_-15px_rgba(245,158,11,0.8)] hover:-translate-y-0.5"
                       : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
                   }`}
                 >
-                  ⏭️ Skip
+                  🔨 Auction
                 </button>
               </>
             ) : (
@@ -1194,7 +1199,30 @@ const Game = () => {
         </div>
       </div>
 
-      {/* Trade Modal */}
+
+            {/* Auction Modal */}
+            {currentGame?.pendingAction?.type === "AUCTION" && (
+              <AuctionModal
+                auction={currentGame.pendingAction.auction}
+                currentPlayerId={currentPlayerId}
+                onPlaceBid={(amount) => {
+                  wsClient.send({
+                    type: "PLACE_BID",
+                    gameId: currentGame.id,
+                    playerId: currentPlayerId,
+                    amount: amount,
+                  });
+                }}
+                onTimeout={() => {
+                  wsClient.send({
+                    type: "AUCTION_TIMEOUT",
+                    gameId: currentGame.id,
+                  });
+                }}
+              />
+            )}
+
+            {/* Trade Modal */}
       {showTradeModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="bg-[#FFCCCB] rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl">

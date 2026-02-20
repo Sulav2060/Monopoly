@@ -28,6 +28,7 @@ export const baseState: GameState = {
   currentTurnIndex: 0,
   properties: [],
   events: [],
+  pendingAction: null,
 };
 
 test("player moves correct number of steps", () => {

@@ -19,6 +19,7 @@ const Board = ({
   onTileClick,
   prevPositions = {},
   currentGame,
+  isPendingAction,
 }) => {
   const getTileColorClass = (group) => {
     const colorMap = {
@@ -361,6 +362,7 @@ const Board = ({
               onRollDice={onRollDice}
               onEndTurn={onEndTurn}
               currentPlayer={players[currentTurnIndex]}
+              isPendingAction={isPendingAction}
             />
           </div>
         </div>

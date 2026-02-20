@@ -20,6 +20,7 @@ describe("drawCommunityChest", () => {
       properties: [],
       communityChestDeck: [{ type: "MONEY", amount: 200 }],
       communityChestIndex: 0,
+      pendingAction: null,
     };
 
     const result = drawCommunityChest(state);
@@ -50,6 +51,7 @@ describe("drawCommunityChest", () => {
       properties: [],
       communityChestDeck: [{ type: "GO_TO_JAIL" }],
       communityChestIndex: 0,
+      pendingAction: null,
     };
 
     const result = drawCommunityChest(state);

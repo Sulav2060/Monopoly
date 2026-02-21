@@ -83,11 +83,17 @@ const Game = () => {
   const [eventCards, setEventCards] = useState([]);
   const [pendingEventCards, setPendingEventCards] = useState([]);
   const [pendingSounds, setPendingSounds] = useState([]);
-  
+
   // Trade Modal State
   const [tradeWithPlayerId, setTradeWithPlayerId] = useState(null);
-  const [myTradeOffer, setMyTradeOffer] = useState({ money: 0, properties: [] });
-  const [theirTradeRequest, setTheirTradeRequest] = useState({ money: 0, properties: [] });
+  const [myTradeOffer, setMyTradeOffer] = useState({
+    money: 0,
+    properties: [],
+  });
+  const [theirTradeRequest, setTheirTradeRequest] = useState({
+    money: 0,
+    properties: [],
+  });
   const eventCardTimeoutRef = useRef(null);
   const [_gameLog, setGameLog] = useState([]);
   const lastEventCountRef = useRef(0);
@@ -1730,7 +1736,9 @@ const Game = () => {
             <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
               <div>
                 <h2 className="text-3xl font-bold text-white">🤝 Trade Hub</h2>
-                <p className="text-sm text-gray-400 mt-1">Negotiate deals with other players</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  Negotiate deals with other players
+                </p>
               </div>
               <button
                 onClick={() => {
@@ -1748,14 +1756,17 @@ const Game = () => {
             {/* Player Selection */}
             {!tradeWithPlayerId ? (
               <div className="space-y-4">
-                <h3 className="font-semibold text-gray-200 text-lg mb-4">Select a player to trade with</h3>
+                <h3 className="font-semibold text-gray-200 text-lg mb-4">
+                  Select a player to trade with
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {currentGame.players
                     .filter((p) => p.id !== currentPlayerId)
                     .map((player, idx) => {
-                      const playerProps = currentGame.properties?.filter(
-                        (prop) => prop.ownerId === player.id
-                      ) || [];
+                      const playerProps =
+                        currentGame.properties?.filter(
+                          (prop) => prop.ownerId === player.id,
+                        ) || [];
                       return (
                         <button
                           key={player.id}
@@ -1769,9 +1780,15 @@ const Game = () => {
                               {player.name[0]}
                             </div>
                             <div className="text-left flex-1">
-                              <p className="font-bold text-white group-hover:text-blue-300 transition-colors">{player.name}</p>
-                              <p className="text-sm text-gray-400">💰 Rs. {player.money.toLocaleString()}</p>
-                              <p className="text-xs text-gray-500 mt-1">{playerProps.length} properties owned</p>
+                              <p className="font-bold text-white group-hover:text-blue-300 transition-colors">
+                                {player.name}
+                              </p>
+                              <p className="text-sm text-gray-400">
+                                💰 Rs. {player.money.toLocaleString()}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {playerProps.length} properties owned
+                              </p>
                             </div>
                           </div>
                         </button>
@@ -1794,7 +1811,14 @@ const Game = () => {
                     ← Back to Player Selection
                   </button>
                   <p className="text-lg font-bold text-white">
-                    Trading with <span className="text-blue-400">{currentGame.players.find(p => p.id === tradeWithPlayerId)?.name}</span>
+                    Trading with{" "}
+                    <span className="text-blue-400">
+                      {
+                        currentGame.players.find(
+                          (p) => p.id === tradeWithPlayerId,
+                        )?.name
+                      }
+                    </span>
                   </p>
                 </div>
 
@@ -1808,7 +1832,9 @@ const Game = () => {
 
                     {/* Money Input */}
                     <div className="mb-4">
-                      <label className="text-sm text-gray-300 block mb-2">Cash Offer</label>
+                      <label className="text-sm text-gray-300 block mb-2">
+                        Cash Offer
+                      </label>
                       <div className="flex items-center gap-2 bg-slate-900 border border-slate-600 rounded-lg p-3">
                         <span className="text-gray-400">💰</span>
                         <input
@@ -1817,22 +1843,35 @@ const Game = () => {
                           max={currentPlayer?.money || 0}
                           value={myTradeOffer.money}
                           onChange={(e) =>
-                            setMyTradeOffer({ ...myTradeOffer, money: Math.max(0, parseInt(e.target.value) || 0) })
+                            setMyTradeOffer({
+                              ...myTradeOffer,
+                              money: Math.max(0, parseInt(e.target.value) || 0),
+                            })
                           }
                           className="flex-1 bg-transparent text-white outline-none"
                           placeholder="0"
                         />
-                        <span className="text-gray-500 text-sm">/ Rs. {(currentPlayer?.money || 0).toLocaleString()}</span>
+                        <span className="text-gray-500 text-sm">
+                          / Rs. {(currentPlayer?.money || 0).toLocaleString()}
+                        </span>
                       </div>
                     </div>
 
                     {/* Property Selection */}
                     <div>
-                      <label className="text-sm text-gray-300 block mb-2">Select Properties</label>
+                      <label className="text-sm text-gray-300 block mb-2">
+                        Select Properties
+                      </label>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {(currentGame.properties?.filter((p) => p.ownerId === currentPlayerId) || []).map((prop) => {
+                        {(
+                          currentGame.properties?.filter(
+                            (p) => p.ownerId === currentPlayerId,
+                          ) || []
+                        ).map((prop) => {
                           const tile = getTileAtIndex(prop.tileIndex);
-                          const isSelected = myTradeOffer.properties.includes(prop.tileIndex);
+                          const isSelected = myTradeOffer.properties.includes(
+                            prop.tileIndex,
+                          );
                           return (
                             <button
                               key={prop.tileIndex}
@@ -1840,36 +1879,52 @@ const Game = () => {
                                 if (isSelected) {
                                   setMyTradeOffer({
                                     ...myTradeOffer,
-                                    properties: myTradeOffer.properties.filter(p => p !== prop.tileIndex)
+                                    properties: myTradeOffer.properties.filter(
+                                      (p) => p !== prop.tileIndex,
+                                    ),
                                   });
                                 } else {
                                   setMyTradeOffer({
                                     ...myTradeOffer,
-                                    properties: [...myTradeOffer.properties, prop.tileIndex]
+                                    properties: [
+                                      ...myTradeOffer.properties,
+                                      prop.tileIndex,
+                                    ],
                                   });
                                 }
                               }}
                               className={`w-full p-3 rounded-lg text-left transition-all flex items-center gap-2 ${
                                 isSelected
-                                  ? 'bg-emerald-600/30 border border-emerald-500 text-emerald-100'
-                                  : 'bg-slate-700 border border-slate-600 text-gray-300 hover:border-emerald-500/50'
+                                  ? "bg-emerald-600/30 border border-emerald-500 text-emerald-100"
+                                  : "bg-slate-700 border border-slate-600 text-gray-300 hover:border-emerald-500/50"
                               }`}
                             >
-                              <div>{isSelected ? '✓' : '○'}</div>
+                              <div>{isSelected ? "✓" : "○"}</div>
                               <div className="flex-1">
-                                <p className="font-semibold text-sm">{tile?.title}</p>
+                                <p className="font-semibold text-sm">
+                                  {tile?.title}
+                                </p>
                                 <p className="text-xs opacity-70">
-                                  {prop.houses > 0 && `${prop.houses} house${prop.houses > 1 ? 's' : ''}`}
-                                  {prop.hotel ? 'Hotel' : ''}
-                                  {prop.houses === 0 && prop.hotel === 0 && 'No buildings'}
+                                  {prop.houses > 0 &&
+                                    `${prop.houses} house${prop.houses > 1 ? "s" : ""}`}
+                                  {prop.hotel ? "Hotel" : ""}
+                                  {prop.houses === 0 &&
+                                    prop.hotel === 0 &&
+                                    "No buildings"}
                                 </p>
                               </div>
                             </button>
                           );
                         })}
                       </div>
-                      {(currentGame.properties?.filter((p) => p.ownerId === currentPlayerId) || []).length === 0 && (
-                        <p className="text-sm text-gray-500 text-center py-4">No properties to trade</p>
+                      {(
+                        currentGame.properties?.filter(
+                          (p) => p.ownerId === currentPlayerId,
+                        ) || []
+                      ).length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-4">
+                          No properties to trade
+                        </p>
                       )}
                     </div>
                   </div>
@@ -1877,12 +1932,15 @@ const Game = () => {
                   {/* Their Offer / Your Request */}
                   <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
                     <h3 className="font-bold text-white mb-4 flex items-center gap-2">
-                      <span className="text-violet-400">📋</span> Requesting from Them
+                      <span className="text-violet-400">📋</span> Requesting
+                      from Them
                     </h3>
 
                     {/* Money Request */}
                     <div className="mb-4">
-                      <label className="text-sm text-gray-300 block mb-2">Cash Request</label>
+                      <label className="text-sm text-gray-300 block mb-2">
+                        Cash Request
+                      </label>
                       <div className="flex items-center gap-2 bg-slate-900 border border-slate-600 rounded-lg p-3">
                         <span className="text-gray-400">💰</span>
                         <input
@@ -1890,7 +1948,10 @@ const Game = () => {
                           min="0"
                           value={theirTradeRequest.money}
                           onChange={(e) =>
-                            setTheirTradeRequest({ ...theirTradeRequest, money: Math.max(0, parseInt(e.target.value) || 0) })
+                            setTheirTradeRequest({
+                              ...theirTradeRequest,
+                              money: Math.max(0, parseInt(e.target.value) || 0),
+                            })
                           }
                           className="flex-1 bg-transparent text-white outline-none"
                           placeholder="0"
@@ -1901,11 +1962,20 @@ const Game = () => {
 
                     {/* Property Selection from Other Player */}
                     <div>
-                      <label className="text-sm text-gray-300 block mb-2">Their Properties</label>
+                      <label className="text-sm text-gray-300 block mb-2">
+                        Their Properties
+                      </label>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
-                        {(currentGame.properties?.filter((p) => p.ownerId === tradeWithPlayerId) || []).map((prop) => {
+                        {(
+                          currentGame.properties?.filter(
+                            (p) => p.ownerId === tradeWithPlayerId,
+                          ) || []
+                        ).map((prop) => {
                           const tile = getTileAtIndex(prop.tileIndex);
-                          const isSelected = theirTradeRequest.properties.includes(prop.tileIndex);
+                          const isSelected =
+                            theirTradeRequest.properties.includes(
+                              prop.tileIndex,
+                            );
                           return (
                             <button
                               key={prop.tileIndex}
@@ -1913,36 +1983,53 @@ const Game = () => {
                                 if (isSelected) {
                                   setTheirTradeRequest({
                                     ...theirTradeRequest,
-                                    properties: theirTradeRequest.properties.filter(p => p !== prop.tileIndex)
+                                    properties:
+                                      theirTradeRequest.properties.filter(
+                                        (p) => p !== prop.tileIndex,
+                                      ),
                                   });
                                 } else {
                                   setTheirTradeRequest({
                                     ...theirTradeRequest,
-                                    properties: [...theirTradeRequest.properties, prop.tileIndex]
+                                    properties: [
+                                      ...theirTradeRequest.properties,
+                                      prop.tileIndex,
+                                    ],
                                   });
                                 }
                               }}
                               className={`w-full p-3 rounded-lg text-left transition-all flex items-center gap-2 ${
                                 isSelected
-                                  ? 'bg-violet-600/30 border border-violet-500 text-violet-100'
-                                  : 'bg-slate-700 border border-slate-600 text-gray-300 hover:border-violet-500/50'
+                                  ? "bg-violet-600/30 border border-violet-500 text-violet-100"
+                                  : "bg-slate-700 border border-slate-600 text-gray-300 hover:border-violet-500/50"
                               }`}
                             >
-                              <div>{isSelected ? '✓' : '○'}</div>
+                              <div>{isSelected ? "✓" : "○"}</div>
                               <div className="flex-1">
-                                <p className="font-semibold text-sm">{tile?.title}</p>
+                                <p className="font-semibold text-sm">
+                                  {tile?.title}
+                                </p>
                                 <p className="text-xs opacity-70">
-                                  {prop.houses > 0 && `${prop.houses} house${prop.houses > 1 ? 's' : ''}`}
-                                  {prop.hotel ? 'Hotel' : ''}
-                                  {prop.houses === 0 && prop.hotel === 0 && 'No buildings'}
+                                  {prop.houses > 0 &&
+                                    `${prop.houses} house${prop.houses > 1 ? "s" : ""}`}
+                                  {prop.hotel ? "Hotel" : ""}
+                                  {prop.houses === 0 &&
+                                    prop.hotel === 0 &&
+                                    "No buildings"}
                                 </p>
                               </div>
                             </button>
                           );
                         })}
                       </div>
-                      {(currentGame.properties?.filter((p) => p.ownerId === tradeWithPlayerId) || []).length === 0 && (
-                        <p className="text-sm text-gray-500 text-center py-4">No properties available</p>
+                      {(
+                        currentGame.properties?.filter(
+                          (p) => p.ownerId === tradeWithPlayerId,
+                        ) || []
+                      ).length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-4">
+                          No properties available
+                        </p>
                       )}
                     </div>
                   </div>
@@ -1950,20 +2037,28 @@ const Game = () => {
 
                 {/* Trade Summary */}
                 <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-200 mb-3">Trade Summary</h3>
+                  <h3 className="font-semibold text-gray-200 mb-3">
+                    Trade Summary
+                  </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-xs text-gray-400 mb-2">You're offering:</p>
+                      <p className="text-xs text-gray-400 mb-2">
+                        You're offering:
+                      </p>
                       <p className="text-lg font-bold text-emerald-400">
                         💰 Rs. {myTradeOffer.money.toLocaleString()}
-                        {myTradeOffer.properties.length > 0 && ` + ${myTradeOffer.properties.length} property(ies)`}
+                        {myTradeOffer.properties.length > 0 &&
+                          ` + ${myTradeOffer.properties.length} property(ies)`}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 mb-2">They're offering:</p>
+                      <p className="text-xs text-gray-400 mb-2">
+                        They're offering:
+                      </p>
                       <p className="text-lg font-bold text-violet-400">
                         💰 Rs. {theirTradeRequest.money.toLocaleString()}
-                        {theirTradeRequest.properties.length > 0 && ` + ${theirTradeRequest.properties.length} property(ies)`}
+                        {theirTradeRequest.properties.length > 0 &&
+                          ` + ${theirTradeRequest.properties.length} property(ies)`}
                       </p>
                     </div>
                   </div>
@@ -1983,7 +2078,10 @@ const Game = () => {
                     Cancel
                   </button>
                   <button
-                    disabled={myTradeOffer.money === 0 && myTradeOffer.properties.length === 0}
+                    disabled={
+                      myTradeOffer.money === 0 &&
+                      myTradeOffer.properties.length === 0
+                    }
                     onClick={() => {
                       wsClient.send({
                         type: "PROPOSE_TRADE",

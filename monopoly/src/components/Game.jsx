@@ -681,6 +681,7 @@ const Game = () => {
       // Now roll the dice (this will update positions on backend)
       const diceRoll = await contextRollDice();
 
+
       // //console.log(
       //   "Rolled:",
       //   diceRoll.d1,
@@ -691,7 +692,9 @@ const Game = () => {
       // );
       // ... rest of your code
 
-      setCurrentDice(diceRoll);
+      if (diceRoll != null) {
+        setCurrentDice(diceRoll);
+      }
       setAnimationStep("rotating");
       setIsAnimating(true);
       // If doubles, allow another roll; otherwise mark as rolled

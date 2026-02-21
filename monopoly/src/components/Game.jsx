@@ -83,6 +83,11 @@ const Game = () => {
   const [eventCards, setEventCards] = useState([]);
   const [pendingEventCards, setPendingEventCards] = useState([]);
   const [pendingSounds, setPendingSounds] = useState([]);
+  
+  // Trade Modal State
+  const [tradeWithPlayerId, setTradeWithPlayerId] = useState(null);
+  const [myTradeOffer, setMyTradeOffer] = useState({ money: 0, properties: [] });
+  const [theirTradeRequest, setTheirTradeRequest] = useState({ money: 0, properties: [] });
   const eventCardTimeoutRef = useRef(null);
   const [_gameLog, setGameLog] = useState([]);
   const lastEventCountRef = useRef(0);
@@ -1719,65 +1724,288 @@ const Game = () => {
 
       {/* Trade Modal */}
       {showTradeModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="bg-[#FFCCCB] rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl text-[#2C4263] font-bold">
-                Trade with Players
-              </h2>
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
+              <div>
+                <h2 className="text-3xl font-bold text-white">🤝 Trade Hub</h2>
+                <p className="text-sm text-gray-400 mt-1">Negotiate deals with other players</p>
+              </div>
               <button
-                onClick={() => setShowTradeModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                onClick={() => {
+                  setShowTradeModal(false);
+                  setTradeWithPlayerId(null);
+                  setMyTradeOffer({ money: 0, properties: [] });
+                  setTheirTradeRequest({ money: 0, properties: [] });
+                }}
+                className="text-gray-400 hover:text-white text-3xl font-bold leading-none h-8 w-8 flex items-center justify-center"
               >
                 ×
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Your Offer */}
-                <div className="border rounded-lg p-4 border-[#2C4263]">
-                  <h3 className="font-bold mb-2 text-[#2C4263]">Your Offer</h3>
-                  <div className="space-y-2 text-[#2C4263]">
-                    <input
-                      type="number"
-                      placeholder="Money amount"
-                      className="w-full p-2 border rounded"
-                    />
-                    <div className="text-sm text-[#2C4263]">
-                      Select properties to trade
+            {/* Player Selection */}
+            {!tradeWithPlayerId ? (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-200 text-lg mb-4">Select a player to trade with</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {currentGame.players
+                    .filter((p) => p.id !== currentPlayerId)
+                    .map((player, idx) => {
+                      const playerProps = currentGame.properties?.filter(
+                        (prop) => prop.ownerId === player.id
+                      ) || [];
+                      return (
+                        <button
+                          key={player.id}
+                          onClick={() => setTradeWithPlayerId(player.id)}
+                          className="p-4 bg-slate-800 border border-slate-700 hover:border-slate-500 rounded-xl transition-all hover:bg-slate-750 group"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-12 h-12 rounded-full flex items-center justify-center border-2 font-bold text-white ${PLAYER_COLORS[idx]?.color} ${PLAYER_COLORS[idx]?.borderColor}`}
+                            >
+                              {player.name[0]}
+                            </div>
+                            <div className="text-left flex-1">
+                              <p className="font-bold text-white group-hover:text-blue-300 transition-colors">{player.name}</p>
+                              <p className="text-sm text-gray-400">💰 Rs. {player.money.toLocaleString()}</p>
+                              <p className="text-xs text-gray-500 mt-1">{playerProps.length} properties owned</p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            ) : (
+              // Trade Interface
+              <div className="space-y-6">
+                <div className="flex justify-between items-center mb-4">
+                  <button
+                    onClick={() => {
+                      setTradeWithPlayerId(null);
+                      setMyTradeOffer({ money: 0, properties: [] });
+                      setTheirTradeRequest({ money: 0, properties: [] });
+                    }}
+                    className="text-sm text-gray-400 hover:text-white flex items-center gap-1"
+                  >
+                    ← Back to Player Selection
+                  </button>
+                  <p className="text-lg font-bold text-white">
+                    Trading with <span className="text-blue-400">{currentGame.players.find(p => p.id === tradeWithPlayerId)?.name}</span>
+                  </p>
+                </div>
+
+                {/* Trade Sections */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* My Offer */}
+                  <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+                    <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                      <span className="text-emerald-400">📦</span> My Offer
+                    </h3>
+
+                    {/* Money Input */}
+                    <div className="mb-4">
+                      <label className="text-sm text-gray-300 block mb-2">Cash Offer</label>
+                      <div className="flex items-center gap-2 bg-slate-900 border border-slate-600 rounded-lg p-3">
+                        <span className="text-gray-400">💰</span>
+                        <input
+                          type="number"
+                          min="0"
+                          max={currentPlayer?.money || 0}
+                          value={myTradeOffer.money}
+                          onChange={(e) =>
+                            setMyTradeOffer({ ...myTradeOffer, money: Math.max(0, parseInt(e.target.value) || 0) })
+                          }
+                          className="flex-1 bg-transparent text-white outline-none"
+                          placeholder="0"
+                        />
+                        <span className="text-gray-500 text-sm">/ Rs. {(currentPlayer?.money || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Property Selection */}
+                    <div>
+                      <label className="text-sm text-gray-300 block mb-2">Select Properties</label>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {(currentGame.properties?.filter((p) => p.ownerId === currentPlayerId) || []).map((prop) => {
+                          const tile = getTileAtIndex(prop.tileIndex);
+                          const isSelected = myTradeOffer.properties.includes(prop.tileIndex);
+                          return (
+                            <button
+                              key={prop.tileIndex}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setMyTradeOffer({
+                                    ...myTradeOffer,
+                                    properties: myTradeOffer.properties.filter(p => p !== prop.tileIndex)
+                                  });
+                                } else {
+                                  setMyTradeOffer({
+                                    ...myTradeOffer,
+                                    properties: [...myTradeOffer.properties, prop.tileIndex]
+                                  });
+                                }
+                              }}
+                              className={`w-full p-3 rounded-lg text-left transition-all flex items-center gap-2 ${
+                                isSelected
+                                  ? 'bg-emerald-600/30 border border-emerald-500 text-emerald-100'
+                                  : 'bg-slate-700 border border-slate-600 text-gray-300 hover:border-emerald-500/50'
+                              }`}
+                            >
+                              <div>{isSelected ? '✓' : '○'}</div>
+                              <div className="flex-1">
+                                <p className="font-semibold text-sm">{tile?.title}</p>
+                                <p className="text-xs opacity-70">
+                                  {prop.houses > 0 && `${prop.houses} house${prop.houses > 1 ? 's' : ''}`}
+                                  {prop.hotel ? 'Hotel' : ''}
+                                  {prop.houses === 0 && prop.hotel === 0 && 'No buildings'}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {(currentGame.properties?.filter((p) => p.ownerId === currentPlayerId) || []).length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-4">No properties to trade</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Their Offer / Your Request */}
+                  <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+                    <h3 className="font-bold text-white mb-4 flex items-center gap-2">
+                      <span className="text-violet-400">📋</span> Requesting from Them
+                    </h3>
+
+                    {/* Money Request */}
+                    <div className="mb-4">
+                      <label className="text-sm text-gray-300 block mb-2">Cash Request</label>
+                      <div className="flex items-center gap-2 bg-slate-900 border border-slate-600 rounded-lg p-3">
+                        <span className="text-gray-400">💰</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={theirTradeRequest.money}
+                          onChange={(e) =>
+                            setTheirTradeRequest({ ...theirTradeRequest, money: Math.max(0, parseInt(e.target.value) || 0) })
+                          }
+                          className="flex-1 bg-transparent text-white outline-none"
+                          placeholder="0"
+                        />
+                        <span className="text-gray-500 text-sm">Rs.</span>
+                      </div>
+                    </div>
+
+                    {/* Property Selection from Other Player */}
+                    <div>
+                      <label className="text-sm text-gray-300 block mb-2">Their Properties</label>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {(currentGame.properties?.filter((p) => p.ownerId === tradeWithPlayerId) || []).map((prop) => {
+                          const tile = getTileAtIndex(prop.tileIndex);
+                          const isSelected = theirTradeRequest.properties.includes(prop.tileIndex);
+                          return (
+                            <button
+                              key={prop.tileIndex}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setTheirTradeRequest({
+                                    ...theirTradeRequest,
+                                    properties: theirTradeRequest.properties.filter(p => p !== prop.tileIndex)
+                                  });
+                                } else {
+                                  setTheirTradeRequest({
+                                    ...theirTradeRequest,
+                                    properties: [...theirTradeRequest.properties, prop.tileIndex]
+                                  });
+                                }
+                              }}
+                              className={`w-full p-3 rounded-lg text-left transition-all flex items-center gap-2 ${
+                                isSelected
+                                  ? 'bg-violet-600/30 border border-violet-500 text-violet-100'
+                                  : 'bg-slate-700 border border-slate-600 text-gray-300 hover:border-violet-500/50'
+                              }`}
+                            >
+                              <div>{isSelected ? '✓' : '○'}</div>
+                              <div className="flex-1">
+                                <p className="font-semibold text-sm">{tile?.title}</p>
+                                <p className="text-xs opacity-70">
+                                  {prop.houses > 0 && `${prop.houses} house${prop.houses > 1 ? 's' : ''}`}
+                                  {prop.hotel ? 'Hotel' : ''}
+                                  {prop.houses === 0 && prop.hotel === 0 && 'No buildings'}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {(currentGame.properties?.filter((p) => p.ownerId === tradeWithPlayerId) || []).length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-4">No properties available</p>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Their Offer */}
-                <div className="border rounded-lg p-4 border-[#2C4263]">
-                  <h3 className="font-bold mb-2 text-[#2C4263]">Request</h3>
-                  <select className="w-full p-2 border rounded mb-2 text-[#2C4263]">
-                    <option>Select player...</option>
-                    {currentGame.players
-                      .filter((p) => p.id !== currentPlayer?.id)
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                  </select>
+                {/* Trade Summary */}
+                <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-200 mb-3">Trade Summary</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-400 mb-2">You're offering:</p>
+                      <p className="text-lg font-bold text-emerald-400">
+                        💰 Rs. {myTradeOffer.money.toLocaleString()}
+                        {myTradeOffer.properties.length > 0 && ` + ${myTradeOffer.properties.length} property(ies)`}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-400 mb-2">They're offering:</p>
+                      <p className="text-lg font-bold text-violet-400">
+                        💰 Rs. {theirTradeRequest.money.toLocaleString()}
+                        {theirTradeRequest.properties.length > 0 && ` + ${theirTradeRequest.properties.length} property(ies)`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 justify-end pt-4 border-t border-slate-700">
+                  <button
+                    onClick={() => {
+                      setShowTradeModal(false);
+                      setTradeWithPlayerId(null);
+                      setMyTradeOffer({ money: 0, properties: [] });
+                      setTheirTradeRequest({ money: 0, properties: [] });
+                    }}
+                    className="px-6 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    disabled={myTradeOffer.money === 0 && myTradeOffer.properties.length === 0}
+                    onClick={() => {
+                      wsClient.send({
+                        type: "PROPOSE_TRADE",
+                        gameId: currentGame.id,
+                        playerId: currentPlayerId,
+                        targetPlayerId: tradeWithPlayerId,
+                        offering: myTradeOffer,
+                        requesting: theirTradeRequest,
+                      });
+                      showNotification("Trade proposal sent!", "success");
+                      setShowTradeModal(false);
+                      setTradeWithPlayerId(null);
+                      setMyTradeOffer({ money: 0, properties: [] });
+                      setTheirTradeRequest({ money: 0, properties: [] });
+                    }}
+                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-gray-500 text-white rounded-lg font-semibold transition-all"
+                  >
+                    🤝 Propose Trade
+                  </button>
                 </div>
               </div>
-
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={() => setShowTradeModal(false)}
-                  className="px-6 py-2 text-[#2C4263] rounded-lg font-semibold hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button className="px-6 py-2 bg-[#FF4D4D] text-[#2C4263] rounded-lg font-semibold hover:bg-[#FF0000] hover:text-white">
-                  Propose Trade
-                </button>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}

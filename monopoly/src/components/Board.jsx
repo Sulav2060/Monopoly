@@ -287,6 +287,13 @@ const Board = ({
     const Component = tile.type === "corner" ? CornerTile : Tile;
     const ownerColor = getOwnerColorForTile(index);
 
+    // Get houses/hotel count for this tile
+    const propertyData = propertiesFromGame.find(
+      (prop) => prop.tileIndex === index || prop.propertyId === index,
+    );
+    const houses = propertyData?.houses ?? 0;
+    const hotel = propertyData?.hotel ?? 0;
+
     const handleClick = (e) => {
       setActiveIndex(index);
 
@@ -302,7 +309,12 @@ const Board = ({
         onClick={handleClick}
         className="cursor-pointer"
       >
-        <Component {...tile} ownedBy={ownerColor} />
+        <Component
+          {...tile}
+          ownedBy={ownerColor}
+          houses={houses}
+          hotel={hotel}
+        />
       </div>
     );
   });

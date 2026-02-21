@@ -250,14 +250,7 @@ export const tiles = {
       rotation: 180,
       image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80" // Mountain sunrise
     },
-    {
-      type: "utility",
-      title: "Telecom",
-      price: 150,
-      rentMultiplier: [4, 10],
-      rotation: 180,
-      image: "https://images.unsplash.com/photo-1516031190212-da133013de50?auto=format&fit=crop&w=800&q=80" // Communication tower
-    },
+   
     {
       type: "property",
       group: "yellow",
@@ -267,6 +260,14 @@ export const tiles = {
       houseCost: 200,
       rotation: 180,
       image: "https://images.unsplash.com/photo-1608908761160-14a98a27ba97?auto=format&fit=crop&w=800&q=80" // Paragliding viewpoint
+    },
+     {
+      type: "utility",
+      title: "Telecom",
+      price: 150,
+      rentMultiplier: [4, 10],
+      rotation: 180,
+      image: "https://images.unsplash.com/photo-1516031190212-da133013de50?auto=format&fit=crop&w=800&q=80" // Communication tower
     },
     {
       type: "property",

@@ -11,6 +11,7 @@ const Tile = ({
   ownedBy,
   image,
   icon, // emoji icon for the property
+  houses,
 }) => {
   const tileImage = image || lakeside;
 
@@ -40,7 +41,9 @@ const Tile = ({
     if (type === "community-chest") {
       return (
         <div className="flex flex-col items-center gap-1 w-full overflow-hidden">
-          <div className="font-bold text-[0.5rem] sm:text-xs tracking-tight text-center wrap-break-words w-full px-0.5">{title}</div>
+          <div className="font-bold text-[0.5rem] sm:text-xs tracking-tight text-center wrap-break-words w-full px-0.5">
+            {title}
+          </div>
         </div>
       );
     }
@@ -48,7 +51,9 @@ const Tile = ({
     if (type === "chance") {
       return (
         <div className="flex flex-col items-center gap-1 w-full overflow-hidden">
-          <div className="font-bold text-[0.5rem] sm:text-xs tracking-tight text-center wrap-break-words w-full px-0.5">{title}</div>
+          <div className="font-bold text-[0.5rem] sm:text-xs tracking-tight text-center wrap-break-words w-full px-0.5">
+            {title}
+          </div>
         </div>
       );
     }
@@ -56,7 +61,9 @@ const Tile = ({
     if (type === "tax") {
       return (
         <div className="flex flex-col items-center gap-0.5 w-full overflow-hidden">
-          <div className="font-bold text-[0.6rem] sm:text-xs tracking-tight text-center truncate w-full px-0.5">{title}</div>
+          <div className="font-bold text-[0.6rem] sm:text-xs tracking-tight text-center truncate w-full px-0.5">
+            {title}
+          </div>
           {price && (
             <div className="text-[0.5rem] sm:text-xs font-semibold bg-black/40 px-1.5 py-0.5 rounded-full text-white">
               Rs. {price}
@@ -138,12 +145,12 @@ const Tile = ({
         rotation === 0
           ? "bottom-0 w-full h-[18%] rounded-b-lg"
           : rotation === 180
-          ? "top-0 w-full h-[18%] rounded-t-lg"
-          : rotation === 90
-          ? "left-0 h-full w-[18%] rounded-l-lg"
-          : rotation === -90
-          ? "right-0 h-full w-[18%] rounded-r-lg"
-          : ""
+            ? "top-0 w-full h-[18%] rounded-t-lg"
+            : rotation === 90
+              ? "left-0 h-full w-[18%] rounded-l-lg"
+              : rotation === -90
+                ? "right-0 h-full w-[18%] rounded-r-lg"
+                : ""
       }
     `}
           style={{
@@ -228,6 +235,23 @@ const Tile = ({
           }}
         >
           {/* Houses/hotels will be rendered here */}
+          {houses > 4 ? (
+            <div className="flex items-center justify-center gap-0.5">
+              <span className="text-xs sm:text-sm">🏨</span>
+            </div>
+          ) : (
+            /* Houses Display - show houses if 1-4 houses */
+            houses > 0 && (
+              <div className="flex items-center justify-center gap-0.5">
+                <span className="text-[0.6rem] sm:text-xs">🏠</span>
+                {houses > 1 && (
+                  <span className="text-[0.5rem] sm:text-[0.6rem] font-bold text-white">
+                    x{houses}
+                  </span>
+                )}
+              </div>
+            )
+          )}
         </div>
       )}
     </div>

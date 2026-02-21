@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Copy, 
-  Check, 
-  Users, 
-  Crown, 
-  User, 
-  Play, 
-  Loader2, 
+import {
+  Copy,
+  Check,
+  Users,
+  Crown,
+  User,
+  Play,
+  Loader2,
   Share2,
   Terminal,
   Activity,
@@ -34,7 +34,8 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
 
   const copyToClipboard = () => {
     if (currentGame?.id) {
-      navigator.clipboard.writeText(currentGame.id);
+      const shareUrl = `${window.location.origin}/?join=${currentGame.id}`;
+      navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -49,24 +50,24 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
       {/* --- HEADER --- */}
       <div className="relative z-10 w-full py-6 px-12 flex justify-between items-center border-b border-white/5 bg-black/40 backdrop-blur-md">
         <div className="flex items-center gap-4">
-           <div className="p-2 bg-[#d4ff00] text-black">
-              <Users size={18} />
-           </div>
-           <div className="text-[10px] font-black tracking-[0.3em] text-white uppercase">Waiting_Room</div>
+          <div className="p-2 bg-[#d4ff00] text-black">
+            <Users size={18} />
+          </div>
+          <div className="text-[10px] font-black tracking-[0.3em] text-white uppercase">Waiting_Room</div>
         </div>
         <div className="hidden sm:flex gap-8 text-[10px] font-bold tracking-widest uppercase">
           <span className="text-[#d4ff00] flex items-center gap-2">
-            <Activity size={12}/> {playerCount}/{maxPlayers} PLAYERS_ENTERED
+            <Activity size={12} /> {playerCount}/{maxPlayers} PLAYERS_ENTERED
           </span>
         </div>
       </div>
 
       {/* --- MAIN LOBBY INTERFACE --- */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-12">
-        
+
         <div className="w-full max-w-2xl">
           {/* Room ID Module */}
-          <motion.div 
+          <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             className="mb-px bg-[#121214] border border-white/10 p-6 flex flex-col sm:flex-row items-center justify-between gap-6"
@@ -77,20 +78,20 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
                 {currentGame?.id || "------"}
               </span>
             </div>
-            
-            <button 
+
+            <button
               onClick={copyToClipboard}
               className="flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-[#d4ff00] hover:text-black transition-all border border-white/10 group"
             >
               <span className="text-xs font-bold uppercase tracking-widest">
-                {copied ? "CODE_COPIED" : "COPY_ROOM_CODE"}
+                {copied ? "CODE_COPIED" : "COPY_ROOM_LINK"}
               </span>
-              {copied ? <Check size={16} /> : <Share2 size={16} className="group-hover:rotate-12 transition-transform"/>}
+              {copied ? <Check size={16} /> : <Share2 size={16} className="group-hover:rotate-12 transition-transform" />}
             </button>
           </motion.div>
 
           {/* Players List Module */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="bg-[#121214] border-x border-white/10 overflow-hidden"
@@ -108,9 +109,9 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
                       <span className="text-[10px] font-bold text-[#444]">0{index + 1}</span>
                       {index === 0 && <Crown size={12} className="text-[#d4ff00]" />}
                     </div>
-                    
-                    <div 
-                      className="w-10 h-10 border-2 flex items-center justify-center text-white" 
+
+                    <div
+                      className="w-10 h-10 border-2 flex items-center justify-center text-white"
                       style={{ borderColor: player.color || '#444' }}
                     >
                       <User size={20} />
@@ -134,30 +135,30 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
               {/* Placeholder Slots */}
               {Array.from({ length: Math.max(0, maxPlayers - playerCount) }).map((_, i) => (
                 <div key={`empty-${i}`} className="p-5 flex items-center gap-6 opacity-20 grayscale">
-                   <div className="min-w-[40px] text-right text-[10px] font-bold">0{playerCount + i + 1}</div>
-                   <div className="w-10 h-10 border border-dashed border-white/40 flex items-center justify-center"><User size={20} /></div>
-                   <div className="text-[10px] font-bold tracking-[0.3em]">WAITING_FOR_PLAYER...</div>
+                  <div className="min-w-[40px] text-right text-[10px] font-bold">0{playerCount + i + 1}</div>
+                  <div className="w-10 h-10 border border-dashed border-white/40 flex items-center justify-center"><User size={20} /></div>
+                  <div className="text-[10px] font-bold tracking-[0.3em]">WAITING_FOR_PLAYER...</div>
                 </div>
               ))}
             </div>
           </motion.div>
 
           {/* Execution Button Module */}
-          <motion.div 
+          <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             className="mt-px"
           >
             {isHost ? (
-              <button 
+              <button
                 onClick={handleStartGame}
                 disabled={playerCount < 2 || loading}
                 className="w-full group relative h-20 bg-[#d4ff00] disabled:bg-[#1a1a1c] disabled:text-[#444] transition-all flex items-center justify-center overflow-hidden"
               >
                 <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity">
-                   <div className="w-full h-full bg-[linear-gradient(45deg,black_25%,transparent_25%,transparent_50%,black_50%,black_75%,transparent_75%,transparent)] bg-[length:4px_4px]" />
+                  <div className="w-full h-full bg-[linear-gradient(45deg,black_25%,transparent_25%,transparent_50%,black_50%,black_75%,transparent_75%,transparent)] bg-[length:4px_4px]" />
                 </div>
-                
+
                 <span className="relative z-10 text-black font-black italic text-2xl tracking-[0.2em] flex items-center gap-4">
                   {loading ? "PREPARING_BOARD..." : playerCount < 2 ? "WAITING_FOR_PLAYERS" : "START_GAME"}
                   <ChevronRight className="group-hover:translate-x-2 transition-transform" />

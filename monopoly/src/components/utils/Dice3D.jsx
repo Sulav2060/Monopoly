@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { RoundedBoxGeometry } from "three-stdlib";
 import { Environment, ContactShadows } from "@react-three/drei";
+import { useDrag } from "@use-gesture/react";
 
 const CameraTopFixed = () => {
   const { camera } = useThree();
@@ -22,11 +23,17 @@ const Die = ({
   onRollComplete,
   index,
   startPosition,
+  onDiceClick,
 }) => {
   const meshRef = useRef();
   const [rollTime, setRollTime] = useState(0);
   const [startRot, setStartRot] = useState([0, 0, 0]);
   const [targetValue, setTargetValue] = useState(value);
+  const [hovered, setHovered] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState(null);
+  const [dragReleasePos, setDragReleasePos] = useState(null);
+  const { size, viewport } = useThree();
   const rollDuration = 0.8;
 
   const getDiceRotationForTop = (topValue) => {
@@ -41,6 +48,37 @@ const Die = ({
     return rotations[topValue] || [0, 0, 0];
   };
 
+  const bind = useDrag(
+    ({ active, movement: [x, y], memo, timeStamp }) => {
+      // If no dice click handler (e.g. not my turn) or already rolling, ignore
+      if (!onDiceClick || isRolling) return;
+
+      if (active) {
+        if (!isDragging) setIsDragging(true);
+        // Map screen pixels to 3D world units (X and Z plane)
+        const x3d = (x / size.width) * viewport.width;
+        const z3d = (y / size.height) * viewport.height;
+
+        // Memo stores the initial position at start of drag
+        if (!memo) {
+          memo = [meshRef.current.position.x, meshRef.current.position.z];
+        }
+
+        const newPos = [memo[0] + x3d, 2, memo[1] + z3d]; // Lift to y=2
+        setDragPosition(newPos);
+        document.body.style.cursor = "grabbing";
+        return memo;
+      } else {
+        setIsDragging(false);
+        setDragReleasePos(dragPosition || [position[0], 2, position[2]]);
+        setDragPosition(null);
+        document.body.style.cursor = "grab";
+        if (onDiceClick) onDiceClick();
+      }
+    },
+    { pointerEvents: true }
+  );
+
   useEffect(() => {
     if (isRolling) {
       setTargetValue(value);
@@ -50,11 +88,24 @@ const Die = ({
         Math.random() * Math.PI * 2,
         Math.random() * Math.PI * 2,
       ]);
+    } else {
+      // Reset drag release pos if not rolling (turn end or reset)
+      // Actually we want to keep it just for the start of the roll
+      // If turn ended, we probably want to clear it, but it matters most at start of roll.
     }
   }, [isRolling, value, index]);
 
   useFrame((state, delta) => {
     if (!meshRef.current) return;
+
+    // Handle Dragging
+    if (isDragging && dragPosition) {
+      meshRef.current.position.set(dragPosition[0], dragPosition[1], dragPosition[2]);
+      // Add a little tilts while dragging for realism
+      meshRef.current.rotation.x += delta * 2;
+      meshRef.current.rotation.z += delta * 1.5;
+      return;
+    }
 
     if (isRolling) {
       setRollTime((prev) => {
@@ -75,10 +126,12 @@ const Die = ({
         meshRef.current.rotation.z =
           startRot[2] +
           (targetRot[2] - startRot[2] + spins * Math.PI * 2) * easedProgress;
-
-        const startX = startPosition[0];
-        const startY = startPosition[1];
-        const startZ = startPosition[2];
+        
+        // Use Drag Release Position as start if available, else 'startPosition' prop
+        const effectiveStart = dragReleasePos || startPosition;
+        const startX = effectiveStart[0];
+        const startY = effectiveStart[1];
+        const startZ = effectiveStart[2];
 
         meshRef.current.position.x =
           startX + (position[0] - startX) * easedProgress;
@@ -98,6 +151,8 @@ const Die = ({
           if (onRollComplete && index === 0) {
             setTimeout(() => onRollComplete(), 100);
           }
+          // Clear drag release pos after roll done
+          if (dragReleasePos) setDragReleasePos(null);
         }
         return newTime;
       });
@@ -164,7 +219,28 @@ const Die = ({
   );
 
   return (
-    <mesh ref={meshRef} position={position} castShadow receiveShadow>
+    <mesh
+      ref={meshRef}
+      position={position}
+      castShadow
+      receiveShadow
+      {...bind()}
+      onClick={(e) => {
+        // e.stopPropagation(); // handled by bind
+        // if (onDiceClick && !isRolling) onDiceClick(); // handled by bind
+      }}
+      onPointerOver={() => {
+        if (onDiceClick && !isRolling) {
+          setHovered(true);
+          document.body.style.cursor = "grab";
+        }
+      }}
+      onPointerOut={() => {
+        setHovered(false);
+        document.body.style.cursor = "auto";
+      }}
+      scale={hovered && onDiceClick && !isRolling ? 1.1 : 1}
+    >
       {/* Soft glow shell slightly larger than the die */}
       <primitive object={new RoundedBoxGeometry(1.08, 1.08, 1.08, 8, 0.2)} />
       <meshStandardMaterial
@@ -205,6 +281,7 @@ const DiceScene = ({
   onRollComplete,
   currentPlayerIndex,
   totalPlayers,
+  onDiceClick,
 }) => {
   const finalDie1Pos = [-1.3, 0, 0];
   const finalDie2Pos = [1.3, 0, 0];
@@ -238,8 +315,10 @@ const DiceScene = ({
 
   return (
     <>
-      {/* Environment Map adds realistic reflections of a studio */}
-      <Environment preset="studio" />
+      {/* Environment Map adds realistic reflections of a studio - commented out for offline support */}
+      {/* <Environment preset="studio" />  */}
+      {/* todo: take feedback and use previous with offline support/new dice */}
+      <ambientLight intensity={0.5} />
 
       {/* Main Directional Light for casting shadows */}
       <directionalLight
@@ -261,6 +340,7 @@ const DiceScene = ({
         isRolling={isRolling}
         onRollComplete={onRollComplete}
         index={0}
+        onDiceClick={onDiceClick}
       />
       <Die
         value={dice2Value}
@@ -269,6 +349,7 @@ const DiceScene = ({
         isRolling={isRolling}
         onRollComplete={null}
         index={1}
+        onDiceClick={onDiceClick}
       />
 
       {/* Contact Shadows provide realistic grounding soft shadows */}
@@ -290,11 +371,12 @@ const Dice3D = ({
   onRollComplete,
   currentPlayerIndex,
   totalPlayers,
+  onDiceClick,
 }) => {
   return (
-    <div className="w-full h-full pointer-events-none" style={{ minHeight: '100%', minWidth: '100%' }}>
+    <div className="w-full h-full" style={{ minHeight: '100%', minWidth: '100%' }}>
       <Canvas
-        style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
+        style={{ width: '100%', height: '100%' }}
         camera={{
           position: [0, 12, 0.1],
           fov: 35, // Reduced FOV slightly for a more "product photography" telephoto look
@@ -314,6 +396,7 @@ const Dice3D = ({
             onRollComplete={onRollComplete}
             currentPlayerIndex={currentPlayerIndex}
             totalPlayers={totalPlayers}
+            onDiceClick={onDiceClick}
           />
         </group>
       </Canvas>

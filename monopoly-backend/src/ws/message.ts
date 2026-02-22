@@ -35,6 +35,12 @@ export type ClientMessage =
       tileIndex: number;
     } //houses: number of houses to build, 5 means hotel
   | {
+      type: "BREAK_PROPERTY";
+      gameId: string;
+      playerId: string;
+      tileIndex: number;
+    } //break/demolish houses, returns half the building cost
+  | {
       type: "INITIATE_TRADE";
       gameId: string;
       playerId: string; // Player making the trade offer

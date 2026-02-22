@@ -1,5 +1,9 @@
 import { initiateTrade } from "../../engine/initiateTrade";
-import { acceptTrade, rejectTrade } from "../../engine/finalizeTrade";
+import {
+  acceptTrade,
+  rejectTrade,
+  deleteTrade,
+} from "../../engine/finalizeTrade";
 import { createBaseState } from "../helpers/gameState";
 
 describe("Trade Feature", () => {
@@ -21,21 +25,13 @@ describe("Trade Feature", () => {
         },
       ];
 
-      const result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      const result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
 
       expect(result.pendingTrades).toHaveLength(1);
       expect(result.pendingTrades[0]).toBeDefined();
       expect(result.pendingTrades[0]!.tradeId).toBeDefined();
       expect(result.pendingTrades[0]!.tradeId).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
       );
     });
 
@@ -56,15 +52,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      const result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      const result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
 
       const trade = result.pendingTrades[0]!;
       expect(trade.initiatingPlayerId).toBe("p1");
@@ -92,15 +80,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      const result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      const result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
 
       const tradeEvent = result.events.find((e) => e.type === "TRADE_OFFERED");
       expect(tradeEvent).toBeDefined();
@@ -174,7 +154,7 @@ describe("Trade Feature", () => {
         100,
         [1],
         50,
-        [5]
+        [5],
       );
 
       expect(result.pendingTrades).toHaveLength(0);
@@ -205,7 +185,7 @@ describe("Trade Feature", () => {
         100,
         [1],
         50,
-        [5]
+        [5],
       );
 
       expect(result.pendingTrades).toHaveLength(0);
@@ -230,15 +210,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      const result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      const result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
 
       expect(result.pendingTrades).toHaveLength(0);
       expect(result).toEqual(state);
@@ -262,15 +234,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      const result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      const result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
 
       expect(result.pendingTrades).toHaveLength(0);
       expect(result).toEqual(state);
@@ -293,15 +257,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      const result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      const result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
 
       expect(result.pendingTrades).toHaveLength(0);
       expect(result).toEqual(state);
@@ -324,15 +280,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      const result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      const result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
 
       expect(result.pendingTrades).toHaveLength(0);
       expect(result).toEqual(state);
@@ -355,15 +303,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      const result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        0,
-        [1],
-        0,
-        [5]
-      );
+      const result = initiateTrade(state, "p1", "p2", 0, [1], 0, [5]);
 
       expect(result.pendingTrades).toHaveLength(1);
     });
@@ -371,15 +311,7 @@ describe("Trade Feature", () => {
     test("allows trade with empty property arrays", () => {
       const state = createBaseState();
 
-      const result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [],
-        50,
-        []
-      );
+      const result = initiateTrade(state, "p1", "p2", 100, [], 50, []);
 
       expect(result.pendingTrades).toHaveLength(1);
       expect(result.pendingTrades[0]!.offerProperties).toEqual([]);
@@ -405,15 +337,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      let result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      let result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
       const tradeId = result.pendingTrades[0]!.tradeId;
 
       result = acceptTrade(result, tradeId);
@@ -441,15 +365,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      let result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      let result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
       const tradeId = result.pendingTrades[0]!.tradeId;
 
       result = acceptTrade(result, tradeId);
@@ -478,15 +394,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      let result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      let result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
       const tradeId = result.pendingTrades[0]!.tradeId;
 
       result = acceptTrade(result, tradeId);
@@ -511,20 +419,14 @@ describe("Trade Feature", () => {
         },
       ];
 
-      let result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      let result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
       const tradeId = result.pendingTrades[0]!.tradeId;
 
       result = acceptTrade(result, tradeId);
 
-      const acceptEvent = result.events.find((e) => e.type === "TRADE_ACCEPTED");
+      const acceptEvent = result.events.find(
+        (e) => e.type === "TRADE_ACCEPTED",
+      );
       expect(acceptEvent).toBeDefined();
       expect(acceptEvent?.type).toBe("TRADE_ACCEPTED");
       expect("tradeId" in acceptEvent!).toBe(true);
@@ -556,15 +458,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      let result = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      let result = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
       const tradeId = result.pendingTrades[0]!.tradeId;
 
       // Remove initiating player
@@ -592,15 +486,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      state = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
       const tradeId = state.pendingTrades[0]!.tradeId;
 
       // Decrease p1's money after trade was initiated
@@ -629,15 +515,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      state = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
       const tradeId = state.pendingTrades[0]!.tradeId;
 
       // Change property ownership
@@ -666,15 +544,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      state = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
       const tradeId = state.pendingTrades[0]!.tradeId;
 
       const result = acceptTrade(state, tradeId);
@@ -712,23 +582,23 @@ describe("Trade Feature", () => {
         },
       ];
 
-      state = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1, 3],
-        50,
-        [5, 6]
-      );
+      state = initiateTrade(state, "p1", "p2", 100, [1, 3], 50, [5, 6]);
       const tradeId = state.pendingTrades[0]!.tradeId;
 
       const result = acceptTrade(state, tradeId);
 
-      expect(result.properties.find((p) => p.tileIndex === 1)!.ownerId).toBe("p2");
-      expect(result.properties.find((p) => p.tileIndex === 3)!.ownerId).toBe("p2");
-      expect(result.properties.find((p) => p.tileIndex === 5)!.ownerId).toBe("p1");
-      expect(result.properties.find((p) => p.tileIndex === 6)!.ownerId).toBe("p1");
+      expect(result.properties.find((p) => p.tileIndex === 1)!.ownerId).toBe(
+        "p2",
+      );
+      expect(result.properties.find((p) => p.tileIndex === 3)!.ownerId).toBe(
+        "p2",
+      );
+      expect(result.properties.find((p) => p.tileIndex === 5)!.ownerId).toBe(
+        "p1",
+      );
+      expect(result.properties.find((p) => p.tileIndex === 6)!.ownerId).toBe(
+        "p1",
+      );
     });
   });
 
@@ -750,15 +620,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      state = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
       const tradeId = state.pendingTrades[0]!.tradeId;
       const initialMoney1 = state.players[0]!.money;
       const initialMoney2 = state.players[1]!.money;
@@ -787,15 +649,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      state = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
       const tradeId = state.pendingTrades[0]!.tradeId;
 
       state = rejectTrade(state, tradeId);
@@ -831,15 +685,7 @@ describe("Trade Feature", () => {
         },
       ];
 
-      state = initiateTrade(
-        state,
-        "p1",
-        "p2",
-        100,
-        [1],
-        50,
-        [5]
-      );
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
       const tradeId = state.pendingTrades[0]!.tradeId;
       const initialState = JSON.parse(JSON.stringify(state));
 
@@ -981,6 +827,203 @@ describe("Trade Feature", () => {
 
       expect(state.pendingTrades).toHaveLength(1);
       expect(state.pendingTrades[0]!.offerProperties).toEqual([1]);
+    });
+  });
+
+  describe("deleteTrade", () => {
+    test("deletes trade by initiating player", () => {
+      let state = createBaseState();
+      state.properties = [
+        {
+          tileIndex: 1,
+          ownerId: "p1",
+          houses: 0,
+          isMortaged: false,
+        },
+        {
+          tileIndex: 5,
+          ownerId: "p2",
+          houses: 0,
+          isMortaged: false,
+        },
+      ];
+
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
+      const tradeId = state.pendingTrades[0]!.tradeId;
+
+      state = deleteTrade(state, tradeId, "p1");
+
+      expect(state.pendingTrades).toHaveLength(0);
+    });
+
+    test("creates TRADE_CANCELLED event with tradeId", () => {
+      let state = createBaseState();
+      state.properties = [
+        {
+          tileIndex: 1,
+          ownerId: "p1",
+          houses: 0,
+          isMortaged: false,
+        },
+        {
+          tileIndex: 5,
+          ownerId: "p2",
+          houses: 0,
+          isMortaged: false,
+        },
+      ];
+
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
+      const tradeId = state.pendingTrades[0]!.tradeId;
+
+      state = deleteTrade(state, tradeId, "p1");
+
+      const cancelEvent = state.events.find(
+        (e) => e.type === "TRADE_CANCELLED",
+      );
+      expect(cancelEvent).toBeDefined();
+      expect(cancelEvent?.type).toBe("TRADE_CANCELLED");
+      expect("tradeId" in cancelEvent!).toBe(true);
+    });
+
+    test("rejects deletion if trade ID not found", () => {
+      const state = createBaseState();
+
+      const result = deleteTrade(state, "invalid-trade-id", "p1");
+
+      expect(result).toEqual(state);
+      expect(result.events).toHaveLength(0);
+    });
+
+    test("rejects deletion if player is not the initiator", () => {
+      let state = createBaseState();
+      state.properties = [
+        {
+          tileIndex: 1,
+          ownerId: "p1",
+          houses: 0,
+          isMortaged: false,
+        },
+        {
+          tileIndex: 5,
+          ownerId: "p2",
+          houses: 0,
+          isMortaged: false,
+        },
+      ];
+
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
+      const tradeId = state.pendingTrades[0]!.tradeId;
+
+      // Try to delete as p2 (target player, not initiator)
+      const result = deleteTrade(state, tradeId, "p2");
+
+      // Trade should still be pending
+      expect(result.pendingTrades).toHaveLength(1);
+      expect(result.events).toHaveLength(1); // Only TRADE_OFFERED event
+    });
+
+    test("doesn't affect money or properties when deleting", () => {
+      let state = createBaseState();
+      state.properties = [
+        {
+          tileIndex: 1,
+          ownerId: "p1",
+          houses: 0,
+          isMortaged: false,
+        },
+        {
+          tileIndex: 5,
+          ownerId: "p2",
+          houses: 0,
+          isMortaged: false,
+        },
+      ];
+
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
+      const tradeId = state.pendingTrades[0]!.tradeId;
+      const initialState = JSON.parse(JSON.stringify(state));
+
+      state = deleteTrade(state, tradeId, "p1");
+
+      // Check that only pendingTrades and events changed
+      expect(state.players).toEqual(initialState.players);
+      expect(state.properties).toEqual(initialState.properties);
+    });
+
+    test("allows multiple trades and deletes one independently", () => {
+      let state = createBaseState();
+      state.players.push({
+        id: "p3",
+        name: "Charlie",
+        position: 10,
+        money: 1500,
+        inJail: false,
+        jailTurns: 0,
+        isBankrupt: false,
+      });
+      state.properties = [
+        {
+          tileIndex: 1,
+          ownerId: "p1",
+          houses: 0,
+          isMortaged: false,
+        },
+        {
+          tileIndex: 5,
+          ownerId: "p2",
+          houses: 0,
+          isMortaged: false,
+        },
+        {
+          tileIndex: 10,
+          ownerId: "p3",
+          houses: 0,
+          isMortaged: false,
+        },
+      ];
+
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
+      const firstTradeId = state.pendingTrades[0]!.tradeId;
+
+      state = initiateTrade(state, "p1", "p3", 200, [], 0, [10]);
+      const secondTradeId = state.pendingTrades[1]!.tradeId;
+
+      expect(state.pendingTrades).toHaveLength(2);
+
+      // Delete only the first trade
+      state = deleteTrade(state, firstTradeId, "p1");
+
+      expect(state.pendingTrades).toHaveLength(1);
+      expect(state.pendingTrades[0]!.tradeId).toBe(secondTradeId);
+    });
+
+    test("rejects deletion by wrong player even if they're in the trade", () => {
+      let state = createBaseState();
+      state.properties = [
+        {
+          tileIndex: 1,
+          ownerId: "p1",
+          houses: 0,
+          isMortaged: false,
+        },
+        {
+          tileIndex: 5,
+          ownerId: "p2",
+          houses: 0,
+          isMortaged: false,
+        },
+      ];
+
+      state = initiateTrade(state, "p1", "p2", 100, [1], 50, [5]);
+      const tradeId = state.pendingTrades[0]!.tradeId;
+      const initialPendingTradesLength = state.pendingTrades.length;
+
+      // p2 (target) tries to delete p1's (initiator) trade
+      state = deleteTrade(state, tradeId, "p2");
+
+      expect(state.pendingTrades).toHaveLength(initialPendingTradesLength);
+      expect(state.pendingTrades[0]!.tradeId).toBe(tradeId);
     });
   });
 });

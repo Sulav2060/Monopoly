@@ -187,3 +187,55 @@ export function rejectTrade(state: GameState, tradeId: string): GameState {
     return state;
   }
 }
+
+/**
+ * Delete a trade by the player who initiated it
+ * Only the initiating player can delete their own trade offer
+ */
+export function deleteTrade(
+  state: GameState,
+  tradeId: string,
+  playerId: string,
+): GameState {
+  try {
+    // Find the trade offer by tradeId
+    const tradeOffer = (state.pendingTrades || []).find(
+      (trade) => trade.tradeId === tradeId,
+    );
+
+    if (!tradeOffer) {
+      console.error(`❌ No pending trade offer with ID: ${tradeId}`);
+      return state;
+    }
+
+    // Verify that only the initiating player can delete the trade
+    if (tradeOffer.initiatingPlayerId !== playerId) {
+      console.error(
+        `❌ Only the initiating player can delete their trade. Player ${playerId} is not the initiator.`,
+      );
+      return state;
+    }
+
+    const tradeData = tradeOffer;
+
+    // Remove trade from pending trades and add cancelled event
+    return {
+      ...state,
+      pendingTrades: (state.pendingTrades || []).filter(
+        (trade) => trade !== tradeOffer,
+      ),
+      events: [
+        ...state.events,
+        {
+          type: "TRADE_CANCELLED",
+          tradeId: tradeData.tradeId,
+          initiatingPlayerId: tradeData.initiatingPlayerId,
+          targetPlayerId: tradeData.targetPlayerId,
+        },
+      ],
+    };
+  } catch (error) {
+    console.error("❌ Error in deleteTrade:", error);
+    return state;
+  }
+}

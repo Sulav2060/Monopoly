@@ -49,6 +49,12 @@ export type ClientMessage =
       gameId: string;
       tradeId: string; // Unique identifier of the trade to finalize
       action: "ACCEPT" | "REJECT";
+    }
+  | {
+      type: "DELETE_TRADE";
+      gameId: string;
+      playerId: string; // Player who initiated and is deleting the trade
+      tradeId: string; // Unique identifier of the trade to delete
     };
 
 export type ServerMessage =

@@ -428,35 +428,23 @@ export function setupWebSocket(wss: WebSocketServer) {
             return;
           }
 
-          const respondingPlayer = game.state.players.find(
-            (p) => p.id === msg.targetPlayerId,
-          );
-
-          if (!respondingPlayer) {
-            safeSend(socket, {
-              type: "ERROR",
-              message: "Player not found",
-            });
-            return;
-          }
-
-          // Check if there's a pending trade for this player
-          //but we need to check for the specific trade offer that matches both the initiating and target player ids to prevent accepting/rejecting the wrong trade in case of multiple pending trades
+          // Find the trade by tradeId
           const tradeOffer = (game.state.pendingTrades || []).find(
-            (trade) =>
-              trade.targetPlayerId === msg.targetPlayerId &&
-              trade.initiatingPlayerId === msg.initiatingPlayerId,
+            (trade) => trade.tradeId === msg.tradeId,
           );
 
           if (!tradeOffer) {
             safeSend(socket, {
               type: "ERROR",
-              message: "No such pending trade offer between these players",
+              message: `No pending trade offer with ID: ${msg.tradeId}`,
             });
             return;
           }
 
-          // Retrieve initiating player for logs
+          // Retrieve both players for logs
+          const respondingPlayer = game.state.players.find(
+            (p) => p.id === tradeOffer.targetPlayerId,
+          );
           const initiatingPlayer = game.state.players.find(
             (p) => p.id === tradeOffer.initiatingPlayerId,
           );
@@ -464,24 +452,16 @@ export function setupWebSocket(wss: WebSocketServer) {
           let newState;
 
           if (msg.action === "ACCEPT") {
-            newState = acceptTrade(
-              game.state,
-              msg.targetPlayerId,
-              msg.initiatingPlayerId,
-            );
+            newState = acceptTrade(game.state, msg.tradeId);
 
             console.log(
-              `✅ ${respondingPlayer.name} accepted trade from ${initiatingPlayer?.name} in game ${msg.gameId}`,
+              `✅ ${respondingPlayer?.name} accepted trade ${msg.tradeId} from ${initiatingPlayer?.name} in game ${msg.gameId}`,
             );
           } else {
-            newState = rejectTrade(
-              game.state,
-              msg.targetPlayerId,
-              msg.initiatingPlayerId,
-            );
+            newState = rejectTrade(game.state, msg.tradeId);
 
             console.log(
-              `❌ ${respondingPlayer.name} rejected trade from ${initiatingPlayer?.name} in game ${msg.gameId}`,
+              `❌ ${respondingPlayer?.name} rejected trade ${msg.tradeId} from ${initiatingPlayer?.name} in game ${msg.gameId}`,
             );
           }
 

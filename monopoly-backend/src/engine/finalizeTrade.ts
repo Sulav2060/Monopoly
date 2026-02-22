@@ -6,21 +6,15 @@ import { BOARD } from "./board";
  * Finalize a trade by accepting it
  * Transfers money and properties between players
  */
-export function acceptTrade(
-  state: GameState,
-  respondingPlayerId: string,
-  initiatingPlayerId: string,
-): GameState {
+export function acceptTrade(state: GameState, tradeId: string): GameState {
   try {
-    // Find the trade offer for this player
+    // Find the trade offer by tradeId
     const tradeOffer = (state.pendingTrades || []).find(
-      (trade) =>
-        trade.targetPlayerId === respondingPlayerId &&
-        trade.initiatingPlayerId === initiatingPlayerId,
+      (trade) => trade.tradeId === tradeId,
     );
 
     if (!tradeOffer) {
-      console.error("❌ No pending trade offer for these players");
+      console.error(`❌ No pending trade offer with ID: ${tradeId}`);
       return state;
     }
 
@@ -138,6 +132,7 @@ export function acceptTrade(
         ...state.events,
         {
           type: "TRADE_ACCEPTED",
+          tradeId: tradeData.tradeId,
           initiatingPlayerId: tradeData.initiatingPlayerId,
           targetPlayerId: tradeData.targetPlayerId,
           offerMoney: tradeData.offerMoney,
@@ -157,21 +152,15 @@ export function acceptTrade(
  * Finalize a trade by rejecting it
  * Clears the pending trade action
  */
-export function rejectTrade(
-  state: GameState,
-  respondingPlayerId: string,
-  initiatingPlayerId: string,
-): GameState {
+export function rejectTrade(state: GameState, tradeId: string): GameState {
   try {
-    // Find the trade offer for this player
+    // Find the trade offer by tradeId
     const tradeOffer = (state.pendingTrades || []).find(
-      (trade) =>
-        trade.targetPlayerId === respondingPlayerId &&
-        trade.initiatingPlayerId === initiatingPlayerId,
+      (trade) => trade.tradeId === tradeId,
     );
 
     if (!tradeOffer) {
-      console.error("❌ No pending trade offer for these players");
+      console.error(`❌ No pending trade offer with ID: ${tradeId}`);
       return state;
     }
 
@@ -187,6 +176,7 @@ export function rejectTrade(
         ...state.events,
         {
           type: "TRADE_REJECTED",
+          tradeId: tradeData.tradeId,
           initiatingPlayerId: tradeData.initiatingPlayerId,
           targetPlayerId: tradeData.targetPlayerId,
         },

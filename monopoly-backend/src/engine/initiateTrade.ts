@@ -1,4 +1,5 @@
 import { GameState, TradeOfferData } from "../types/game";
+import { randomUUID } from "crypto";
 
 /**
  * Initiate a trade offer between two players
@@ -62,8 +63,10 @@ export function initiateTrade(
       }
     }
 
-    // Create trade offer data
+    // Create trade offer data with unique ID
+    const tradeId = randomUUID();
     const tradeData: TradeOfferData = {
+      tradeId,
       initiatingPlayerId,
       targetPlayerId,
       offerMoney,
@@ -80,6 +83,7 @@ export function initiateTrade(
         ...state.events,
         {
           type: "TRADE_OFFERED",
+          tradeId,
           initiatingPlayerId,
           targetPlayerId,
           offerMoney,

@@ -24,6 +24,7 @@ export type Buy_Property_PendingAction_Data = PropertyTile & {
 };
 
 export type TradeOfferData = {
+  tradeId: string; // Unique identifier for this trade offer
   initiatingPlayerId: PlayerId; // Player who made the offer
   targetPlayerId: PlayerId; // Player being offered the trade
   offerMoney: number; // Money initiating player is offering
@@ -108,6 +109,7 @@ export type GameEvent =
   //trade regarding events
   | {
       type: "TRADE_OFFERED";
+      tradeId: string;
       initiatingPlayerId: PlayerId;
       targetPlayerId: PlayerId;
       offerMoney: number;
@@ -117,6 +119,7 @@ export type GameEvent =
     }
   | {
       type: "TRADE_ACCEPTED";
+      tradeId: string;
       initiatingPlayerId: PlayerId;
       targetPlayerId: PlayerId;
       offerMoney: number;
@@ -126,6 +129,7 @@ export type GameEvent =
     }
   | {
       type: "TRADE_REJECTED";
+      tradeId: string;
       initiatingPlayerId: PlayerId;
       targetPlayerId: PlayerId;
     };

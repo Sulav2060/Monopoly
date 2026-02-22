@@ -47,8 +47,7 @@ export type ClientMessage =
   | {
       type: "FINALIZE_TRADE";
       gameId: string;
-      initiatingPlayerId: string; // Player who made the trade offer
-      targetPlayerId: string; // Player responding to trade
+      tradeId: string; // Unique identifier of the trade to finalize
       action: "ACCEPT" | "REJECT";
     };
 

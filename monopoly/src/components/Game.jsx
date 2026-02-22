@@ -1559,14 +1559,30 @@ const Game = () => {
                       </span>
                     </div>
                   )}
-                  {_showPropertyCard.tile.price && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Mortgage</span>
-                      <span className="text-white font-semibold">
-                        ${Math.floor(_showPropertyCard.tile.price / 2)}
-                      </span>
-                    </div>
-                  )}
+                  {_showPropertyCard.tile.price &&
+                    (() => {
+                      const mortgageValue = Math.floor(
+                        _showPropertyCard.tile.price / 2,
+                      );
+                      const unmortgageCost = Math.floor(mortgageValue * 1.1);
+
+                      return (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Mortgage</span>
+                            <span className="text-white font-semibold">
+                              ${mortgageValue}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Unmortgage</span>
+                            <span className="text-white font-semibold">
+                              ${unmortgageCost}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   {_showPropertyCard.tile.houseCost && (
                     <div className="flex justify-between">
                       <span className="text-gray-400">House Cost</span>

@@ -132,6 +132,12 @@ export type GameEvent =
       tradeId: string;
       initiatingPlayerId: PlayerId;
       targetPlayerId: PlayerId;
+    }
+  | {
+      type: "TRADE_CANCELLED";
+      tradeId: string;
+      initiatingPlayerId: PlayerId;
+      targetPlayerId: PlayerId;
     };
 
 export type GameState = {

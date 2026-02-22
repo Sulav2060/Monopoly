@@ -12,7 +12,7 @@ import { resolveAuctionTimeout } from "../engine/resolveAuctionTimeout";
 import { placeBid } from "../engine/placeBid";
 import { buildProperty } from "../engine/buildProperty";
 import { initiateTrade } from "../engine/initiateTrade";
-import { acceptTrade, rejectTrade } from "../engine/finalizeTrade";
+import { acceptTrade, rejectTrade, deleteTrade } from "../engine/finalizeTrade";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -472,6 +472,64 @@ export function setupWebSocket(wss: WebSocketServer) {
             gameId: msg.gameId,
             state: newState,
           });
+
+          return;
+        }
+
+        /* =======================
+           DELETE_TRADE
+        ======================= */
+        if (msg.type === "DELETE_TRADE") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          // Find the trade by tradeId
+          const tradeOffer = (game.state.pendingTrades || []).find(
+            (trade) => trade.tradeId === msg.tradeId,
+          );
+
+          if (!tradeOffer) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: `No pending trade offer with ID: ${msg.tradeId}`,
+            });
+            return;
+          }
+
+          // Verify the player is the initiator
+          if (tradeOffer.initiatingPlayerId !== msg.playerId) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Only the initiating player can delete their trade",
+            });
+            return;
+          }
+
+          // Delete the trade
+          const newState = deleteTrade(game.state, msg.tradeId, msg.playerId);
+
+          // Retrieve players for logs
+          const initiatingPlayer = game.state.players.find(
+            (p) => p.id === tradeOffer.initiatingPlayerId,
+          );
+          const targetPlayer = game.state.players.find(
+            (p) => p.id === tradeOffer.targetPlayerId,
+          );
+
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🗑️ ${initiatingPlayer?.name} deleted trade ${msg.tradeId} with ${targetPlayer?.name} in game ${msg.gameId}`,
+          );
 
           return;
         }

@@ -23,6 +23,16 @@ export type Buy_Property_PendingAction_Data = PropertyTile & {
   playerId: PlayerId;
 };
 
+export type TradeOfferData = {
+  tradeId: string; // Unique identifier for this trade offer
+  initiatingPlayerId: PlayerId; // Player who made the offer
+  targetPlayerId: PlayerId; // Player being offered the trade
+  offerMoney: number; // Money initiating player is offering
+  offerProperties: number[]; // Property tile indices initiating player is offering
+  requestMoney: number; // Money requested from target player
+  requestProperties: number[]; // Property tile indices requested from target player
+};
+
 export type PendingAction =
   | { type: "BUY_PROPERTY"; property: Buy_Property_PendingAction_Data }
   | { type: "AUCTION"; auction: AuctionState }
@@ -95,7 +105,34 @@ export type GameEvent =
       tileIndex: number;
       amount: number;
     }
-  | { type: "AUCTION_UNSOLD"; tileIndex: number };
+  | { type: "AUCTION_UNSOLD"; tileIndex: number }
+  //trade regarding events
+  | {
+      type: "TRADE_OFFERED";
+      tradeId: string;
+      initiatingPlayerId: PlayerId;
+      targetPlayerId: PlayerId;
+      offerMoney: number;
+      offerProperties: number[];
+      requestMoney: number;
+      requestProperties: number[];
+    }
+  | {
+      type: "TRADE_ACCEPTED";
+      tradeId: string;
+      initiatingPlayerId: PlayerId;
+      targetPlayerId: PlayerId;
+      offerMoney: number;
+      offerProperties: number[];
+      requestMoney: number;
+      requestProperties: number[];
+    }
+  | {
+      type: "TRADE_REJECTED";
+      tradeId: string;
+      initiatingPlayerId: PlayerId;
+      targetPlayerId: PlayerId;
+    };
 
 export type GameState = {
   players: PlayerState[];
@@ -110,6 +147,7 @@ export type GameState = {
   communityChestDeck: CommunityChestCard[];
   communityChestIndex: number;
   pendingAction: PendingAction;
+  pendingTrades: TradeOfferData[]; // Array to support multiple concurrent trade offers
 };
 
 export type PropertyOwnership = {

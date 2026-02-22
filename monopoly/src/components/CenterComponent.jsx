@@ -24,8 +24,8 @@ const CenterComponent = ({
   const actionLabel = isAnimating
     ? "Moving..."
     : isEndState
-    ? "End Turn"
-    : "🎲 Roll Dice";
+      ? "End Turn"
+      : "🎲 Roll Dice";
   const actionHandler = isEndState ? onEndTurn : onRollDice;
   const actionDisabled =
     isAnimating ||
@@ -47,17 +47,19 @@ const CenterComponent = ({
         />
       </div>
 
-      {showDice && (
+      {showDice && currentDice && (
         <div className="absolute inset-0 z-50">
-            <Dice3D
-              dice1={currentDice.d1}
-              dice2={currentDice.d2}
-              isRolling={isRolling}
-              onRollComplete={onRollComplete}
-              currentPlayerIndex={currentTurnIndex}
-              totalPlayers={totalPlayers}
-              onDiceClick={!hasRolled && isMyTurn && !isAnimating ? onRollDice : undefined}
-            />
+          <Dice3D
+            dice1={currentDice.d1 ?? 1}
+            dice2={currentDice.d2 ?? 1}
+            isRolling={isRolling}
+            onRollComplete={onRollComplete}
+            currentPlayerIndex={currentTurnIndex}
+            totalPlayers={totalPlayers}
+            onDiceClick={
+              !hasRolled && isMyTurn && !isAnimating ? onRollDice : undefined
+            }
+          />
         </div>
       )}
 

@@ -99,8 +99,7 @@ const Board = ({
 
   const tilesCount = allTilesInOrder.length;
 
-  const diceSum = currentDice.d1 + currentDice.d2;
-
+  const diceSum = currentDice ? currentDice.d1 + currentDice.d2 : 0;
   // Get properties array from game state for direct ownership check
   const propertiesFromGame = currentGame?.properties || [];
 

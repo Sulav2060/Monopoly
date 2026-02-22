@@ -1,0 +1,171 @@
+import { GameState } from "../types/game";
+
+/**
+ * Finalize a trade by accepting it
+ * Transfers money and properties between players
+ */
+export function acceptTrade(
+  state: GameState,
+  respondingPlayerId: string,
+  initiatingPlayerId: string,
+): GameState {
+  try {
+    // Find the trade offer for this player
+    const tradeOffer = (state.pendingTrades || []).find(
+      (trade) =>
+        trade.targetPlayerId === respondingPlayerId &&
+        trade.initiatingPlayerId === initiatingPlayerId,
+    );
+
+    if (!tradeOffer) {
+      console.error("❌ No pending trade offer for these players");
+      return state;
+    }
+
+    const tradeData = tradeOffer;
+
+    const initiatingPlayer = state.players.find(
+      (p) => p.id === tradeData.initiatingPlayerId,
+    );
+    const targetPlayer = state.players.find(
+      (p) => p.id === tradeData.targetPlayerId,
+    );
+
+    if (!initiatingPlayer || !targetPlayer) {
+      console.error("❌ Player not found");
+      return state;
+    }
+
+    // Final validation: check players still have the resources
+    if (initiatingPlayer.money < tradeData.offerMoney) {
+      console.error("❌ Initiating player no longer has enough money");
+      return state;
+    }
+
+    if (targetPlayer.money < tradeData.requestMoney) {
+      console.error("❌ Target player no longer has enough money");
+      return state;
+    }
+
+    // Validate properties still owned by correct players
+    for (const tileIndex of tradeData.offerProperties) {
+      const property = state.properties.find((p) => p.tileIndex === tileIndex);
+      if (!property || property.ownerId !== tradeData.initiatingPlayerId) {
+        console.error(
+          `❌ Property ${tileIndex} no longer owned by initiating player`,
+        );
+        return state;
+      }
+    }
+
+    for (const tileIndex of tradeData.requestProperties) {
+      const property = state.properties.find((p) => p.tileIndex === tileIndex);
+      if (!property || property.ownerId !== tradeData.targetPlayerId) {
+        console.error(
+          `❌ Property ${tileIndex} no longer owned by target player`,
+        );
+        return state;
+      }
+    }
+    //TODO: Maybe we need to add a stop for all the processes during the trade accept(finalization)
+    // Execute the trade: transfer money and properties
+    return {
+      ...state,
+      players: state.players.map((p) => {
+        if (p.id === tradeData.initiatingPlayerId) {
+          return {
+            ...p,
+            money: p.money - tradeData.offerMoney + tradeData.requestMoney,
+          };
+        }
+        if (p.id === tradeData.targetPlayerId) {
+          return {
+            ...p,
+            money: p.money + tradeData.offerMoney - tradeData.requestMoney,
+          };
+        }
+        return p;
+      }),
+      properties: state.properties.map((prop) => {
+        // Transfer offered properties to target
+        if (tradeData.offerProperties.includes(prop.tileIndex)) {
+          return {
+            ...prop,
+            ownerId: tradeData.targetPlayerId,
+          };
+        }
+        // Transfer requested properties to initiator
+        if (tradeData.requestProperties.includes(prop.tileIndex)) {
+          return {
+            ...prop,
+            ownerId: tradeData.initiatingPlayerId,
+          };
+        }
+        return prop;
+      }),
+      pendingTrades: (state.pendingTrades || []).filter(
+        (trade) => trade !== tradeOffer,
+      ),
+      events: [
+        ...state.events,
+        {
+          type: "TRADE_ACCEPTED",
+          initiatingPlayerId: tradeData.initiatingPlayerId,
+          targetPlayerId: tradeData.targetPlayerId,
+          offerMoney: tradeData.offerMoney,
+          offerProperties: tradeData.offerProperties,
+          requestMoney: tradeData.requestMoney,
+          requestProperties: tradeData.requestProperties,
+        },
+      ],
+    };
+  } catch (error) {
+    console.error("❌ Error in acceptTrade:", error);
+    return state;
+  }
+}
+
+/**
+ * Finalize a trade by rejecting it
+ * Clears the pending trade action
+ */
+export function rejectTrade(
+  state: GameState,
+  respondingPlayerId: string,
+  initiatingPlayerId: string,
+): GameState {
+  try {
+    // Find the trade offer for this player
+    const tradeOffer = (state.pendingTrades || []).find(
+      (trade) =>
+        trade.targetPlayerId === respondingPlayerId &&
+        trade.initiatingPlayerId === initiatingPlayerId,
+    );
+
+    if (!tradeOffer) {
+      console.error("❌ No pending trade offer for these players");
+      return state;
+    }
+
+    const tradeData = tradeOffer;
+
+    // Remove trade from pending trades and add rejected event
+    return {
+      ...state,
+      pendingTrades: (state.pendingTrades || []).filter(
+        (trade) => trade !== tradeOffer,
+      ),
+      events: [
+        ...state.events,
+        {
+          type: "TRADE_REJECTED",
+          initiatingPlayerId: tradeData.initiatingPlayerId,
+          targetPlayerId: tradeData.targetPlayerId,
+        },
+      ],
+    };
+  } catch (error) {
+    console.error("❌ Error in rejectTrade:", error);
+    return state;
+  }
+}

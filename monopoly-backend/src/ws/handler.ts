@@ -11,6 +11,8 @@ import { buyPendingProperty } from "../engine/buyPendingProperty";
 import { resolveAuctionTimeout } from "../engine/resolveAuctionTimeout";
 import { placeBid } from "../engine/placeBid";
 import { buildProperty } from "../engine/buildProperty";
+import { initiateTrade } from "../engine/initiateTrade";
+import { acceptTrade, rejectTrade } from "../engine/finalizeTrade";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -364,6 +366,133 @@ export function setupWebSocket(wss: WebSocketServer) {
           console.log(
             `🏠 ${currentPlayer.name} built on property ${msg.tileIndex} in game ${msg.gameId}`,
           );
+          return;
+        }
+
+        /* =======================
+           INITIATE_TRADE
+        ======================= */
+        if (msg.type === "INITIATE_TRADE") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const initiatingPlayer = game.state.players.find(
+            (p) => p.id === msg.playerId,
+          );
+          const targetPlayer = game.state.players.find(
+            (p) => p.id === msg.targetPlayerId,
+          );
+
+          if (!initiatingPlayer || !targetPlayer) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Player not found",
+            });
+            return;
+          }
+
+          const newState = initiateTrade(
+            game.state,
+            msg.playerId,
+            msg.targetPlayerId,
+            msg.offerMoney,
+            msg.offerProperties,
+            msg.requestMoney,
+            msg.requestProperties,
+          );
+
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `💰 ${initiatingPlayer.name} offered a trade to ${targetPlayer.name} in game ${msg.gameId}`,
+          );
+          return;
+        }
+
+        /* =======================
+           FINALIZE_TRADE
+        ======================= */
+        if (msg.type === "FINALIZE_TRADE") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const respondingPlayer = game.state.players.find(
+            (p) => p.id === msg.targetPlayerId,
+          );
+
+          if (!respondingPlayer) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Player not found",
+            });
+            return;
+          }
+
+          // Check if there's a pending trade for this player
+          //but we need to check for the specific trade offer that matches both the initiating and target player ids to prevent accepting/rejecting the wrong trade in case of multiple pending trades
+          const tradeOffer = (game.state.pendingTrades || []).find(
+            (trade) =>
+              trade.targetPlayerId === msg.targetPlayerId &&
+              trade.initiatingPlayerId === msg.initiatingPlayerId,
+          );
+
+          if (!tradeOffer) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "No such pending trade offer between these players",
+            });
+            return;
+          }
+
+          // Retrieve initiating player for logs
+          const initiatingPlayer = game.state.players.find(
+            (p) => p.id === tradeOffer.initiatingPlayerId,
+          );
+
+          let newState;
+
+          if (msg.action === "ACCEPT") {
+            newState = acceptTrade(
+              game.state,
+              msg.targetPlayerId,
+              msg.initiatingPlayerId,
+            );
+
+            console.log(
+              `✅ ${respondingPlayer.name} accepted trade from ${initiatingPlayer?.name} in game ${msg.gameId}`,
+            );
+          } else {
+            newState = rejectTrade(
+              game.state,
+              msg.targetPlayerId,
+              msg.initiatingPlayerId,
+            );
+
+            console.log(
+              `❌ ${respondingPlayer.name} rejected trade from ${initiatingPlayer?.name} in game ${msg.gameId}`,
+            );
+          }
+
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
           return;
         }
 

@@ -1,4 +1,6 @@
+import { PropertyTile } from "../types/board";
 import { GameState } from "../types/game";
+import { BOARD } from "./board";
 
 /**
  * Finalize a trade by accepting it
@@ -36,6 +38,18 @@ export function acceptTrade(
       return state;
     }
 
+    //check all the properties are of type PROPERTY
+    for (const tileIndex of [
+      ...tradeData.offerProperties,
+      ...tradeData.requestProperties,
+    ]) {
+      const tile = BOARD[tileIndex];
+      if (tile?.type !== "PROPERTY") {
+        console.error(`❌ Tile ${tileIndex} is not a property`);
+        return state;
+      }
+    }
+
     // Final validation: check players still have the resources
     if (initiatingPlayer.money < tradeData.offerMoney) {
       console.error("❌ Initiating player no longer has enough money");
@@ -67,7 +81,21 @@ export function acceptTrade(
         return state;
       }
     }
-    //TODO: Maybe we need to add a stop for all the processes during the trade accept(finalization)
+
+    //check if none of the properties involved have houses built in them, if they do we should reject the trade as we don't want to allow trading of properties with houses on them
+    for (const tileIndex of [
+      ...tradeData.offerProperties,
+      ...tradeData.requestProperties,
+    ]) {
+      const property = state.properties.find((p) => p.tileIndex === tileIndex);
+      if (property && property.houses > 0) {
+        const propertyTile = BOARD[tileIndex] as PropertyTile;
+        const tileName = propertyTile.name;
+        console.error(`❌ Property ${tileName} has houses built on it`);
+        return state;
+      }
+    }
+    //TODO: Maybe we need to add a stop for all the processes during the trade accept(finalization) for changing property values and for concurrency
     // Execute the trade: transfer money and properties
     return {
       ...state,

@@ -73,6 +73,11 @@ export type ClientMessage =
       gameId: string;
       playerId: string; // Player who initiated and is deleting the trade
       tradeId: string; // Unique identifier of the trade to delete
+    }
+  | {
+      type: "DECLARE_BANKRUPTCY";
+      gameId: string;
+      playerId: string; // Player declaring bankruptcy
     };
 
 export type ServerMessage =

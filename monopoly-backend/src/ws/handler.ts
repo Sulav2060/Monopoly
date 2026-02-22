@@ -16,6 +16,7 @@ import { initiateTrade } from "../engine/initiateTrade";
 import { acceptTrade, rejectTrade, deleteTrade } from "../engine/finalizeTrade";
 import { mortgageProperty } from "../engine/mortgage";
 import { unmortgageProperty } from "../engine/unmortgage";
+import { bankruptPlayer } from "../engine/bankruptPlayer";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -629,6 +630,47 @@ export function setupWebSocket(wss: WebSocketServer) {
 
           console.log(
             `🏦 ${player.name} unmortgaged property at ${msg.tileIndex} in game ${msg.gameId}`,
+          );
+          return;
+        }
+
+        /* =======================
+           DECLARE_BANKRUPTCY
+        ======================= */
+        if (msg.type === "DECLARE_BANKRUPTCY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const player = game.state.players.find((p) => p.id === msg.playerId);
+          if (!player) {
+            safeSend(socket, { type: "ERROR", message: "Player not found" });
+            return;
+          }
+
+          // Check if player is already bankrupt
+          if (player.isBankrupt) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Player is already bankrupt",
+            });
+            return;
+          }
+
+          // Declare bankruptcy (no causedBy since it's voluntary)
+          const newState = bankruptPlayer(game.state, msg.playerId);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `💸 ${player.name} declared bankruptcy in game ${msg.gameId}`,
           );
           return;
         }

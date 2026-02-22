@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import Board from "./Board";
 import AuctionModal from "./AuctionModal";
 import Rules from "./Rules";
@@ -72,6 +78,12 @@ const Game = () => {
   const [_showPropertyCard, setShowPropertyCard] = useState(null);
   const [showBuildMenu, setShowBuildMenu] = useState(false);
   const [showTradeModal, setShowTradeModal] = useState(false);
+  const [tradeTargetPlayerId, setTradeTargetPlayerId] = useState("");
+  const [tradeOfferMoney, setTradeOfferMoney] = useState("");
+  const [tradeOfferProperties, setTradeOfferProperties] = useState([]);
+  const [tradeRequestMoney, setTradeRequestMoney] = useState("");
+  const [tradeRequestProperties, setTradeRequestProperties] = useState([]);
+  const [tradeTab, setTradeTab] = useState("new"); // "new" or "incoming"
   const [showRules, setShowRules] = useState(false);
   const [notification, setNotification] = useState(null);
   const [eventCards, setEventCards] = useState([]);
@@ -163,8 +175,9 @@ const Game = () => {
         const d2 = event.dice?.die2 ?? "?";
         const total = d1 + d2;
         const isDoubles = d1 === d2;
-        return `🎲 ${name} rolled ${d1} + ${d2} = ${total}${isDoubles ? " (Doubles!)" : ""
-          }`;
+        return `🎲 ${name} rolled ${d1} + ${d2} = ${total}${
+          isDoubles ? " (Doubles!)" : ""
+        }`;
       }
 
       case "PLAYER_MOVED": {
@@ -186,8 +199,9 @@ const Game = () => {
         const payer = players.find((p) => p.id === event.from);
         const receiver = players.find((p) => p.id === event.to);
         const amount = event.amount || 0;
-        return `💸 ${payer?.name || "Player"} paid $${amount} rent to ${receiver?.name || "Player"
-          }`;
+        return `💸 ${payer?.name || "Player"} paid $${amount} rent to ${
+          receiver?.name || "Player"
+        }`;
       }
 
       case "PROPERTY_SKIPPED": {
@@ -237,8 +251,9 @@ const Game = () => {
       case "FREE_PARKING_COLLECTED": {
         const player = players.find((p) => p.id === event.playerId);
         const amount = event.amount || 0;
-        return `🅿️ ${player?.name || "Player"
-          } collected $${amount} from Free Parking!`;
+        return `🅿️ ${
+          player?.name || "Player"
+        } collected $${amount} from Free Parking!`;
       }
 
       case "COMMUNITY_CHEST": {
@@ -274,8 +289,9 @@ const Game = () => {
           ? players.find((p) => p.id === event.causedBy)
           : null;
         if (causedBy) {
-          return `💔 ${player?.name || "Player"} went bankrupt to ${causedBy.name
-            }`;
+          return `💔 ${player?.name || "Player"} went bankrupt to ${
+            causedBy.name
+          }`;
         }
         return `💔 ${player?.name || "Player"} went bankrupt`;
       }
@@ -285,9 +301,73 @@ const Game = () => {
         return `🏆 Game Over! ${winner?.name || "Player"} wins!`;
       }
 
+      case "TRADE_OFFERED": {
+        const initiator = players.find(
+          (p) => p.id === event.initiatingPlayerId,
+        );
+        const target = players.find((p) => p.id === event.targetPlayerId);
+        return `🤝 ${initiator?.name || "Player"} offered a trade to ${target?.name || "Player"}`;
+      }
+
+      case "TRADE_ACCEPTED": {
+        const target = players.find((p) => p.id === event.targetPlayerId);
+        const initiator = players.find(
+          (p) => p.id === event.initiatingPlayerId,
+        );
+        return `✅ ${target?.name || "Player"} accepted ${initiator?.name || "Player"}'s trade`;
+      }
+
+      case "TRADE_REJECTED": {
+        const target = players.find((p) => p.id === event.targetPlayerId);
+        const initiator = players.find(
+          (p) => p.id === event.initiatingPlayerId,
+        );
+        return `❌ ${target?.name || "Player"} rejected ${initiator?.name || "Player"}'s trade`;
+      }
+
+      case "TRADE_CANCELLED": {
+        const initiator = players.find(
+          (p) => p.id === event.initiatingPlayerId,
+        );
+        const target = players.find((p) => p.id === event.targetPlayerId);
+        return `🚫 ${initiator?.name || "Player"} cancelled trade offer to ${target?.name || "Player"}`;
+      }
+
+      case "PROPERTY_BUILT": {
+        const player = players.find((p) => p.id === event.playerId);
+        const tile = getTileAtPosition(event.tileIndex);
+        const propertyName = tile?.title || "a property";
+        const houses = event.houses || 0;
+        const buildingType =
+          houses === 5 ? "hotel" : houses === 1 ? "house" : "houses";
+        return `🏗️ ${player?.name || "Player"} built ${houses === 5 ? "a " : ""}${houses === 5 ? "hotel" : houses + " " + buildingType} on ${propertyName}`;
+      }
+
+      case "AUCTION_STARTED": {
+        const tile = getTileAtPosition(event.property?.tileIndex);
+        const propertyName =
+          tile?.title || event.property?.title || "a property";
+        return `🔨 Auction started for ${propertyName}`;
+      }
+
+      case "AUCTION_WON": {
+        const winner = players.find((p) => p.id === event.playerId);
+        const tile = getTileAtPosition(event.tileIndex);
+        const propertyName = tile?.title || "a property";
+        const amount = event.amount || 0;
+        return `🔨 ${winner?.name || "Player"} won ${propertyName} for $${amount}`;
+      }
+
+      case "AUCTION_UNSOLD": {
+        const tile = getTileAtPosition(event.tileIndex);
+        const propertyName = tile?.title || "a property";
+        return `🔨 ${propertyName} remained unsold`;
+      }
+
       default:
-        return `📋 ${event.type?.replace(/_/g, " ").toLowerCase() || "Game event"
-          }`;
+        return `📋 ${
+          event.type?.replace(/_/g, " ").toLowerCase() || "Game event"
+        }`;
     }
   };
 
@@ -526,7 +606,12 @@ const Game = () => {
 
       // Filter out low-signal events; keep ordering as sent by backend
       const importantEvents = fresh.filter(
-        (evt) => evt.type !== "DICE_ROLLED" && evt.type !== "PLAYER_MOVED",
+        (evt) =>
+          evt.type !== "DICE_ROLLED" &&
+          evt.type !== "PLAYER_MOVED" &&
+          evt.type !== "PROPERTY_OFFERED" &&
+          evt.type !== "AUCTION_BID_PLACED" &&
+          evt.type !== "AUCTION_PLAYER_PASSED",
       );
 
       // Check for events that should show a card
@@ -597,8 +682,9 @@ const Game = () => {
           const message = formatEventMessage(evt, currentGame);
           logIdCounterRef.current += 1;
           return {
-            id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${logIdCounterRef.current
-              }`,
+            id: `log-${eventIndex}-${evt.timestamp || Date.now()}-${
+              logIdCounterRef.current
+            }`,
             message,
             time: new Date().toLocaleTimeString(),
           };
@@ -759,7 +845,6 @@ const Game = () => {
           pendingAction.property?.playerId === currentPlayerId)
       )
     ) {
-
       return false;
     }
 
@@ -792,6 +877,49 @@ const Game = () => {
     }
   }, [currentGame, contextBuyProperty]);
 
+  const proposeTrade = () => {
+    if (!tradeTargetPlayerId) {
+      showNotification("Please select a player to trade with", "error");
+      return;
+    }
+    wsClient.send({
+      type: "INITIATE_TRADE",
+      gameId: currentGame.id,
+      playerId: currentPlayerId,
+      targetPlayerId: tradeTargetPlayerId,
+      offerMoney: Number(tradeOfferMoney) || 0,
+      offerProperties: tradeOfferProperties,
+      requestMoney: Number(tradeRequestMoney) || 0,
+      requestProperties: tradeRequestProperties,
+    });
+    setShowTradeModal(false);
+    setTradeTargetPlayerId("");
+    setTradeOfferMoney("");
+    setTradeOfferProperties([]);
+    setTradeRequestMoney("");
+    setTradeRequestProperties([]);
+    showNotification("Trade offer sent!", "success");
+  };
+
+  const finalizeTrade = (tradeId, action) => {
+    wsClient.send({
+      type: "FINALIZE_TRADE",
+      gameId: currentGame.id,
+      tradeId,
+      action,
+    });
+  };
+
+  const deleteTrade = (tradeId) => {
+    wsClient.send({
+      type: "DELETE_TRADE",
+      gameId: currentGame.id,
+      playerId: currentPlayerId,
+      tradeId,
+    });
+    showNotification("Trade offer cancelled", "success");
+  };
+
   // Bot auto-play removed to prevent unintended rolls on other players' turns
   // Sync dice animation across all players in room
   useEffect(() => {
@@ -799,6 +927,7 @@ const Game = () => {
 
     // Check if we already displayed this dice roll
     if (
+      currentDice &&
       currentDice.d1 === currentGame.lastDice.die1 &&
       currentDice.d2 === currentGame.lastDice.die2
     ) {
@@ -918,7 +1047,7 @@ const Game = () => {
   useEffect(() => {
     if (!isAnimating || !currentGame) return;
     let timeout;
-    const diceSum = currentDice.d1 + currentDice.d2;
+    const diceSum = currentDice ? currentDice.d1 + currentDice.d2 : 0;
 
     //console.log("Animation step:", animationStep, "Dice sum:", diceSum);
 
@@ -1110,12 +1239,13 @@ const Game = () => {
       {/* Notification Toast */}
       {notification && (
         <div
-          className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-xl shadow-2xl border border-white/10 backdrop-blur-md bg-white/10 text-white font-semibold ${notification.type === "success"
-            ? "shadow-green-500/30"
-            : notification.type === "error"
-              ? "shadow-red-500/30"
-              : "shadow-blue-500/30"
-            }`}
+          className={`fixed top-6 right-6 z-50 px-6 py-3 rounded-xl shadow-2xl border border-white/10 backdrop-blur-md bg-white/10 text-white font-semibold ${
+            notification.type === "success"
+              ? "shadow-green-500/30"
+              : notification.type === "error"
+                ? "shadow-red-500/30"
+                : "shadow-blue-500/30"
+          }`}
         >
           {notification.message}
         </div>
@@ -1316,16 +1446,18 @@ const Game = () => {
           <div className="grid grid-cols-2 gap-3">
             {/* Show Buy and Skip buttons when there's a pending property purchase */}
             {currentGame?.pendingAction?.type === "BUY_PROPERTY" &&
-              (currentGame?.pendingAction?.playerId === currentPlayerId ||
-                currentGame?.pendingAction?.property?.playerId === currentPlayerId) ? (
+            (currentGame?.pendingAction?.playerId === currentPlayerId ||
+              currentGame?.pendingAction?.property?.playerId ===
+                currentPlayerId) ? (
               <>
                 <button
                   onClick={buyProperty}
                   disabled={!canBuyProperty() || isLoadingAction}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${canBuyProperty() && !isLoadingAction
-                    ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
-                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                    }`}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
+                    canBuyProperty() && !isLoadingAction
+                      ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
+                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                  }`}
                 >
                   🏠 Buy
                 </button>
@@ -1333,10 +1465,11 @@ const Game = () => {
                 <button
                   onClick={endTurn}
                   disabled={isLoadingAction}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${!isLoadingAction
-                    ? "bg-amber-600/80 border-amber-500/70 text-white shadow-[0_10px_30px_-15px_rgba(245,158,11,0.8)] hover:-translate-y-0.5"
-                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                    }`}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
+                    !isLoadingAction
+                      ? "bg-amber-600/80 border-amber-500/70 text-white shadow-[0_10px_30px_-15px_rgba(245,158,11,0.8)] hover:-translate-y-0.5"
+                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                  }`}
                 >
                   🔨 Auction
                 </button>
@@ -1346,10 +1479,11 @@ const Game = () => {
                 <button
                   onClick={buyProperty}
                   disabled={!canBuyProperty() || isLoadingAction}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${canBuyProperty() && !isLoadingAction
-                    ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
-                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                    }`}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
+                    canBuyProperty() && !isLoadingAction
+                      ? "bg-emerald-500/80 border-emerald-400/70 text-white shadow-[0_10px_30px_-15px_rgba(16,185,129,0.8)] hover:-translate-y-0.5"
+                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                  }`}
                 >
                   🏠 Buy
                 </button>
@@ -1358,11 +1492,24 @@ const Game = () => {
                   onClick={() => {
                     console.log("properties:", currentGame.properties);
                     if (!isMyTurn) return;
-                    const COLOR_GROUP_SIZES = { brown: 2, lightblue: 3, pink: 3, orange: 3, red: 3, yellow: 3, green: 3, blue: 2 };
-                    const myProps = currentGame.properties?.filter(p => p.ownerId === currentPlayerId) || [];
+                    const COLOR_GROUP_SIZES = {
+                      brown: 2,
+                      lightblue: 3,
+                      pink: 3,
+                      orange: 3,
+                      red: 3,
+                      yellow: 3,
+                      green: 3,
+                      blue: 2,
+                    };
+                    const myProps =
+                      currentGame.properties?.filter(
+                        (p) => p.ownerId === currentPlayerId,
+                      ) || [];
                     const colorCounts = myProps.reduce((acc, p) => {
                       const tile = getTileAtIndex(p.tileIndex);
-                      if (tile?.color) acc[tile.color] = (acc[tile.color] || 0) + 1;
+                      if (tile?.color)
+                        acc[tile.color] = (acc[tile.color] || 0) + 1;
                       return acc;
                     }, {});
                     // const hasMonopoly = Object.entries(colorCounts).some(
@@ -1375,10 +1522,11 @@ const Game = () => {
                     setShowBuildMenu(true);
                   }}
                   disabled={!isMyTurn}
-                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${isMyTurn
-                    ? "bg-orange-500/80 border-orange-400/70 text-white shadow-[0_10px_30px_-15px_rgba(249,115,22,0.8)] hover:-translate-y-0.5"
-                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                    }`}
+                  className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
+                    isMyTurn
+                      ? "bg-orange-500/80 border-orange-400/70 text-white shadow-[0_10px_30px_-15px_rgba(249,115,22,0.8)] hover:-translate-y-0.5"
+                      : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                  }`}
                 >
                   🏗️ Build
                 </button>
@@ -1386,22 +1534,49 @@ const Game = () => {
             )}
 
             <button
-              onClick={() => setShowTradeModal(true)}
-              disabled={!isMyTurn}
-              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${isMyTurn
-                ? "bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5"
-                : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                }`}
+              onClick={() => {
+                setShowTradeModal(true);
+                // Default to "all" tab to show public trades, or "incoming" if player has pending trades
+                setTradeTab(
+                  (currentGame?.pendingTrades || []).some(
+                    (t) => t.targetPlayerId === currentPlayerId,
+                  )
+                    ? "incoming"
+                    : (currentGame?.pendingTrades || []).length > 0
+                      ? "all"
+                      : "new",
+                );
+              }}
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm relative ${
+                isMyTurn ||
+                (currentGame?.pendingTrades || []).some(
+                  (t) => t.targetPlayerId === currentPlayerId,
+                )
+                  ? "bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5"
+                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+              }`}
             >
               🤝 Trade
+              {(currentGame?.pendingTrades || []).filter(
+                (t) => t.targetPlayerId === currentPlayerId,
+              ).length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {
+                    (currentGame?.pendingTrades || []).filter(
+                      (t) => t.targetPlayerId === currentPlayerId,
+                    ).length
+                  }
+                </span>
+              )}
             </button>
 
             <button
               disabled={!isMyTurn}
-              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${isMyTurn
-                ? "bg-amber-500/80 border-amber-400/70 text-white shadow-[0_10px_30px_-15px_rgba(251,191,36,0.8)] hover:-translate-y-0.5"
-                : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
-                }`}
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
+                isMyTurn
+                  ? "bg-amber-500/80 border-amber-400/70 text-white shadow-[0_10px_30px_-15px_rgba(251,191,36,0.8)] hover:-translate-y-0.5"
+                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+              }`}
             >
               💰 Mortgage
             </button>
@@ -1559,10 +1734,11 @@ const Game = () => {
               // Slideshow carousel
               <div className="relative h-48 rounded-xl overflow-hidden">
                 <div
-                  className={`flex h-full w-full ${isTransitioning
-                    ? "transition-transform duration-700 ease-in-out"
-                    : ""
-                    }`}
+                  className={`flex h-full w-full ${
+                    isTransitioning
+                      ? "transition-transform duration-700 ease-in-out"
+                      : ""
+                  }`}
                   style={{
                     transform: `translateX(-${carouselIndex * 100}%)`,
                   }}
@@ -1592,10 +1768,11 @@ const Game = () => {
                   {allPropertyTiles.slice(0, 10).map((_, idx) => (
                     <div
                       key={idx}
-                      className={`h-1.5 rounded-full transition-all ${idx === carouselIndex % 10
-                        ? "w-6 bg-white"
-                        : "w-1.5 bg-white/40"
-                        }`}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === carouselIndex % 10
+                          ? "w-6 bg-white"
+                          : "w-1.5 bg-white/40"
+                      }`}
                     />
                   ))}
                 </div>
@@ -1638,7 +1815,9 @@ const Game = () => {
             onClick={(e) => e.stopPropagation()} // prevent backdrop click from firing inside
           >
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-white font-bold text-lg">🏗️ Build Structures</h2>
+              <h2 className="text-white font-bold text-lg">
+                🏗️ Build Structures
+              </h2>
               <button
                 onClick={() => setShowBuildMenu(false)}
                 className="text-gray-400 hover:text-white text-2xl font-bold leading-none"
@@ -1648,7 +1827,7 @@ const Game = () => {
             </div>
             <BuildMenu
               currentPlayerId={currentPlayerId}
-              properties={currentGame.properties.map(prop => {
+              properties={currentGame.properties.map((prop) => {
                 const tile = getTileAtIndex(prop.tileIndex);
                 return {
                   id: prop.tileIndex,
@@ -1677,44 +1856,109 @@ const Game = () => {
 
       {/* Trade Modal */}
       {showTradeModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="bg-[#FFCCCB] rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl text-[#2C4263] font-bold">
-                Trade with Players
-              </h2>
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-md">
+          <div className="bg-slate-900/95 border border-slate-700/50 rounded-2xl p-6 max-w-4xl w-full mx-4 shadow-[0_20px_80px_-20px_rgba(0,0,0,0.9)] max-h-[90vh] overflow-y-auto backdrop-blur-xl">
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-700/50">
+              <div>
+                <h2 className="text-3xl font-bold bg-linear-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                  🤝 Trade Center
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">
+                  Negotiate deals with other players
+                </p>
+              </div>
               <button
                 onClick={() => setShowTradeModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                className="text-gray-400 hover:text-white text-2xl font-bold transition-colors p-2 hover:bg-slate-800/50 rounded-lg"
               >
                 ×
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Your Offer */}
-                <div className="border rounded-lg p-4 border-[#2C4263]">
-                  <h3 className="font-bold mb-2 text-[#2C4263]">Your Offer</h3>
-                  <div className="space-y-2 text-[#2C4263]">
-                    <input
-                      type="number"
-                      placeholder="Money amount"
-                      className="w-full p-2 border rounded"
-                    />
-                    <div className="text-sm text-[#2C4263]">
-                      Select properties to trade
-                    </div>
-                  </div>
-                </div>
+            <div className="flex pt-4 gap-2 mb-6 border-b border-slate-700 pb-0 overflow-x-auto">
+              <button
+                onClick={() => setTradeTab("new")}
+                className={`px-3 py-2.5 font-semibold transition-all rounded-t-lg whitespace-nowrap ${
+                  tradeTab === "new"
+                    ? "text-indigo-400 bg-slate-800/50 border-b-2 border-indigo-400"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-slate-800/30"
+                }`}
+              >
+                📝 New Trade
+              </button>
+              <button
+                onClick={() => setTradeTab("all")}
+                className={`px-3 py-2.5 font-semibold transition-all rounded-t-lg relative whitespace-nowrap ${
+                  tradeTab === "all"
+                    ? "text-indigo-400 bg-slate-800/50 border-b-2 border-indigo-400"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-slate-800/30"
+                }`}
+              >
+                👁️ All Trades
+                {(currentGame?.pendingTrades || []).length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {(currentGame?.pendingTrades || []).length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setTradeTab("incoming")}
+                className={`px-3 py-2.5 font-semibold transition-all rounded-t-lg relative whitespace-nowrap ${
+                  tradeTab === "incoming"
+                    ? "text-indigo-400 bg-slate-800/50 border-b-2 border-indigo-400"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-slate-800/30"
+                }`}
+              >
+                📥 Incoming
+                {(currentGame?.pendingTrades || []).filter(
+                  (t) => t.targetPlayerId === currentPlayerId,
+                ).length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse">
+                    {
+                      (currentGame?.pendingTrades || []).filter(
+                        (t) => t.targetPlayerId === currentPlayerId,
+                      ).length
+                    }
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setTradeTab("outgoing")}
+                className={`px-3 py-2.5 font-semibold transition-all rounded-t-lg relative whitespace-nowrap ${
+                  tradeTab === "outgoing"
+                    ? "text-indigo-400 bg-slate-800/50 border-b-2 border-indigo-400"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-slate-800/30"
+                }`}
+              >
+                📤 Outgoing
+                {(currentGame?.pendingTrades || []).filter(
+                  (t) => t.initiatingPlayerId === currentPlayerId,
+                ).length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {
+                      (currentGame?.pendingTrades || []).filter(
+                        (t) => t.initiatingPlayerId === currentPlayerId,
+                      ).length
+                    }
+                  </span>
+                )}
+              </button>
+            </div>
 
-                {/* Their Offer */}
-                <div className="border rounded-lg p-4 border-[#2C4263]">
-                  <h3 className="font-bold mb-2 text-[#2C4263]">Request</h3>
-                  <select className="w-full p-2 border rounded mb-2 text-[#2C4263]">
-                    <option>Select player...</option>
+            {tradeTab === "new" ? (
+              <div className="space-y-6">
+                <div className="bg-linear-to-br from-slate-800/40 to-slate-800/20 border border-slate-700/50 rounded-xl p-4">
+                  <label className="text-sm font-semibold text-gray-200 mb-3 flex items-center gap-2">
+                    <span>👥</span> Select Trading Partner
+                  </label>
+                  <select
+                    value={tradeTargetPlayerId}
+                    onChange={(e) => setTradeTargetPlayerId(e.target.value)}
+                    className="w-full p-3 bg-slate-900/80 border border-slate-700 rounded-lg text-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  >
+                    <option value="">Choose a player...</option>
                     {currentGame.players
-                      .filter((p) => p.id !== currentPlayer?.id)
+                      .filter((p) => p.id !== currentPlayerId)
                       .map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name}
@@ -1722,20 +1966,662 @@ const Game = () => {
                       ))}
                   </select>
                 </div>
-              </div>
 
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={() => setShowTradeModal(false)}
-                  className="px-6 py-2 text-[#2C4263] rounded-lg font-semibold hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button className="px-6 py-2 bg-[#FF4D4D] text-[#2C4263] rounded-lg font-semibold hover:bg-[#FF0000] hover:text-white">
-                  Propose Trade
-                </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Your Offer */}
+                  <div className="border border-indigo-500/30 rounded-xl p-5 bg-linear-to-br from-indigo-900/20 via-slate-800/40 to-slate-800/20 shadow-lg">
+                    <h3 className="font-bold mb-4 text-indigo-300 text-lg flex items-center gap-2">
+                      <span>📦</span> Your Offer
+                    </h3>
+                    <div className="space-y-5">
+                      <div>
+                        <label className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
+                          <span>💰</span> Money
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400 font-bold text-lg">
+                            $
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={tradeOfferMoney}
+                            onChange={(e) => setTradeOfferMoney(e.target.value)}
+                            placeholder="0"
+                            className="w-full pl-8 pr-3 py-2.5 bg-slate-900/80 border border-slate-700 rounded-lg text-white font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+                          <span>🏠</span> Properties
+                        </label>
+                        <div className="max-h-48 overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
+                          {currentGame.properties
+                            ?.filter(
+                              (p) =>
+                                p.ownerId === currentPlayerId &&
+                                !p.houses &&
+                                !p.hotel,
+                            )
+                            .map((p) => {
+                              const tile = getTileAtIndex(p.tileIndex);
+                              const isSelected = tradeOfferProperties.includes(
+                                p.tileIndex,
+                              );
+                              return (
+                                <button
+                                  key={p.tileIndex}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setTradeOfferProperties(
+                                        tradeOfferProperties.filter(
+                                          (id) => id !== p.tileIndex,
+                                        ),
+                                      );
+                                    } else {
+                                      setTradeOfferProperties([
+                                        ...tradeOfferProperties,
+                                        p.tileIndex,
+                                      ]);
+                                    }
+                                  }}
+                                  className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-all transform hover:scale-[1.02] ${
+                                    isSelected
+                                      ? "bg-indigo-500/30 border-2 border-indigo-400 text-white shadow-lg shadow-indigo-500/20"
+                                      : "bg-slate-800/50 border border-slate-700 text-gray-300 hover:bg-slate-700/50 hover:border-slate-600"
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-sm">
+                                      {tile?.title}
+                                    </span>
+                                    {isSelected && (
+                                      <span className="text-indigo-300 text-lg">
+                                        ✓
+                                      </span>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          {(!currentGame.properties ||
+                            currentGame.properties.filter(
+                              (p) =>
+                                p.ownerId === currentPlayerId &&
+                                !p.houses &&
+                                !p.hotel,
+                            ).length === 0) && (
+                            <div className="text-center py-6 text-gray-500 italic text-sm bg-slate-800/30 rounded-lg border border-slate-700/50">
+                              No tradable properties
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Their Offer */}
+                  <div className="border border-amber-500/30 rounded-xl p-5 bg-linear-to-br from-amber-900/20 via-slate-800/40 to-slate-800/20 shadow-lg">
+                    <h3 className="font-bold mb-4 text-amber-300 text-lg flex items-center gap-2">
+                      <span>🎯</span> You Request
+                    </h3>
+                    <div className="space-y-5">
+                      <div>
+                        <label className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
+                          <span>💰</span> Money
+                        </label>
+                        <div className="relative">
+                          <span
+                            className={`absolute left-3 top-1/2 -translate-y-1/2 font-bold text-lg transition-colors ${
+                              tradeTargetPlayerId
+                                ? "text-amber-400"
+                                : "text-gray-600"
+                            }`}
+                          >
+                            $
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={tradeRequestMoney}
+                            onChange={(e) =>
+                              setTradeRequestMoney(e.target.value)
+                            }
+                            placeholder="0"
+                            className={`w-full pl-8 pr-3 py-2.5 bg-slate-900/80 border rounded-lg font-semibold focus:outline-none transition-all ${
+                              tradeTargetPlayerId
+                                ? "border-slate-700 text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                : "border-slate-800 text-gray-600 cursor-not-allowed"
+                            }`}
+                            disabled={!tradeTargetPlayerId}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+                          <span>🏠</span> Properties
+                        </label>
+                        <div className="max-h-48 overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-slate-900">
+                          {tradeTargetPlayerId ? (
+                            currentGame.properties
+                              ?.filter(
+                                (p) =>
+                                  p.ownerId === tradeTargetPlayerId &&
+                                  !p.houses &&
+                                  !p.hotel,
+                              )
+                              .map((p) => {
+                                const tile = getTileAtIndex(p.tileIndex);
+                                const isSelected =
+                                  tradeRequestProperties.includes(p.tileIndex);
+                                return (
+                                  <button
+                                    key={p.tileIndex}
+                                    onClick={() => {
+                                      if (isSelected) {
+                                        setTradeRequestProperties(
+                                          tradeRequestProperties.filter(
+                                            (id) => id !== p.tileIndex,
+                                          ),
+                                        );
+                                      } else {
+                                        setTradeRequestProperties([
+                                          ...tradeRequestProperties,
+                                          p.tileIndex,
+                                        ]);
+                                      }
+                                    }}
+                                    className={`w-full text-left px-4 py-2.5 rounded-lg font-medium transition-all transform hover:scale-[1.02] ${
+                                      isSelected
+                                        ? "bg-amber-500/30 border-2 border-amber-400 text-white shadow-lg shadow-amber-500/20"
+                                        : "bg-slate-800/50 border border-slate-700 text-gray-300 hover:bg-slate-700/50 hover:border-slate-600"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm">
+                                        {tile?.title}
+                                      </span>
+                                      {isSelected && (
+                                        <span className="text-amber-300 text-lg">
+                                          ✓
+                                        </span>
+                                      )}
+                                    </div>
+                                  </button>
+                                );
+                              })
+                          ) : (
+                            <div className="text-center py-6 text-gray-500 italic text-sm bg-slate-800/30 rounded-lg border border-slate-700/50">
+                              Select a player first
+                            </div>
+                          )}
+                          {tradeTargetPlayerId &&
+                            (!currentGame.properties ||
+                              currentGame.properties.filter(
+                                (p) =>
+                                  p.ownerId === tradeTargetPlayerId &&
+                                  !p.houses &&
+                                  !p.hotel,
+                              ).length === 0) && (
+                              <div className="text-center py-6 text-gray-500 italic text-sm bg-slate-800/30 rounded-lg border border-slate-700/50">
+                                No tradable properties
+                              </div>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 justify-end mt-8 pt-6 border-t border-slate-700/50">
+                  <button
+                    onClick={() => setShowTradeModal(false)}
+                    className="px-6 py-3 text-gray-300 bg-slate-800 rounded-lg font-semibold hover:bg-slate-700 transition-all hover:scale-105 border border-slate-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={proposeTrade}
+                    disabled={!tradeTargetPlayerId}
+                    className={`px-8 py-3 rounded-lg font-bold transition-all transform ${
+                      tradeTargetPlayerId
+                        ? "bg-linear-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-500 hover:to-purple-500 hover:scale-105 shadow-lg shadow-indigo-500/30"
+                        : "bg-slate-700 text-gray-500 cursor-not-allowed opacity-50"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span>🚀</span> Propose Trade
+                    </span>
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : tradeTab === "all" ? (
+              <div className="space-y-4">
+                {(currentGame?.pendingTrades || []).length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <div className="text-5xl mb-3">🤝</div>
+                    <p className="text-lg font-semibold mb-1">
+                      No active trades
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      All trade offers in the game will appear here
+                    </p>
+                  </div>
+                ) : (
+                  (currentGame?.pendingTrades || []).map((trade) => {
+                    const initiator = currentGame.players.find(
+                      (p) => p.id === trade.initiatingPlayerId,
+                    );
+                    const targetPlayer = currentGame.players.find(
+                      (p) => p.id === trade.targetPlayerId,
+                    );
+                    const isMyTrade =
+                      trade.initiatingPlayerId === currentPlayerId ||
+                      trade.targetPlayerId === currentPlayerId;
+                    const isInitiator =
+                      trade.initiatingPlayerId === currentPlayerId;
+                    const isTarget = trade.targetPlayerId === currentPlayerId;
+
+                    return (
+                      <div
+                        key={trade.tradeId}
+                        className={`border rounded-xl p-5 transition-all shadow-lg ${
+                          isMyTrade
+                            ? "border-indigo-500/50 bg-linear-to-br from-indigo-900/20 to-slate-800/30"
+                            : "border-slate-700 bg-linear-to-br from-slate-800/50 to-slate-800/30 hover:border-slate-600"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-700">
+                          <div className="flex items-center gap-3">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-white text-lg">
+                                  {initiator?.name || "Unknown"}
+                                </h3>
+                                <span className="text-gray-400">→</span>
+                                <h3 className="font-bold text-white text-lg">
+                                  {targetPlayer?.name || "Unknown"}
+                                </h3>
+                              </div>
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                {isInitiator
+                                  ? "You initiated this trade"
+                                  : isTarget
+                                    ? "Trade offer for you"
+                                    : "Active trade offer"}
+                              </p>
+                            </div>
+                          </div>
+                          {isMyTrade && (
+                            <span className="px-2 py-1 bg-indigo-500/20 text-indigo-400 text-xs font-semibold rounded-full border border-indigo-500/30">
+                              Your Trade
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                          <div className="bg-indigo-500/5 rounded-lg p-4 border border-indigo-500/20">
+                            <h4 className="text-sm font-bold text-indigo-300 mb-3 flex items-center gap-2">
+                              <span>📦</span> {initiator?.name} Offers
+                            </h4>
+                            <ul className="text-sm text-gray-300 space-y-2">
+                              {trade.offerMoney > 0 && (
+                                <li className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded border border-emerald-500/20">
+                                  <span>💰</span>
+                                  <span className="font-semibold">
+                                    ${trade.offerMoney}
+                                  </span>
+                                </li>
+                              )}
+                              {trade.offerProperties?.map((propId) => {
+                                const tile = getTileAtIndex(propId);
+                                return (
+                                  <li
+                                    key={propId}
+                                    className="flex items-center gap-2 bg-slate-700/30 px-3 py-1.5 rounded"
+                                  >
+                                    <span>🏠</span>
+                                    <span>{tile?.title}</span>
+                                  </li>
+                                );
+                              })}
+                              {trade.offerMoney === 0 &&
+                                (!trade.offerProperties ||
+                                  trade.offerProperties.length === 0) && (
+                                  <li className="text-gray-500 italic text-center py-2">
+                                    Nothing offered
+                                  </li>
+                                )}
+                            </ul>
+                          </div>
+                          <div className="bg-amber-500/5 rounded-lg p-4 border border-amber-500/20">
+                            <h4 className="text-sm font-bold text-amber-300 mb-3 flex items-center gap-2">
+                              <span>🎯</span> {initiator?.name} Requests
+                            </h4>
+                            <ul className="text-sm text-gray-300 space-y-2">
+                              {trade.requestMoney > 0 && (
+                                <li className="flex items-center gap-2 bg-red-500/10 px-3 py-1.5 rounded border border-red-500/20">
+                                  <span>💰</span>
+                                  <span className="font-semibold">
+                                    ${trade.requestMoney}
+                                  </span>
+                                </li>
+                              )}
+                              {trade.requestProperties?.map((propId) => {
+                                const tile = getTileAtIndex(propId);
+                                return (
+                                  <li
+                                    key={propId}
+                                    className="flex items-center gap-2 bg-slate-700/30 px-3 py-1.5 rounded"
+                                  >
+                                    <span>🏠</span>
+                                    <span>{tile?.title}</span>
+                                  </li>
+                                );
+                              })}
+                              {trade.requestMoney === 0 &&
+                                (!trade.requestProperties ||
+                                  trade.requestProperties.length === 0) && (
+                                  <li className="text-gray-500 italic text-center py-2">
+                                    Nothing requested
+                                  </li>
+                                )}
+                            </ul>
+                          </div>
+                        </div>
+                        {isTarget && (
+                          <div className="flex gap-3 justify-end pt-3 border-t border-slate-700">
+                            <button
+                              onClick={() =>
+                                finalizeTrade(trade.tradeId, "REJECT")
+                              }
+                              className="px-5 py-2.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg font-semibold transition-all hover:scale-105 border border-red-500/30"
+                            >
+                              ✕ Reject
+                            </button>
+                            <button
+                              onClick={() => {
+                                finalizeTrade(trade.tradeId, "ACCEPT");
+                                setShowTradeModal(false);
+                              }}
+                              className="px-5 py-2.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg font-semibold transition-all hover:scale-105 border border-emerald-500/30"
+                            >
+                              ✓ Accept
+                            </button>
+                          </div>
+                        )}
+                        {isInitiator && (
+                          <div className="flex gap-3 justify-end pt-3 border-t border-slate-700">
+                            <button
+                              onClick={() => deleteTrade(trade.tradeId)}
+                              className="px-5 py-2.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg font-semibold transition-all hover:scale-105 border border-red-500/30 flex items-center gap-2"
+                            >
+                              <span>🗑️</span> Cancel Offer
+                            </button>
+                          </div>
+                        )}
+                        {!isMyTrade && (
+                          <div className="flex justify-center pt-3 border-t border-slate-700">
+                            <p className="text-xs text-gray-500 italic">
+                              Waiting for {targetPlayer?.name} to respond...
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            ) : tradeTab === "incoming" ? (
+              <div className="space-y-4">
+                {(currentGame?.pendingTrades || []).filter(
+                  (t) => t.targetPlayerId === currentPlayerId,
+                ).length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <div className="text-5xl mb-3">📭</div>
+                    <p className="text-lg font-semibold mb-1">
+                      No incoming trade offers
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Trade offers from other players will appear here
+                    </p>
+                  </div>
+                ) : (
+                  (currentGame?.pendingTrades || [])
+                    .filter((t) => t.targetPlayerId === currentPlayerId)
+                    .map((trade) => {
+                      const initiator = currentGame.players.find(
+                        (p) => p.id === trade.initiatingPlayerId,
+                      );
+                      return (
+                        <div
+                          key={trade.tradeId}
+                          className="border border-slate-700 rounded-xl p-5 bg-linear-to-br from-slate-800/50 to-slate-800/30 hover:border-slate-600 transition-all shadow-lg"
+                        >
+                          <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-700">
+                            <div>
+                              <h3 className="font-bold text-white text-lg">
+                                {initiator?.name || "Unknown"}
+                              </h3>
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                wants to trade with you
+                              </p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                            <div className="bg-indigo-500/5 rounded-lg p-4 border border-indigo-500/20">
+                              <h4 className="text-sm font-bold text-indigo-300 mb-3 flex items-center gap-2">
+                                <span>📦</span> They Offer
+                              </h4>
+                              <ul className="text-sm text-gray-300 space-y-2">
+                                {trade.offerMoney > 0 && (
+                                  <li className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded border border-emerald-500/20">
+                                    <span>💰</span>
+                                    <span className="font-semibold">
+                                      ${trade.offerMoney}
+                                    </span>
+                                  </li>
+                                )}
+                                {trade.offerProperties?.map((propId) => {
+                                  const tile = getTileAtIndex(propId);
+                                  return (
+                                    <li
+                                      key={propId}
+                                      className="flex items-center gap-2 bg-slate-700/30 px-3 py-1.5 rounded"
+                                    >
+                                      <span>🏠</span>
+                                      <span>{tile?.title}</span>
+                                    </li>
+                                  );
+                                })}
+                                {trade.offerMoney === 0 &&
+                                  (!trade.offerProperties ||
+                                    trade.offerProperties.length === 0) && (
+                                    <li className="text-gray-500 italic text-center py-2">
+                                      Nothing offered
+                                    </li>
+                                  )}
+                              </ul>
+                            </div>
+                            <div className="bg-amber-500/5 rounded-lg p-4 border border-amber-500/20">
+                              <h4 className="text-sm font-bold text-amber-300 mb-3 flex items-center gap-2">
+                                <span>🎯</span> They Request
+                              </h4>
+                              <ul className="text-sm text-gray-300 space-y-2">
+                                {trade.requestMoney > 0 && (
+                                  <li className="flex items-center gap-2 bg-red-500/10 px-3 py-1.5 rounded border border-red-500/20">
+                                    <span>💰</span>
+                                    <span className="font-semibold">
+                                      ${trade.requestMoney}
+                                    </span>
+                                  </li>
+                                )}
+                                {trade.requestProperties?.map((propId) => {
+                                  const tile = getTileAtIndex(propId);
+                                  return (
+                                    <li
+                                      key={propId}
+                                      className="flex items-center gap-2 bg-slate-700/30 px-3 py-1.5 rounded"
+                                    >
+                                      <span>🏠</span>
+                                      <span>{tile?.title}</span>
+                                    </li>
+                                  );
+                                })}
+                                {trade.requestMoney === 0 &&
+                                  (!trade.requestProperties ||
+                                    trade.requestProperties.length === 0) && (
+                                    <li className="text-gray-500 italic text-center py-2">
+                                      Nothing requested
+                                    </li>
+                                  )}
+                              </ul>
+                            </div>
+                          </div>
+                          <div className="flex gap-3 justify-end pt-3 border-t border-slate-700">
+                            <button
+                              onClick={() =>
+                                finalizeTrade(trade.tradeId, "REJECT")
+                              }
+                              className="px-5 py-2.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg font-semibold transition-all hover:scale-105 border border-red-500/30"
+                            >
+                              ✕ Reject
+                            </button>
+                            <button
+                              onClick={() => {
+                                finalizeTrade(trade.tradeId, "ACCEPT");
+                                setShowTradeModal(false);
+                              }}
+                              className="px-5 py-2.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded-lg font-semibold transition-all hover:scale-105 border border-emerald-500/30"
+                            >
+                              ✓ Accept
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {(currentGame?.pendingTrades || []).filter(
+                  (t) => t.initiatingPlayerId === currentPlayerId,
+                ).length === 0 ? (
+                  <div className="text-center py-12 text-gray-400">
+                    <div className="text-5xl mb-3">📤</div>
+                    <p className="text-lg font-semibold mb-1">
+                      No outgoing trade offers
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Your active trade proposals will appear here
+                    </p>
+                  </div>
+                ) : (
+                  (currentGame?.pendingTrades || [])
+                    .filter((t) => t.initiatingPlayerId === currentPlayerId)
+                    .map((trade) => {
+                      const targetPlayer = currentGame.players.find(
+                        (p) => p.id === trade.targetPlayerId,
+                      );
+                      return (
+                        <div
+                          key={trade.tradeId}
+                          className="border border-slate-700 rounded-xl p-5 bg-linear-to-br from-slate-800/50 to-slate-800/30 hover:border-slate-600 transition-all shadow-lg"
+                        >
+                          <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-700">
+                            <div>
+                              <h3 className="font-bold text-white text-lg">
+                                Offer to {targetPlayer?.name || "Unknown"}
+                              </h3>
+                              <p className="text-xs text-gray-400 mt-0.5">
+                                Waiting for response...
+                              </p>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                            <div className="bg-indigo-500/5 rounded-lg p-4 border border-indigo-500/20">
+                              <h4 className="text-sm font-bold text-indigo-300 mb-3 flex items-center gap-2">
+                                <span>📦</span> You Offer
+                              </h4>
+                              <ul className="text-sm text-gray-300 space-y-2">
+                                {trade.offerMoney > 0 && (
+                                  <li className="flex items-center gap-2 bg-emerald-500/10 px-3 py-1.5 rounded border border-emerald-500/20">
+                                    <span>💰</span>
+                                    <span className="font-semibold">
+                                      ${trade.offerMoney}
+                                    </span>
+                                  </li>
+                                )}
+                                {trade.offerProperties?.map((propId) => {
+                                  const tile = getTileAtIndex(propId);
+                                  return (
+                                    <li
+                                      key={propId}
+                                      className="flex items-center gap-2 bg-slate-700/30 px-3 py-1.5 rounded"
+                                    >
+                                      <span>🏠</span>
+                                      <span>{tile?.title}</span>
+                                    </li>
+                                  );
+                                })}
+                                {trade.offerMoney === 0 &&
+                                  (!trade.offerProperties ||
+                                    trade.offerProperties.length === 0) && (
+                                    <li className="text-gray-500 italic text-center py-2">
+                                      Nothing offered
+                                    </li>
+                                  )}
+                              </ul>
+                            </div>
+                            <div className="bg-amber-500/5 rounded-lg p-4 border border-amber-500/20">
+                              <h4 className="text-sm font-bold text-amber-300 mb-3 flex items-center gap-2">
+                                <span>🎯</span> You Request
+                              </h4>
+                              <ul className="text-sm text-gray-300 space-y-2">
+                                {trade.requestMoney > 0 && (
+                                  <li className="flex items-center gap-2 bg-red-500/10 px-3 py-1.5 rounded border border-red-500/20">
+                                    <span>💰</span>
+                                    <span className="font-semibold">
+                                      ${trade.requestMoney}
+                                    </span>
+                                  </li>
+                                )}
+                                {trade.requestProperties?.map((propId) => {
+                                  const tile = getTileAtIndex(propId);
+                                  return (
+                                    <li
+                                      key={propId}
+                                      className="flex items-center gap-2 bg-slate-700/30 px-3 py-1.5 rounded"
+                                    >
+                                      <span>🏠</span>
+                                      <span>{tile?.title}</span>
+                                    </li>
+                                  );
+                                })}
+                                {trade.requestMoney === 0 &&
+                                  (!trade.requestProperties ||
+                                    trade.requestProperties.length === 0) && (
+                                    <li className="text-gray-500 italic text-center py-2">
+                                      Nothing requested
+                                    </li>
+                                  )}
+                              </ul>
+                            </div>
+                          </div>
+                          <div className="flex gap-3 justify-end pt-3 border-t border-slate-700">
+                            <button
+                              onClick={() => deleteTrade(trade.tradeId)}
+                              className="px-5 py-2.5 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg font-semibold transition-all hover:scale-105 border border-red-500/30 flex items-center gap-2"
+                            >
+                              <span>🗑️</span> Cancel Offer
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

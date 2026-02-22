@@ -302,25 +302,33 @@ const Game = () => {
       }
 
       case "TRADE_OFFERED": {
-        const initiator = players.find((p) => p.id === event.initiatingPlayerId);
+        const initiator = players.find(
+          (p) => p.id === event.initiatingPlayerId,
+        );
         const target = players.find((p) => p.id === event.targetPlayerId);
         return `🤝 ${initiator?.name || "Player"} offered a trade to ${target?.name || "Player"}`;
       }
 
       case "TRADE_ACCEPTED": {
         const target = players.find((p) => p.id === event.targetPlayerId);
-        const initiator = players.find((p) => p.id === event.initiatingPlayerId);
+        const initiator = players.find(
+          (p) => p.id === event.initiatingPlayerId,
+        );
         return `✅ ${target?.name || "Player"} accepted ${initiator?.name || "Player"}'s trade`;
       }
 
       case "TRADE_REJECTED": {
         const target = players.find((p) => p.id === event.targetPlayerId);
-        const initiator = players.find((p) => p.id === event.initiatingPlayerId);
+        const initiator = players.find(
+          (p) => p.id === event.initiatingPlayerId,
+        );
         return `❌ ${target?.name || "Player"} rejected ${initiator?.name || "Player"}'s trade`;
       }
 
       case "TRADE_CANCELLED": {
-        const initiator = players.find((p) => p.id === event.initiatingPlayerId);
+        const initiator = players.find(
+          (p) => p.id === event.initiatingPlayerId,
+        );
         const target = players.find((p) => p.id === event.targetPlayerId);
         return `🚫 ${initiator?.name || "Player"} cancelled trade offer to ${target?.name || "Player"}`;
       }
@@ -330,13 +338,15 @@ const Game = () => {
         const tile = getTileAtPosition(event.tileIndex);
         const propertyName = tile?.title || "a property";
         const houses = event.houses || 0;
-        const buildingType = houses === 5 ? "hotel" : houses === 1 ? "house" : "houses";
+        const buildingType =
+          houses === 5 ? "hotel" : houses === 1 ? "house" : "houses";
         return `🏗️ ${player?.name || "Player"} built ${houses === 5 ? "a " : ""}${houses === 5 ? "hotel" : houses + " " + buildingType} on ${propertyName}`;
       }
 
       case "AUCTION_STARTED": {
         const tile = getTileAtPosition(event.property?.tileIndex);
-        const propertyName = tile?.title || event.property?.title || "a property";
+        const propertyName =
+          tile?.title || event.property?.title || "a property";
         return `🔨 Auction started for ${propertyName}`;
       }
 
@@ -596,7 +606,12 @@ const Game = () => {
 
       // Filter out low-signal events; keep ordering as sent by backend
       const importantEvents = fresh.filter(
-        (evt) => evt.type !== "DICE_ROLLED" && evt.type !== "PLAYER_MOVED" && evt.type !== "PROPERTY_OFFERED" && evt.type !== "AUCTION_BID_PLACED" && evt.type !== "AUCTION_PLAYER_PASSED",
+        (evt) =>
+          evt.type !== "DICE_ROLLED" &&
+          evt.type !== "PLAYER_MOVED" &&
+          evt.type !== "PROPERTY_OFFERED" &&
+          evt.type !== "AUCTION_BID_PLACED" &&
+          evt.type !== "AUCTION_PLAYER_PASSED",
       );
 
       // Check for events that should show a card

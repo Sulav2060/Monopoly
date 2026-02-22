@@ -17,6 +17,7 @@ class GameSocketManager {
     this.maxReconnectAttempts = 5;
     this.reconnectDelay = 2000;
     this.isIntentionallyClosed = false;
+    this._lastGameState = null;
   }
 
   /**
@@ -87,6 +88,7 @@ class GameSocketManager {
 
             if (message.type === "GAME_STATE_UPDATE") {
               if (message.gameId === this.gameId) {
+                this._lastGameState = message.state;
                 this._trigger("gameStateUpdate", message.state);
               }
             } else if (message.type === "ERROR") {
@@ -220,6 +222,13 @@ class GameSocketManager {
       this.listeners.set(event, []);
     }
     this.listeners.get(event).push(callback);
+      if (event === "gameStateUpdate" && this._lastGameState) {
+    try {
+      callback(this._lastGameState);
+    } catch (e) {
+      console.error("Error replaying last game state:", e);
+    }
+  }
   }
 
   /**

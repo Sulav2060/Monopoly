@@ -1,4 +1,7 @@
 import { GameState } from "../types/game";
+import { BOARD } from "./board";
+import { startAuction } from "./startAuction";
+import { PropertyTile } from "../types/board";
 import { endTurn } from "./endTurn";
 
 export function skipProperty(state: GameState): GameState {
@@ -8,6 +11,14 @@ export function skipProperty(state: GameState): GameState {
     return state;
   }
 
+  // Instead of just skipping and ending turn, we start an auction
+  const tile = BOARD[pending.property.tileIndex];
+  
+  if (tile && tile.type === "PROPERTY") {
+    return startAuction(state, tile as PropertyTile);
+  }
+
+  // Fallback if not an auctionable property (shouldn't happen for BUY_PROPERTY)
   return {
     ...endTurn({
       ...state,
@@ -16,8 +27,8 @@ export function skipProperty(state: GameState): GameState {
         ...state.events,
         {
           type: "PROPERTY_SKIPPED",
-          playerId: pending.playerId,
-          tileIndex: pending.tileIndex,
+          playerId: pending.property.playerId,
+          tileIndex: pending.property.tileIndex,
         },
       ],
     }),

@@ -10,7 +10,7 @@ export function buyPendingProperty(state: GameState): GameState {
   }
   const player = getCurrentPlayerSafe(state);
   //take tileIndex from pending action.
-  const tileIndex = pending.tileIndex;
+  const tileIndex = pending.property.tileIndex;
   //take property from board using tileIndex.
   const property = BOARD[tileIndex];
   if (!property || property.type !== "PROPERTY") {
@@ -32,6 +32,8 @@ export function buyPendingProperty(state: GameState): GameState {
       {
         tileIndex: property.tileIndex,
         ownerId: player.id,
+        houses: 0,
+        isMortaged: false,
       },
     ],
     events: [

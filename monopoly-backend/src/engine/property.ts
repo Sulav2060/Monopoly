@@ -5,7 +5,7 @@ import { payRent } from "./payRent";
 
 export function handleProperty(
   state: GameState,
-  tile: PropertyTile
+  tile: PropertyTile,
 ): GameState {
   const player = getCurrentPlayerSafe(state);
 
@@ -16,16 +16,21 @@ export function handleProperty(
     return {
       ...state,
       players: state.players.map((p) =>
-        p.id === player.id ? { ...p, money: p.money - tile.price } : p
+        p.id === player.id ? { ...p, money: p.money - tile.price } : p,
       ),
       properties: [
         ...state.properties,
         {
           tileIndex: player.position,
           ownerId: player.id,
+          houses: 0,
+          isMortaged: false,
         },
       ],
-      events: [...state.events, { type: "PROPERTY_BOUGHT", tile: player.position }],
+      events: [
+        ...state.events,
+        { type: "PROPERTY_BOUGHT", tile: player.position },
+      ],
     };
   }
 

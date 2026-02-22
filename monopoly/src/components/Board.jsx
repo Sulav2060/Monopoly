@@ -19,6 +19,7 @@ const Board = ({
   onTileClick,
   prevPositions = {},
   currentGame,
+  isPendingAction,
 }) => {
   const getTileColorClass = (group) => {
     const colorMap = {
@@ -98,8 +99,7 @@ const Board = ({
 
   const tilesCount = allTilesInOrder.length;
 
-  const diceSum = currentDice.d1 + currentDice.d2;
-
+  const diceSum = currentDice ? currentDice.d1 + currentDice.d2 : 0;
   // Get properties array from game state for direct ownership check
   const propertiesFromGame = currentGame?.properties || [];
 
@@ -308,7 +308,7 @@ const Board = ({
 
   return (
     <div
-      className={`w-full h-full flex ${isMobile ? "items-start" : "items-center"} justify-center overflow-hidden`}
+      className={`w-full h-full flex ${isMobile ? "items-start" : "items-center"} justify-center overflow-hidden relative isolate`}
       style={
         isMobile
           ? {
@@ -361,6 +361,7 @@ const Board = ({
               onRollDice={onRollDice}
               onEndTurn={onEndTurn}
               currentPlayer={players[currentTurnIndex]}
+              isPendingAction={isPendingAction}
             />
           </div>
         </div>
@@ -385,6 +386,7 @@ const Board = ({
               startPosition={prevPos}
               moveSteps={steps}
               tilesCount={tilesCount}
+              inJail={player.inJail}
             />
           );
         })}

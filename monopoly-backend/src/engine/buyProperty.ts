@@ -20,7 +20,12 @@ export function buyProperty(state: GameState, tile: PropertyTile): GameState {
     players: state.players.map((p, i) => (i === index ? updatedPlayer : p)),
     properties: [
       ...state.properties,
-      { tileIndex: tile.tileIndex, ownerId: player.id },
+      {
+        tileIndex: tile.tileIndex,
+        ownerId: player.id,
+        houses: 0,
+        isMortaged: false,
+      },
     ],
     events: [
       ...state.events,

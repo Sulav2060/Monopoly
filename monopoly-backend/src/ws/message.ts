@@ -25,6 +25,36 @@ export type ClientMessage =
       type: "BUY_PROPERTY";
       gameId: string;
       playerId: string;
+    }
+  | { type: "AUCTION_TIMEOUT"; gameId: string }
+  | { type: "PLACE_BID"; gameId: string; playerId: string; amount: number }
+  | {
+      type: "BUILD_PROPERTY";
+      gameId: string;
+      playerId: string;
+      tileIndex: number;
+    } //houses: number of houses to build, 5 means hotel
+  | {
+      type: "INITIATE_TRADE";
+      gameId: string;
+      playerId: string; // Player making the trade offer
+      targetPlayerId: string; // Player being offered the trade
+      offerMoney: number; // Money player is offering
+      offerProperties: number[]; // Property tile indices player is offering
+      requestMoney: number; // Money player is requesting
+      requestProperties: number[]; // Property tile indices player is requesting
+    }
+  | {
+      type: "FINALIZE_TRADE";
+      gameId: string;
+      tradeId: string; // Unique identifier of the trade to finalize
+      action: "ACCEPT" | "REJECT";
+    }
+  | {
+      type: "DELETE_TRADE";
+      gameId: string;
+      playerId: string; // Player who initiated and is deleting the trade
+      tradeId: string; // Unique identifier of the trade to delete
     };
 
 export type ServerMessage =

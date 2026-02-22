@@ -3,7 +3,8 @@ import { GameState } from "../../types/game";
 
 export function createBaseState(): GameState {
   return {
-    pendingAction:null,
+    pendingAction: null,
+    pendingTrades: [],
     currentTurnIndex: 0,
     communityChestDeck: [],
     communityChestIndex: 0,
@@ -15,7 +16,7 @@ export function createBaseState(): GameState {
         money: 1500,
         inJail: false,
         jailTurns: 0,
-        isBankrupt:false
+        isBankrupt: false,
       },
       {
         id: "p2",
@@ -24,13 +25,15 @@ export function createBaseState(): GameState {
         money: 1500,
         inJail: false,
         jailTurns: 0,
-        isBankrupt:false
+        isBankrupt: false,
       },
     ],
     properties: [
       {
         tileIndex: 1,
         ownerId: "p2",
+        houses: 0,
+        isMortaged: false,
       },
     ],
     events: [],

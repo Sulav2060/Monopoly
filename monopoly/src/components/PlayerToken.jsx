@@ -10,6 +10,7 @@ const PlayerToken = ({
   startPosition,
   moveSteps,
   tilesCount,
+  inJail,
 }) => {
   const fallbackPalette = [
     { color: "bg-red-500", borderColor: "border-red-900" },
@@ -56,7 +57,7 @@ const PlayerToken = ({
     normalizedTilesCount;
 
   const normalizedStart = normalizePosition(
-    Number.isFinite(startPosition) ? startPosition : position
+    Number.isFinite(startPosition) ? startPosition : position,
   );
   const normalizedEnd = normalizePosition(position);
   const steps = moveSteps || 0;
@@ -157,6 +158,22 @@ const PlayerToken = ({
     const boardSize = 11;
     const normalizedPos = normalizePosition(pos);
 
+    // SPECIAL CASE: Jail tile (position 10)
+    // Split into zones: left column is "Just Visiting", right 2x2 is "In Jail"
+    if (normalizedPos === 10) {
+      // If player is actually in jail (inJail flag set), position in "In Jail" zone (right side)
+      if (inJail) {
+        const jailInmateOffset = 1; // Spread between 2 cells
+        return {
+          gridRow: -11 - jailInmateOffset,
+          gridColumn: boardSize,
+        };
+      }
+      // Otherwise, just visiting - position in left column
+      return { gridRow: 1, gridColumn: 12 };
+    }
+
+    // REGULAR TILES
     // Top row (GO starts here at index 0)
     if (normalizedPos <= 10)
       return { gridRow: 1, gridColumn: normalizedPos + 1 };

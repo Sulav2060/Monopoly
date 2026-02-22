@@ -8,6 +8,11 @@ import { getCurrentPlayerSafe } from "../engine/assertions";
 import { endTurn } from "../engine/endTurn";
 import { skipProperty } from "../engine/skipProperty";
 import { buyPendingProperty } from "../engine/buyPendingProperty";
+import { resolveAuctionTimeout } from "../engine/resolveAuctionTimeout";
+import { placeBid } from "../engine/placeBid";
+import { buildProperty } from "../engine/buildProperty";
+import { initiateTrade } from "../engine/initiateTrade";
+import { acceptTrade, rejectTrade, deleteTrade } from "../engine/finalizeTrade";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -171,6 +176,14 @@ export function setupWebSocket(wss: WebSocketServer) {
             return;
           }
 
+          if (game.state.pendingAction) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Please complete pending action first",
+            });
+            return;
+          }
+
           const dice = rollDice();
           const newState = playTurn(game.state, dice);
 
@@ -275,6 +288,249 @@ export function setupWebSocket(wss: WebSocketServer) {
           console.log(
             `🏠 ${currentPlayer.name} bought property in game ${msg.gameId}`,
           );
+          return;
+        }
+        //TODO: Do we even need auction_timeout event at the buy property step?
+        /* =======================
+           AUCTION_TIMEOUT
+        ======================= */
+        if (msg.type === "AUCTION_TIMEOUT") {
+          const game = getGame(msg.gameId);
+          if (!game) return;
+
+          const newState = resolveAuctionTimeout(game.state);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+          return;
+        }
+
+        /* =======================
+           PLACE_BID
+        ======================= */
+        if (msg.type === "PLACE_BID") {
+          const game = getGame(msg.gameId);
+          if (!game) return;
+
+          //check if the player is part of the game
+          const player = game.state.players.find((p) => p.id === msg.playerId);
+          if (!player) return;
+
+          const newState = placeBid(game.state, msg.playerId, msg.amount);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+          return;
+        }
+
+        /* =======================
+           BUILD_PROPERTY
+        ======================= */
+        if (msg.type === "BUILD_PROPERTY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const currentPlayer = getCurrentPlayerSafe(game.state);
+          if (currentPlayer.id !== msg.playerId) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Not your turn",
+            });
+            return;
+          }
+
+          const newState = buildProperty(
+            game.state,
+            msg.playerId,
+            msg.tileIndex,
+          );
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🏠 ${currentPlayer.name} built on property ${msg.tileIndex} in game ${msg.gameId}`,
+          );
+          return;
+        }
+
+        /* =======================
+           INITIATE_TRADE
+        ======================= */
+        if (msg.type === "INITIATE_TRADE") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const initiatingPlayer = game.state.players.find(
+            (p) => p.id === msg.playerId,
+          );
+          const targetPlayer = game.state.players.find(
+            (p) => p.id === msg.targetPlayerId,
+          );
+
+          if (!initiatingPlayer || !targetPlayer) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Player not found",
+            });
+            return;
+          }
+
+          const newState = initiateTrade(
+            game.state,
+            msg.playerId,
+            msg.targetPlayerId,
+            msg.offerMoney,
+            msg.offerProperties,
+            msg.requestMoney,
+            msg.requestProperties,
+          );
+
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `💰 ${initiatingPlayer.name} offered a trade to ${targetPlayer.name} in game ${msg.gameId}`,
+          );
+          return;
+        }
+
+        /* =======================
+           FINALIZE_TRADE
+        ======================= */
+        if (msg.type === "FINALIZE_TRADE") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          // Find the trade by tradeId
+          const tradeOffer = (game.state.pendingTrades || []).find(
+            (trade) => trade.tradeId === msg.tradeId,
+          );
+
+          if (!tradeOffer) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: `No pending trade offer with ID: ${msg.tradeId}`,
+            });
+            return;
+          }
+
+          // Retrieve both players for logs
+          const respondingPlayer = game.state.players.find(
+            (p) => p.id === tradeOffer.targetPlayerId,
+          );
+          const initiatingPlayer = game.state.players.find(
+            (p) => p.id === tradeOffer.initiatingPlayerId,
+          );
+
+          let newState;
+
+          if (msg.action === "ACCEPT") {
+            newState = acceptTrade(game.state, msg.tradeId);
+
+            console.log(
+              `✅ ${respondingPlayer?.name} accepted trade ${msg.tradeId} from ${initiatingPlayer?.name} in game ${msg.gameId}`,
+            );
+          } else {
+            newState = rejectTrade(game.state, msg.tradeId);
+
+            console.log(
+              `❌ ${respondingPlayer?.name} rejected trade ${msg.tradeId} from ${initiatingPlayer?.name} in game ${msg.gameId}`,
+            );
+          }
+
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          return;
+        }
+
+        /* =======================
+           DELETE_TRADE
+        ======================= */
+        if (msg.type === "DELETE_TRADE") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          // Find the trade by tradeId
+          const tradeOffer = (game.state.pendingTrades || []).find(
+            (trade) => trade.tradeId === msg.tradeId,
+          );
+
+          if (!tradeOffer) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: `No pending trade offer with ID: ${msg.tradeId}`,
+            });
+            return;
+          }
+
+          // Verify the player is the initiator
+          if (tradeOffer.initiatingPlayerId !== msg.playerId) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Only the initiating player can delete their trade",
+            });
+            return;
+          }
+
+          // Delete the trade
+          const newState = deleteTrade(game.state, msg.tradeId, msg.playerId);
+
+          // Retrieve players for logs
+          const initiatingPlayer = game.state.players.find(
+            (p) => p.id === tradeOffer.initiatingPlayerId,
+          );
+          const targetPlayer = game.state.players.find(
+            (p) => p.id === tradeOffer.targetPlayerId,
+          );
+
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🗑️ ${initiatingPlayer?.name} deleted trade ${msg.tradeId} with ${targetPlayer?.name} in game ${msg.gameId}`,
+          );
+
           return;
         }
 

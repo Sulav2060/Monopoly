@@ -29,8 +29,10 @@ export function resolveCurrentTile(state: GameState): GameState {
           ...state,
           pendingAction: {
             type: "BUY_PROPERTY",
-            playerId: player.id,
-            tileIndex: tile.tileIndex,
+            property: {
+              playerId: player.id,
+              ...tile,
+            },
           },
           events: [
             ...state.events,

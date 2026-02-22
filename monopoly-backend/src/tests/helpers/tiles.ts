@@ -8,4 +8,8 @@ export const testProperty: PropertyTile = {
   name: "Mediterranean Avenue",
   baseRent: 50,
   price: 60,
+  group: "terai",
+  houseRent: [10, 30, 90, 160],
+  hotelRent: 250,
+  houseBuildCost: 12,
 };

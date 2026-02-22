@@ -78,6 +78,12 @@ const Game = () => {
   const [_showPropertyCard, setShowPropertyCard] = useState(null);
   const [showBuildMenu, setShowBuildMenu] = useState(false);
   const [showTradeModal, setShowTradeModal] = useState(false);
+  const [tradeTargetPlayerId, setTradeTargetPlayerId] = useState("");
+  const [tradeOfferMoney, setTradeOfferMoney] = useState("");
+  const [tradeOfferProperties, setTradeOfferProperties] = useState([]);
+  const [tradeRequestMoney, setTradeRequestMoney] = useState("");
+  const [tradeRequestProperties, setTradeRequestProperties] = useState([]);
+  const [tradeTab, setTradeTab] = useState("new"); // "new" or "incoming"
   const [showRules, setShowRules] = useState(false);
   const [notification, setNotification] = useState(null);
   const [eventCards, setEventCards] = useState([]);
@@ -800,6 +806,39 @@ const Game = () => {
     }
   }, [currentGame, contextBuyProperty]);
 
+  const proposeTrade = () => {
+    if (!tradeTargetPlayerId) {
+      showNotification("Please select a player to trade with", "error");
+      return;
+    }
+    wsClient.send({
+      type: "INITIATE_TRADE",
+      gameId: currentGame.id,
+      playerId: currentPlayerId,
+      targetPlayerId: tradeTargetPlayerId,
+      offerMoney: Number(tradeOfferMoney) || 0,
+      offerProperties: tradeOfferProperties,
+      requestMoney: Number(tradeRequestMoney) || 0,
+      requestProperties: tradeRequestProperties,
+    });
+    setShowTradeModal(false);
+    setTradeTargetPlayerId("");
+    setTradeOfferMoney("");
+    setTradeOfferProperties([]);
+    setTradeRequestMoney("");
+    setTradeRequestProperties([]);
+    showNotification("Trade offer sent!", "success");
+  };
+
+  const finalizeTrade = (tradeId, action) => {
+    wsClient.send({
+      type: "FINALIZE_TRADE",
+      gameId: currentGame.id,
+      tradeId,
+      action,
+    });
+  };
+
   // Bot auto-play removed to prevent unintended rolls on other players' turns
   // Sync dice animation across all players in room
   useEffect(() => {
@@ -1414,15 +1453,37 @@ const Game = () => {
             )}
 
             <button
-              onClick={() => setShowTradeModal(true)}
-              disabled={!isMyTurn}
-              className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
-                isMyTurn
+              onClick={() => {
+                setShowTradeModal(true);
+                setTradeTab(
+                  (currentGame?.pendingTrades || []).some(
+                    (t) => t.targetPlayerId === currentPlayerId,
+                  )
+                    ? "incoming"
+                    : "new",
+                );
+              }}
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm relative ${
+                isMyTurn ||
+                (currentGame?.pendingTrades || []).some(
+                  (t) => t.targetPlayerId === currentPlayerId,
+                )
                   ? "bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5"
                   : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
               }`}
             >
               🤝 Trade
+              {(currentGame?.pendingTrades || []).filter(
+                (t) => t.targetPlayerId === currentPlayerId,
+              ).length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {
+                    (currentGame?.pendingTrades || []).filter(
+                      (t) => t.targetPlayerId === currentPlayerId,
+                    ).length
+                  }
+                </span>
+              )}
             </button>
 
             <button
@@ -1711,44 +1772,66 @@ const Game = () => {
 
       {/* Trade Modal */}
       {showTradeModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="bg-[#FFCCCB] rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl">
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-3xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl text-[#2C4263] font-bold">
-                Trade with Players
-              </h2>
+              <h2 className="text-2xl text-white font-bold">Trade</h2>
               <button
                 onClick={() => setShowTradeModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                className="text-gray-400 hover:text-white text-2xl font-bold"
               >
                 ×
               </button>
             </div>
 
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Your Offer */}
-                <div className="border rounded-lg p-4 border-[#2C4263]">
-                  <h3 className="font-bold mb-2 text-[#2C4263]">Your Offer</h3>
-                  <div className="space-y-2 text-[#2C4263]">
-                    <input
-                      type="number"
-                      placeholder="Money amount"
-                      className="w-full p-2 border rounded"
-                    />
-                    <div className="text-sm text-[#2C4263]">
-                      Select properties to trade
-                    </div>
-                  </div>
-                </div>
+            <div className="flex gap-4 mb-6 border-b border-slate-700 pb-2">
+              <button
+                onClick={() => setTradeTab("new")}
+                className={`px-4 py-2 font-semibold transition-colors ${
+                  tradeTab === "new"
+                    ? "text-indigo-400 border-b-2 border-indigo-400"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                New Trade
+              </button>
+              <button
+                onClick={() => setTradeTab("incoming")}
+                className={`px-4 py-2 font-semibold transition-colors relative ${
+                  tradeTab === "incoming"
+                    ? "text-indigo-400 border-b-2 border-indigo-400"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                Incoming Offers
+                {(currentGame?.pendingTrades || []).filter(
+                  (t) => t.targetPlayerId === currentPlayerId,
+                ).length > 0 && (
+                  <span className="absolute top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    {
+                      (currentGame?.pendingTrades || []).filter(
+                        (t) => t.targetPlayerId === currentPlayerId,
+                      ).length
+                    }
+                  </span>
+                )}
+              </button>
+            </div>
 
-                {/* Their Offer */}
-                <div className="border rounded-lg p-4 border-[#2C4263]">
-                  <h3 className="font-bold mb-2 text-[#2C4263]">Request</h3>
-                  <select className="w-full p-2 border rounded mb-2 text-[#2C4263]">
-                    <option>Select player...</option>
+            {tradeTab === "new" ? (
+              <div className="space-y-4">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Select Player to Trade With
+                  </label>
+                  <select
+                    value={tradeTargetPlayerId}
+                    onChange={(e) => setTradeTargetPlayerId(e.target.value)}
+                    className="w-full p-2 bg-slate-800 border border-slate-700 rounded text-white"
+                  >
+                    <option value="">Select player...</option>
                     {currentGame.players
-                      .filter((p) => p.id !== currentPlayer?.id)
+                      .filter((p) => p.id !== currentPlayerId)
                       .map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name}
@@ -1756,20 +1839,293 @@ const Game = () => {
                       ))}
                   </select>
                 </div>
-              </div>
 
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={() => setShowTradeModal(false)}
-                  className="px-6 py-2 text-[#2C4263] rounded-lg font-semibold hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button className="px-6 py-2 bg-[#FF4D4D] text-[#2C4263] rounded-lg font-semibold hover:bg-[#FF0000] hover:text-white">
-                  Propose Trade
-                </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Your Offer */}
+                  <div className="border border-slate-700 rounded-lg p-4 bg-slate-800/50">
+                    <h3 className="font-bold mb-3 text-indigo-300">
+                      Your Offer
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">
+                          Money
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={tradeOfferMoney}
+                          onChange={(e) => setTradeOfferMoney(e.target.value)}
+                          placeholder="Amount"
+                          className="w-full p-2 bg-slate-900 border border-slate-700 rounded text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">
+                          Properties
+                        </label>
+                        <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
+                          {currentGame.properties
+                            ?.filter(
+                              (p) =>
+                                p.ownerId === currentPlayerId &&
+                                !p.houses &&
+                                !p.hotel,
+                            )
+                            .map((p) => {
+                              const tile = getTileAtIndex(p.tileIndex);
+                              return (
+                                <label
+                                  key={p.tileIndex}
+                                  className="flex items-center gap-2 p-2 hover:bg-slate-700 rounded cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={tradeOfferProperties.includes(
+                                      p.tileIndex,
+                                    )}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setTradeOfferProperties([
+                                          ...tradeOfferProperties,
+                                          p.tileIndex,
+                                        ]);
+                                      } else {
+                                        setTradeOfferProperties(
+                                          tradeOfferProperties.filter(
+                                            (id) => id !== p.tileIndex,
+                                          ),
+                                        );
+                                      }
+                                    }}
+                                    className="rounded border-slate-600 text-indigo-500 focus:ring-indigo-500 bg-slate-900"
+                                  />
+                                  <span className="text-sm text-gray-200">
+                                    {tile?.title}
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          {(!currentGame.properties ||
+                            currentGame.properties.filter(
+                              (p) =>
+                                p.ownerId === currentPlayerId &&
+                                !p.houses &&
+                                !p.hotel,
+                            ).length === 0) && (
+                            <div className="text-xs text-gray-500 italic">
+                              No tradable properties
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Their Offer */}
+                  <div className="border border-slate-700 rounded-lg p-4 bg-slate-800/50">
+                    <h3 className="font-bold mb-3 text-amber-300">
+                      You Request
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">
+                          Money
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={tradeRequestMoney}
+                          onChange={(e) => setTradeRequestMoney(e.target.value)}
+                          placeholder="Amount"
+                          className="w-full p-2 bg-slate-900 border border-slate-700 rounded text-white"
+                          disabled={!tradeTargetPlayerId}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1">
+                          Properties
+                        </label>
+                        <div className="max-h-40 overflow-y-auto space-y-1 pr-1">
+                          {tradeTargetPlayerId ? (
+                            currentGame.properties
+                              ?.filter(
+                                (p) =>
+                                  p.ownerId === tradeTargetPlayerId &&
+                                  !p.houses &&
+                                  !p.hotel,
+                              )
+                              .map((p) => {
+                                const tile = getTileAtIndex(p.tileIndex);
+                                return (
+                                  <label
+                                    key={p.tileIndex}
+                                    className="flex items-center gap-2 p-2 hover:bg-slate-700 rounded cursor-pointer"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={tradeRequestProperties.includes(
+                                        p.tileIndex,
+                                      )}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          setTradeRequestProperties([
+                                            ...tradeRequestProperties,
+                                            p.tileIndex,
+                                          ]);
+                                        } else {
+                                          setTradeRequestProperties(
+                                            tradeRequestProperties.filter(
+                                              (id) => id !== p.tileIndex,
+                                            ),
+                                          );
+                                        }
+                                      }}
+                                      className="rounded border-slate-600 text-amber-500 focus:ring-amber-500 bg-slate-900"
+                                    />
+                                    <span className="text-sm text-gray-200">
+                                      {tile?.title}
+                                    </span>
+                                  </label>
+                                );
+                              })
+                          ) : (
+                            <div className="text-xs text-gray-500 italic">
+                              Select a player first
+                            </div>
+                          )}
+                          {tradeTargetPlayerId &&
+                            (!currentGame.properties ||
+                              currentGame.properties.filter(
+                                (p) =>
+                                  p.ownerId === tradeTargetPlayerId &&
+                                  !p.houses &&
+                                  !p.hotel,
+                              ).length === 0) && (
+                              <div className="text-xs text-gray-500 italic">
+                                No tradable properties
+                              </div>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-slate-700">
+                  <button
+                    onClick={() => setShowTradeModal(false)}
+                    className="px-6 py-2 text-gray-300 bg-slate-800 rounded-lg font-semibold hover:bg-slate-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={proposeTrade}
+                    disabled={!tradeTargetPlayerId}
+                    className={`px-6 py-2 rounded-lg font-semibold transition-colors ${
+                      tradeTargetPlayerId
+                        ? "bg-indigo-600 text-white hover:bg-indigo-500"
+                        : "bg-slate-700 text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    Propose Trade
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                {(currentGame?.pendingTrades || []).filter(
+                  (t) => t.targetPlayerId === currentPlayerId,
+                ).length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    No incoming trade offers.
+                  </div>
+                ) : (
+                  (currentGame?.pendingTrades || [])
+                    .filter((t) => t.targetPlayerId === currentPlayerId)
+                    .map((trade) => {
+                      const initiator = currentGame.players.find(
+                        (p) => p.id === trade.initiatingPlayerId,
+                      );
+                      return (
+                        <div
+                          key={trade.tradeId}
+                          className="border border-slate-700 rounded-lg p-4 bg-slate-800/50"
+                        >
+                          <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+                            <h3 className="font-bold text-white">
+                              Offer from {initiator?.name || "Unknown"}
+                            </h3>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                            <div>
+                              <h4 className="text-sm font-semibold text-indigo-300 mb-2">
+                                They Offer:
+                              </h4>
+                              <ul className="text-sm text-gray-300 space-y-1">
+                                {trade.offerMoney > 0 && (
+                                  <li>💰 ${trade.offerMoney}</li>
+                                )}
+                                {trade.offerProperties?.map((propId) => {
+                                  const tile = getTileAtIndex(propId);
+                                  return <li key={propId}>🏠 {tile?.title}</li>;
+                                })}
+                                {trade.offerMoney === 0 &&
+                                  (!trade.offerProperties ||
+                                    trade.offerProperties.length === 0) && (
+                                    <li className="text-gray-500 italic">
+                                      Nothing
+                                    </li>
+                                  )}
+                              </ul>
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-semibold text-amber-300 mb-2">
+                                They Request:
+                              </h4>
+                              <ul className="text-sm text-gray-300 space-y-1">
+                                {trade.requestMoney > 0 && (
+                                  <li>💰 ${trade.requestMoney}</li>
+                                )}
+                                {trade.requestProperties?.map((propId) => {
+                                  const tile = getTileAtIndex(propId);
+                                  return <li key={propId}>🏠 {tile?.title}</li>;
+                                })}
+                                {trade.requestMoney === 0 &&
+                                  (!trade.requestProperties ||
+                                    trade.requestProperties.length === 0) && (
+                                    <li className="text-gray-500 italic">
+                                      Nothing
+                                    </li>
+                                  )}
+                              </ul>
+                            </div>
+                          </div>
+                          <div className="flex gap-3 justify-end">
+                            <button
+                              onClick={() =>
+                                finalizeTrade(trade.tradeId, "REJECT")
+                              }
+                              className="px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded font-semibold transition-colors"
+                            >
+                              Reject
+                            </button>
+                            <button
+                              onClick={() => {
+                                finalizeTrade(trade.tradeId, "ACCEPT");
+                                setShowTradeModal(false);
+                              }}
+                              className="px-4 py-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded font-semibold transition-colors"
+                            >
+                              Accept
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -10,6 +10,7 @@ export function payRent(state: GameState, tile: PropertyTile): GameState {
   const ownership = getPropertyOwner(state, tile.tileIndex);
   if (!ownership) return state; //no owner
   if (ownership.ownerId === player.id) return state; //own property
+  if (ownership.isMortaged) return state; //property is mortgaged, no rent
 
   // Retrieve number of houses from the state for the tile
   const houses = ownership.houses;

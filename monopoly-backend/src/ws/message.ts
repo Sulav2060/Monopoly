@@ -41,6 +41,18 @@ export type ClientMessage =
       tileIndex: number;
     } //break/demolish houses, returns half the building cost
   | {
+      type: "MORTGAGE_PROPERTY";
+      gameId: string;
+      playerId: string;
+      tileIndex: number;
+    }
+  | {
+      type: "UNMORTGAGE_PROPERTY";
+      gameId: string;
+      playerId: string;
+      tileIndex: number;
+    }
+  | {
       type: "INITIATE_TRADE";
       gameId: string;
       playerId: string; // Player making the trade offer

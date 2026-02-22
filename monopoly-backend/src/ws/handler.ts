@@ -14,6 +14,8 @@ import { buildProperty } from "../engine/buildProperty";
 import { breakHouses } from "../engine/breakHouses";
 import { initiateTrade } from "../engine/initiateTrade";
 import { acceptTrade, rejectTrade, deleteTrade } from "../engine/finalizeTrade";
+import { mortgageProperty } from "../engine/mortgage";
+import { unmortgageProperty } from "../engine/unmortgage";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -566,6 +568,68 @@ export function setupWebSocket(wss: WebSocketServer) {
             `🗑️ ${initiatingPlayer?.name} deleted trade ${msg.tradeId} with ${targetPlayer?.name} in game ${msg.gameId}`,
           );
 
+          return;
+        }
+
+        /* =======================
+           MORTGAGE_PROPERTY
+        ======================= */
+        if (msg.type === "MORTGAGE_PROPERTY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const player = game.state.players.find((p) => p.id === msg.playerId);
+          if (!player) {
+            safeSend(socket, { type: "ERROR", message: "Player not found" });
+            return;
+          }
+
+          const newState = mortgageProperty(game.state, msg.tileIndex);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🏦 ${player.name} mortgaged property at ${msg.tileIndex} in game ${msg.gameId}`,
+          );
+          return;
+        }
+
+        /* =======================
+           UNMORTGAGE_PROPERTY
+        ======================= */
+        if (msg.type === "UNMORTGAGE_PROPERTY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const player = game.state.players.find((p) => p.id === msg.playerId);
+          if (!player) {
+            safeSend(socket, { type: "ERROR", message: "Player not found" });
+            return;
+          }
+
+          const newState = unmortgageProperty(game.state, msg.tileIndex);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🏦 ${player.name} unmortgaged property at ${msg.tileIndex} in game ${msg.gameId}`,
+          );
           return;
         }
 

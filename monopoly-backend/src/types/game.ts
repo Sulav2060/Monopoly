@@ -102,6 +102,19 @@ export type GameEvent =
       houses: number;
       refund: number;
     }
+  //mortgage regarding events
+  | {
+      type: "PROPERTY_MORTGAGED";
+      playerId: PlayerId;
+      tileIndex: number;
+      amount: number;
+    }
+  | {
+      type: "PROPERTY_UNMORTGAGED";
+      playerId: PlayerId;
+      tileIndex: number;
+      amount: number;
+    }
   //auction regarding events
   | { type: "AUCTION_STARTED"; property: PropertyTile }
   | { type: "AUCTION_BID_PLACED"; playerId: PlayerId; amount: number }

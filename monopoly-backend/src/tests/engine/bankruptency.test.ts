@@ -9,6 +9,7 @@ test("player goes bankrupt if cannot pay rent", () => {
   const state: GameState = {
     communityChestDeck: [],
     communityChestIndex: 0,
+    pendingTrades: [],
     players: [
       {
         id: "p1",
@@ -65,6 +66,7 @@ test("skips bankrupt players when ending turn", () => {
   const state: GameState = {
     communityChestDeck: [],
     communityChestIndex: 0,
+    pendingTrades: [],
     players: [
       {
         id: "p1",
@@ -156,11 +158,11 @@ describe("voluntary bankruptcy", () => {
 
     // Properties should be removed
     expect(result.properties.length).toBe(0);
-    
-    //STODO: recheck this 
+
+    //STODO: recheck this
     // Event should be added
     expect(result.events).toContainEqual([
-      { playerId: "p1", type: "PLAYER_BANKRUPT",causedBy:"" },
+      { playerId: "p1", type: "PLAYER_BANKRUPT", causedBy: "" },
       { type: "GAME_OVER", winnerId: "p2" },
     ]);
   });

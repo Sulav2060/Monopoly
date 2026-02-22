@@ -95,6 +95,13 @@ export type GameEvent =
       houses: number;
       cost: number;
     }
+  | {
+      type: "PROPERTY_BROKEN";
+      playerId: PlayerId;
+      tileIndex: number;
+      houses: number;
+      refund: number;
+    }
   //auction regarding events
   | { type: "AUCTION_STARTED"; property: PropertyTile }
   | { type: "AUCTION_BID_PLACED"; playerId: PlayerId; amount: number }

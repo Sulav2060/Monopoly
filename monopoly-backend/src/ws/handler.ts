@@ -11,6 +11,7 @@ import { buyPendingProperty } from "../engine/buyPendingProperty";
 import { resolveAuctionTimeout } from "../engine/resolveAuctionTimeout";
 import { placeBid } from "../engine/placeBid";
 import { buildProperty } from "../engine/buildProperty";
+import { breakHouses } from "../engine/breakHouses";
 import { initiateTrade } from "../engine/initiateTrade";
 import { acceptTrade, rejectTrade, deleteTrade } from "../engine/finalizeTrade";
 
@@ -365,6 +366,40 @@ export function setupWebSocket(wss: WebSocketServer) {
 
           console.log(
             `🏠 ${currentPlayer.name} built on property ${msg.tileIndex} in game ${msg.gameId}`,
+          );
+          return;
+        }
+
+        /* =======================
+           BREAK_PROPERTY
+        ======================= */
+        if (msg.type === "BREAK_PROPERTY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const currentPlayer = getCurrentPlayerSafe(game.state);
+          if (currentPlayer.id !== msg.playerId) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Not your turn",
+            });
+            return;
+          }
+
+          const newState = breakHouses(game.state, msg.playerId, msg.tileIndex);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🗑️ ${currentPlayer.name} broke houses on property ${msg.tileIndex} in game ${msg.gameId}`,
           );
           return;
         }

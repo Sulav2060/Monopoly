@@ -78,6 +78,7 @@ const Game = () => {
   const [_showPropertyCard, setShowPropertyCard] = useState(null);
   const [showBuildMenu, setShowBuildMenu] = useState(false);
   const [showTradeModal, setShowTradeModal] = useState(false);
+  const [showBankruptcyModal, setShowBankruptcyModal] = useState(false);
   const [tradeTargetPlayerId, setTradeTargetPlayerId] = useState("");
   const [tradeOfferMoney, setTradeOfferMoney] = useState("");
   const [tradeOfferProperties, setTradeOfferProperties] = useState([]);
@@ -839,6 +840,14 @@ const Game = () => {
     });
   };
 
+  const declareBankruptcy = () => {
+    wsClient.send({
+      type: "DECLARE_BANKRUPTCY",
+      gameId: currentGame.id,
+      playerId: currentPlayerId,
+    });
+  };
+
   // Bot auto-play removed to prevent unintended rolls on other players' turns
   // Sync dice animation across all players in room
   useEffect(() => {
@@ -1036,6 +1045,10 @@ const Game = () => {
 
   // Determine current player and turn state
   const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];
+  const currentUser = currentGame?.players?.find(
+    (player) => player.id === currentPlayerId,
+  );
+  const isCurrentUserBankrupt = currentUser?.isBankrupt ?? false;
   const isMyTurn = currentPlayer?.id === currentPlayerId;
   const gameOverEvent = currentGame?.events
     ?.slice()
@@ -1498,6 +1511,18 @@ const Game = () => {
             </button>
           </div>
 
+          <button
+            onClick={() => setShowBankruptcyModal(true)}
+            disabled={isCurrentUserBankrupt}
+            className={`w-full py-2.5 rounded-xl font-semibold transition-all border text-sm ${
+              isCurrentUserBankrupt
+                ? "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                : "bg-red-500/80 border-red-400/70 text-white shadow-[0_10px_30px_-18px_rgba(239,68,68,0.7)] hover:-translate-y-0.5"
+            }`}
+          >
+            💀 Declare Bankruptcy
+          </button>
+
           {/* Player Portfolio */}
           <div className="border-t border-white/10 pt-3">
             <div className="flex items-center justify-between mb-2">
@@ -1766,6 +1791,63 @@ const Game = () => {
                 setShowBuildMenu(false);
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Declare Bankruptcy Modal */}
+      {showBankruptcyModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowBankruptcyModal(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-white font-bold text-lg">
+                💀 Declare Bankruptcy
+              </h2>
+              <button
+                onClick={() => setShowBankruptcyModal(false)}
+                className="text-gray-400 hover:text-white text-2xl font-bold leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-sm text-gray-300">
+              This will set your money to Rs. 0 and remove all your properties
+              from the game. This action cannot be undone.
+            </p>
+            <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-gray-300">
+              Your status will be marked as bankrupt and you will no longer
+              participate in turns.
+            </div>
+            <div className="mt-5 flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowBankruptcyModal(false)}
+                className="px-5 py-2.5 rounded-lg bg-slate-800 text-gray-200 border border-slate-700 hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isCurrentUserBankrupt}
+                onClick={() => {
+                  declareBankruptcy();
+                  setShowBankruptcyModal(false);
+                }}
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${
+                  isCurrentUserBankrupt
+                    ? "bg-slate-700 text-gray-500 cursor-not-allowed"
+                    : "bg-red-500 text-white hover:bg-red-400"
+                }`}
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}

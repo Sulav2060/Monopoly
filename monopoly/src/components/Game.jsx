@@ -84,6 +84,9 @@ const Game = () => {
   const [tradeRequestMoney, setTradeRequestMoney] = useState("");
   const [tradeRequestProperties, setTradeRequestProperties] = useState([]);
   const [tradeTab, setTradeTab] = useState("new"); // "new" or "incoming"
+  const [showMortgageModal, setShowMortgageModal] = useState(false);
+  const [mortgageTab, setMortgageTab] = useState("mortgage");
+  const [selectedMortgageTiles, setSelectedMortgageTiles] = useState([]);
   const [showRules, setShowRules] = useState(false);
   const [notification, setNotification] = useState(null);
   const [eventCards, setEventCards] = useState([]);
@@ -907,6 +910,24 @@ const Game = () => {
     });
   };
 
+  const mortgageProperty = (tileIndex) => {
+    wsClient.send({
+      type: "MORTGAGE_PROPERTY",
+      gameId: currentGame.id,
+      playerId: currentPlayerId,
+      tileIndex,
+    });
+  };
+
+  const unmortgageProperty = (tileIndex) => {
+    wsClient.send({
+      type: "UNMORTGAGE_PROPERTY",
+      gameId: currentGame.id,
+      playerId: currentPlayerId,
+      tileIndex,
+    });
+  };
+
   const deleteTrade = (tradeId) => {
     wsClient.send({
       type: "DELETE_TRADE",
@@ -1568,6 +1589,11 @@ const Game = () => {
             </button>
 
             <button
+              onClick={() => {
+                setMortgageTab("mortgage");
+                setSelectedMortgageTiles([]);
+                setShowMortgageModal(true);
+              }}
               disabled={!isMyTurn}
               className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
                 isMyTurn
@@ -1646,6 +1672,31 @@ const Game = () => {
                         _showPropertyCard.tile.price / 2,
                       );
                       const unmortgageCost = Math.floor(mortgageValue * 1.1);
+                      const tileIndex = _showPropertyCard.index;
+                      const selectedProperty = currentGame?.properties?.find(
+                        (prop) =>
+                          prop.tileIndex === tileIndex ||
+                          prop.propertyId === tileIndex ||
+                          prop.tile === tileIndex,
+                      );
+                      const ownerId =
+                        selectedProperty?.ownerId ||
+                        selectedProperty?.owner ||
+                        selectedProperty?.playerId;
+                      const isOwnedByMe = ownerId === currentPlayerId;
+                      const isMortgaged =
+                        selectedProperty?.isMortgaged ??
+                        selectedProperty?.isMortaged ??
+                        false;
+                      const hasBuildings =
+                        (selectedProperty?.houses ?? 0) > 0 ||
+                        (selectedProperty?.hotel ?? 0) > 0;
+                      const canMortgage =
+                        isOwnedByMe && !isMortgaged && !hasBuildings;
+                      const canUnmortgage =
+                        isOwnedByMe &&
+                        isMortgaged &&
+                        (currentPlayer?.money ?? 0) >= unmortgageCost;
 
                       return (
                         <>
@@ -1661,6 +1712,34 @@ const Game = () => {
                               ${unmortgageCost}
                             </span>
                           </div>
+                          {isOwnedByMe && (
+                            <div className="flex gap-2 pt-2">
+                              <button
+                                type="button"
+                                onClick={() => mortgageProperty(tileIndex)}
+                                disabled={!canMortgage}
+                                className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-all border ${
+                                  canMortgage
+                                    ? "bg-amber-500/20 border-amber-400/40 text-amber-200 hover:bg-amber-500/30"
+                                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                                }`}
+                              >
+                                Mortgage
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => unmortgageProperty(tileIndex)}
+                                disabled={!canUnmortgage}
+                                className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-all border ${
+                                  canUnmortgage
+                                    ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/30"
+                                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                                }`}
+                              >
+                                Unmortgage
+                              </button>
+                            </div>
+                          )}
                         </>
                       );
                     })()}
@@ -1863,6 +1942,217 @@ const Game = () => {
                 setShowBuildMenu(false);
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Mortgage / Unmortgage Modal */}
+      {showMortgageModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowMortgageModal(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-white font-bold text-lg">
+                💰 Mortgage Center
+              </h2>
+              <button
+                onClick={() => setShowMortgageModal(false)}
+                className="text-gray-400 hover:text-white text-2xl font-bold leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex gap-4 mb-4 border-b border-slate-700 pb-2">
+              <button
+                onClick={() => {
+                  setMortgageTab("mortgage");
+                  setSelectedMortgageTiles([]);
+                }}
+                className={`px-4 py-2 font-semibold transition-colors ${
+                  mortgageTab === "mortgage"
+                    ? "text-amber-300 border-b-2 border-amber-400"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                Mortgage
+              </button>
+              <button
+                onClick={() => {
+                  setMortgageTab("unmortgage");
+                  setSelectedMortgageTiles([]);
+                }}
+                className={`px-4 py-2 font-semibold transition-colors ${
+                  mortgageTab === "unmortgage"
+                    ? "text-emerald-300 border-b-2 border-emerald-400"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                Unmortgage
+              </button>
+            </div>
+
+            {(() => {
+              const myProperties =
+                currentGame?.properties?.filter(
+                  (prop) =>
+                    prop.ownerId === currentPlayerId ||
+                    prop.owner === currentPlayerId ||
+                    prop.playerId === currentPlayerId,
+                ) || [];
+
+              const eligibleProperties = myProperties.filter((prop) => {
+                const isMortgaged =
+                  prop.isMortgaged ?? prop.isMortaged ?? false;
+                const hasBuildings =
+                  (prop.houses ?? 0) > 0 || (prop.hotel ?? 0) > 0;
+                return mortgageTab === "mortgage"
+                  ? !isMortgaged && !hasBuildings
+                  : isMortgaged;
+              });
+
+              const selectedProperties = eligibleProperties.filter((prop) => {
+                const tileIndex =
+                  prop.tileIndex ?? prop.propertyId ?? prop.tile;
+                return selectedMortgageTiles.includes(tileIndex);
+              });
+
+              const selectedTiles = selectedProperties.map((prop) => {
+                const tileIndex =
+                  prop.tileIndex ?? prop.propertyId ?? prop.tile;
+                return {
+                  tileIndex,
+                  tile: getTileAtIndex(tileIndex),
+                };
+              });
+
+              const currentMoney = currentPlayer?.money ?? 0;
+              const totalMortgageValue = selectedTiles.reduce((sum, item) => {
+                const price = item.tile?.price ?? 0;
+                return sum + Math.floor(price / 2);
+              }, 0);
+              const totalUnmortgageCost = selectedTiles.reduce((sum, item) => {
+                const price = item.tile?.price ?? 0;
+                const mortgageValue = Math.floor(price / 2);
+                return sum + Math.floor(mortgageValue * 1.1);
+              }, 0);
+              const nextMoney =
+                mortgageTab === "mortgage"
+                  ? currentMoney + totalMortgageValue
+                  : currentMoney - totalUnmortgageCost;
+              const canConfirm =
+                selectedProperties.length > 0 &&
+                (mortgageTab === "mortgage" ||
+                  currentMoney >= totalUnmortgageCost);
+
+              return (
+                <>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {eligibleProperties.length === 0 ? (
+                      <p className="text-gray-500 text-sm italic">
+                        No properties available
+                      </p>
+                    ) : (
+                      eligibleProperties.map((prop) => {
+                        const tileIndex =
+                          prop.tileIndex ?? prop.propertyId ?? prop.tile;
+                        const tile = getTileAtIndex(tileIndex);
+                        const value = Math.floor((tile?.price ?? 0) / 2);
+                        const cost = Math.floor(value * 1.1);
+                        const isSelected =
+                          selectedMortgageTiles.includes(tileIndex);
+
+                        return (
+                          <button
+                            type="button"
+                            key={`${tileIndex}-${prop.ownerId}`}
+                            onClick={() => {
+                              setSelectedMortgageTiles((prev) =>
+                                prev.includes(tileIndex)
+                                  ? prev.filter((id) => id !== tileIndex)
+                                  : [...prev, tileIndex],
+                              );
+                            }}
+                            className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
+                              isSelected
+                                ? "border-amber-400/60 bg-amber-500/10 text-white"
+                                : "border-white/10 bg-white/5 text-gray-200 hover:bg-white/10"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold">
+                                {tile?.title || `Tile #${tileIndex}`}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {mortgageTab === "mortgage"
+                                  ? `+$${value}`
+                                  : `-$${cost}`}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Current Money</span>
+                      <span className="text-white font-semibold">
+                        Rs. {currentMoney.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">After Action</span>
+                      <span className="text-white font-semibold">
+                        Rs. {nextMoney.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowMortgageModal(false)}
+                      className="px-5 py-2.5 rounded-lg bg-slate-800 text-gray-200 border border-slate-700 hover:bg-slate-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!canConfirm}
+                      onClick={() => {
+                        if (!canConfirm) return;
+                        selectedProperties.forEach((prop) => {
+                          const tileIndex =
+                            prop.tileIndex ?? prop.propertyId ?? prop.tile;
+                          if (mortgageTab === "mortgage") {
+                            mortgageProperty(tileIndex);
+                          } else {
+                            unmortgageProperty(tileIndex);
+                          }
+                        });
+                        setShowMortgageModal(false);
+                      }}
+                      className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                        canConfirm
+                          ? mortgageTab === "mortgage"
+                            ? "bg-amber-500 text-white hover:bg-amber-400"
+                            : "bg-emerald-500 text-white hover:bg-emerald-400"
+                          : "bg-slate-700 text-gray-500 cursor-not-allowed"
+                      }`}
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}

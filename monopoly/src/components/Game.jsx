@@ -347,6 +347,22 @@ const Game = () => {
         return `🏗️ ${player?.name || "Player"} built ${houses === 5 ? "a " : ""}${houses === 5 ? "hotel" : houses + " " + buildingType} on ${propertyName}`;
       }
 
+      case "PROPERTY_MORTGAGED": {
+        const player = players.find((p) => p.id === event.playerId);
+        const tile = getTileAtPosition(event.tileIndex);
+        const propertyName = tile?.title || "a property";
+        const amount = event.amount ?? 0;
+        return `💰 ${player?.name || "Player"} mortgaged ${propertyName} for Rs. ${amount}`;
+      }
+
+      case "PROPERTY_UNMORTGAGED": {
+        const player = players.find((p) => p.id === event.playerId);
+        const tile = getTileAtPosition(event.tileIndex);
+        const propertyName = tile?.title || "a property";
+        const amount = event.amount ?? 0;
+        return `💸 ${player?.name || "Player"} unmortgaged ${propertyName} for Rs. ${amount}`;
+      }
+
       case "AUCTION_STARTED": {
         const tile = getTileAtPosition(event.property?.tileIndex);
         const propertyName =

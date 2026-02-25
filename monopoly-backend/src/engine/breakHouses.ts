@@ -2,6 +2,7 @@ import { GameState, PropertyOwnership } from "../types/game";
 import { PropertyTile } from "../types/board";
 import { getCurrentPlayerSafe } from "./assertions";
 import { BOARD } from "./board";
+import { afterAssetChange } from "./debtResolution";
 
 /**
  * Get the cost to break a house on a property from the board data
@@ -163,7 +164,7 @@ export function breakHouses(
       houses: ownership.houses - 1,
     };
 
-    return {
+    const newState = {
       ...state,
       players: state.players.map((p) =>
         p.id === playerId ? { ...p, money: p.money + houseRefund } : p,
@@ -179,9 +180,12 @@ export function breakHouses(
           tileIndex: tileIndex,
           houses: updatedProperty.houses,
           refund: houseRefund,
-        },
+        } as const, //TODO: why needed as const
       ],
     };
+
+    // Check if this resolves any debt
+    return afterAssetChange(newState);
   } catch (error) {
     console.error("❌ Error in breakHouses:", error);
     return state;

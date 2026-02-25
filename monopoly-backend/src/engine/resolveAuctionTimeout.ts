@@ -8,7 +8,7 @@ export function resolveAuctionTimeout(state: GameState): GameState {
 
   const auction = state.pendingAction.auction;
 
-  // No bids → unsold
+  // No bids → unsold, don't end turn automatically (let player decide)
   if (!auction.highestBidderId) {
     return {
       ...state,
@@ -23,6 +23,6 @@ export function resolveAuctionTimeout(state: GameState): GameState {
     };
   }
 
-  //if Bid exists → finalize sale
+  //if Bid exists → finalize sale (don't end turn automatically)
   return finalizeAuction(state);
 }

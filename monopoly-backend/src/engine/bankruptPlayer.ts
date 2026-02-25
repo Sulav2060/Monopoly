@@ -1,9 +1,11 @@
 import { GameState, PlayerId } from "../types/game";
+import { checkGameOver } from "./gameOver";
+import { endTurn } from "./endTurn";
 
 export function bankruptPlayer(
   state: GameState,
   playerId: PlayerId,
-  causedBy?: PlayerId
+  causedBy?: PlayerId,
 ): GameState {
   const player = state.players.find((p) => p.id === playerId);
   if (!player) return state;
@@ -22,17 +24,23 @@ export function bankruptPlayer(
 
   const properties = state.properties.filter((p) => p.ownerId !== playerId);
 
-  return {
+  const bankruptState: GameState = {
     ...state,
     players,
     properties,
     events: [
       ...state.events,
       {
-        type: "PLAYER_BANKRUPT",
+        type: "PLAYER_BANKRUPT" as const, //also here what does const do?and why normal string and providing causedBy as empty strings didn't work.
         playerId,
-        causedBy: causedBy ?? "",
+        ...(causedBy && { causedBy }), //TODO: see here what's being done
       },
     ],
   };
+
+  // Check if game is over after bankruptcy
+  const gameOverState = checkGameOver(bankruptState);
+
+  // End the bankrupt player's turn
+  return endTurn(gameOverState);
 }

@@ -20,6 +20,7 @@ const Board = ({
   prevPositions = {},
   currentGame,
   isPendingAction,
+  isPendingDebt,
 }) => {
   const getTileColorClass = (group) => {
     const colorMap = {
@@ -102,6 +103,14 @@ const Board = ({
   const diceSum = currentDice ? currentDice.d1 + currentDice.d2 : 0;
   // Get properties array from game state for direct ownership check
   const propertiesFromGame = currentGame?.properties || [];
+
+  // Debug: Log properties with houses
+  React.useEffect(() => {
+    const propsWithHouses = propertiesFromGame.filter((p) => p.houses > 0);
+    if (propsWithHouses.length > 0) {
+      console.log("🏗️ Properties with houses:", propsWithHouses);
+    }
+  }, [propertiesFromGame]);
 
   // Get the current player's position (where they're landing)
   const currentPlayer = players && players[currentTurnIndex];
@@ -285,6 +294,25 @@ const Board = ({
 
     const Component = tile.type === "corner" ? CornerTile : Tile;
     const ownerColor = getOwnerColorForTile(index);
+    const propertyEntry = propertiesFromGame.find(
+      (prop) =>
+        prop.tileIndex === index ||
+        prop.propertyId === index ||
+        prop.tile === index,
+    );
+    const isMortgaged =
+      propertyEntry?.isMortgaged ?? propertyEntry?.isMortaged ?? false;
+
+    // Get houses/hotel count for this tile
+    const propertyData = propertiesFromGame.find(
+      (prop) =>
+        prop.tileIndex === index ||
+        prop.propertyId === index ||
+        prop.tile === index,
+    );
+    // Use houses field (5 = hotel), fall back to hotel field if present
+    const houses = propertyData?.houses ?? propertyData?.hotel ?? 0;
+    const hotel = propertyData?.hotel ?? 0;
 
     const handleClick = (e) => {
       setActiveIndex(index);
@@ -301,7 +329,12 @@ const Board = ({
         onClick={handleClick}
         className="cursor-pointer"
       >
-        <Component {...tile} ownedBy={ownerColor} />
+        <Component
+          {...tile}
+          ownedBy={ownerColor}
+          isMortgaged={isMortgaged}
+          houses={houses}
+        />
       </div>
     );
   });
@@ -362,34 +395,38 @@ const Board = ({
               onEndTurn={onEndTurn}
               currentPlayer={players[currentTurnIndex]}
               isPendingAction={isPendingAction}
+              isPendingDebt={isPendingDebt}
             />
           </div>
         </div>
 
-        {players?.map((player, index) => {
-          const prevPos = prevPositions?.[player.id] ?? player.position ?? 0;
-          const steps = (player.position - prevPos + tilesCount) % tilesCount;
-          const isAnimatingPlayer =
-            (animationStep === "rotating" || animationStep === "waving") &&
-            steps > 0;
+        {players
+          ?.filter((player) => !player.isBankrupt)
+          .map((player) => {
+            const originalIndex = players.findIndex((p) => p.id === player.id);
+            const prevPos = prevPositions?.[player.id] ?? player.position ?? 0;
+            const steps = (player.position - prevPos + tilesCount) % tilesCount;
+            const isAnimatingPlayer =
+              (animationStep === "rotating" || animationStep === "waving") &&
+              steps > 0;
 
-          return (
-            <PlayerToken
-              key={player.id}
-              position={player.position}
-              color={player.color}
-              isAnimatingPlayer={isAnimatingPlayer}
-              isCurrentPlayer={index === currentTurnIndex}
-              playerCount={players.length}
-              playerIndex={index}
-              animationStep={animationStep}
-              startPosition={prevPos}
-              moveSteps={steps}
-              tilesCount={tilesCount}
-              inJail={player.inJail}
-            />
-          );
-        })}
+            return (
+              <PlayerToken
+                key={player.id}
+                position={player.position}
+                color={player.color}
+                isAnimatingPlayer={isAnimatingPlayer}
+                isCurrentPlayer={originalIndex === currentTurnIndex}
+                playerCount={players.length}
+                playerIndex={originalIndex}
+                animationStep={animationStep}
+                startPosition={prevPos}
+                moveSteps={steps}
+                tilesCount={tilesCount}
+                inJail={player.inJail}
+              />
+            );
+          })}
       </div>
     </div>
   );

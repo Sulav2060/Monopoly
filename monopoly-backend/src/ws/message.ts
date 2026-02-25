@@ -41,6 +41,18 @@ export type ClientMessage =
       tileIndex: number;
     } //break/demolish houses, returns half the building cost
   | {
+      type: "MORTGAGE_PROPERTY";
+      gameId: string;
+      playerId: string;
+      tileIndex: number;
+    }
+  | {
+      type: "UNMORTGAGE_PROPERTY";
+      gameId: string;
+      playerId: string;
+      tileIndex: number;
+    }
+  | {
       type: "INITIATE_TRADE";
       gameId: string;
       playerId: string; // Player making the trade offer
@@ -61,6 +73,11 @@ export type ClientMessage =
       gameId: string;
       playerId: string; // Player who initiated and is deleting the trade
       tradeId: string; // Unique identifier of the trade to delete
+    }
+  | {
+      type: "DECLARE_BANKRUPTCY";
+      gameId: string;
+      playerId: string; // Player declaring bankruptcy
     };
 
 export type ServerMessage =

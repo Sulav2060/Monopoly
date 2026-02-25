@@ -1313,14 +1313,15 @@ const Game = () => {
           {currentGame.players.map((p, index) => {
             const isCurrentTurn = index === currentGame.currentTurnIndex;
             const isYou = p.id === currentPlayerId;
+            const isBankrupt = p.isBankrupt;
 
             return (
               <div
                 key={p.id}
-                className={`relative group py-2 px-4 transition-all duration-500 overflow-hidden`}
+                className={`relative group py-2 px-4 transition-all duration-500 overflow-hidden ${isBankrupt ? "opacity-40" : ""}`}
               >
                 {/* Active Turn Glow Indicator */}
-                {isCurrentTurn && (
+                {isCurrentTurn && !isBankrupt && (
                   <div className="absolute top-0 left-0 w-1 h-full rounded-3xl bg-amber-500 " />
                 )}
 
@@ -1329,18 +1330,18 @@ const Game = () => {
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       {/* Pulsing ring for current turn */}
-                      {isCurrentTurn && (
+                      {isCurrentTurn && !isBankrupt && (
                         <div className="absolute inset-0 rounded-full bg-amber-500 animate-ping opacity-20" />
                       )}
                       <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center border-2 shadow-inner ${PLAYER_COLORS[index]?.color} ${PLAYER_COLORS[index]?.borderColor}`}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center border-2 shadow-inner ${PLAYER_COLORS[index]?.color} ${PLAYER_COLORS[index]?.borderColor} ${isBankrupt ? "grayscale opacity-50" : ""}`}
                       ></div>
                     </div>
 
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`font-bold text-sm tracking-wide text-gray-100}`}
+                          className={`font-bold text-sm tracking-wide ${isBankrupt ? "text-gray-500 line-through" : "text-gray-100"}`}
                         >
                           {p.name}
                         </span>
@@ -1352,7 +1353,7 @@ const Game = () => {
                   <div className="text-right">
                     <div className="flex items-center gap-1 justify-end">
                       <span
-                        className={`text-sm font-mono font-bold ${isCurrentTurn ? "text-emerald-400" : "text-emerald-500/70"}`}
+                        className={`text-sm font-mono font-bold ${isBankrupt ? "text-gray-600" : isCurrentTurn ? "text-emerald-400" : "text-emerald-500/70"}`}
                       >
                         Rs. {p.money.toLocaleString()}
                       </span>

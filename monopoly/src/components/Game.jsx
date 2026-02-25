@@ -671,28 +671,42 @@ const Game = () => {
       }
 
       if (cardEvents.length > 0) {
-        // Immediately show PASSED_GO, queue others
+        // If there's a COMMUNITY_CHEST event with PASSED_GO, queue them in correct order
+        const hasCommunityChestOrChance = cardEvents.some(
+          (evt) => evt.type === "COMMUNITY_CHEST",
+        );
         const passedGoEvents = cardEvents.filter((e) => e.type === "PASSED_GO");
         const otherEvents = cardEvents.filter((e) => e.type !== "PASSED_GO");
 
-        if (passedGoEvents.length > 0) {
-          setEventCards((prev) => {
-            // Filter out any existing PASSED_GO cards to avoid duplicates if multiple events fire
-            const filteredPrev = prev.filter((c) => c.type !== "PASSED_GO");
-            const newCards = [...filteredPrev, ...passedGoEvents];
-            if (eventCardTimeoutRef.current) {
-              clearTimeout(eventCardTimeoutRef.current);
-            }
-            eventCardTimeoutRef.current = setTimeout(
-              () => setEventCards([]),
-              4000,
-            );
-            return newCards;
-          });
-        }
+        // If there's a community chest/chance card with PASSED_GO, queue in proper order
+        if (hasCommunityChestOrChance && passedGoEvents.length > 0) {
+          // Queue community chest/chance first, then PASSED_GO
+          setPendingEventCards((prev) => [
+            ...prev,
+            ...otherEvents,
+            ...passedGoEvents,
+          ]);
+        } else {
+          // Original logic: show PASSED_GO immediately if no community chest/chance
+          if (passedGoEvents.length > 0) {
+            setEventCards((prev) => {
+              // Filter out any existing PASSED_GO cards to avoid duplicates if multiple events fire
+              const filteredPrev = prev.filter((c) => c.type !== "PASSED_GO");
+              const newCards = [...filteredPrev, ...passedGoEvents];
+              if (eventCardTimeoutRef.current) {
+                clearTimeout(eventCardTimeoutRef.current);
+              }
+              eventCardTimeoutRef.current = setTimeout(
+                () => setEventCards([]),
+                4000,
+              );
+              return newCards;
+            });
+          }
 
-        if (otherEvents.length > 0) {
-          setPendingEventCards((prev) => [...prev, ...otherEvents]);
+          if (otherEvents.length > 0) {
+            setPendingEventCards((prev) => [...prev, ...otherEvents]);
+          }
         }
       }
 
@@ -1231,91 +1245,228 @@ const Game = () => {
   }
 
   if (gameOverEvent) {
+    // Calculate player stats
+    const calculatePlayerStats = (player) => {
+      const properties = player.properties?.length || 0;
+      const houses = player.properties?.reduce((sum, prop) => sum + (prop.houses || 0), 0) || 0;
+      const hotels = player.properties?.reduce((sum, prop) => sum + (prop.hotels || 0), 0) || 0;
+      return { properties, houses, hotels };
+    };
+
+    // Sort all players by money for rankings with medals
+    const rankedPlayers = [...(currentGame?.players || [])]
+      .sort((a, b) => (b.money || 0) - (a.money || 0));
+
+    const getMedalEmoji = (index) => {
+      if (index === 0) return "🥇";
+      if (index === 1) return "🥈";
+      if (index === 2) return "🥉";
+      return `#${index + 1}`;
+    };
+
+    const winnerStats = calculatePlayerStats(winner);
+
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,#1f2937_0%,#0b1221_45%,#05070d_100%)] text-gray-100 p-6 overflow-hidden relative">
-        {/* Glow Background Effect */}
-        <div className="absolute top-[-200px] w-[600px] h-[600px] bg-emerald-500/20 blur-[140px] rounded-full animate-pulse" />
+      <div className="w-screen h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,#1f2937_0%,#0b1221_45%,#05070d_100%)] text-gray-100 p-4 sm:p-6 overflow-y-auto overflow-x-hidden relative">
+        {/* Animated Background Effects */}
+        <div className="absolute top-[-200px] left-1/4 w-[600px] h-[600px] bg-emerald-500/20 blur-[140px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-200px] right-1/4 w-[600px] h-[600px] bg-amber-500/15 blur-[140px] rounded-full animate-pulse delay-1000" />
+        
+        {/* Confetti Effect */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 rounded-full animate-[fall_3s_linear_infinite]"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `-${Math.random() * 20}px`,
+                backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'][i % 5],
+                animationDelay: `${Math.random() * 3}s`,
+                opacity: 0.6,
+              }}
+            />
+          ))}
+        </div>
 
-        <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-white/5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] backdrop-blur-xl p-8 sm:p-10 animate-[fadeIn_.6s_ease-out]">
-          {/* Header */}
-          <div className="flex flex-col items-center text-center gap-3">
-            <div className="text-6xl animate-bounce">🏆</div>
+        <div className="relative w-full max-w-4xl rounded-3xl border border-white/10 bg-white/5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] backdrop-blur-xl p-6 sm:p-10 animate-[fadeIn_.8s_ease-out] my-8">
+          {/* Header with Trophy */}
+          <div className="flex flex-col items-center text-center gap-3 mb-8">
+            <div className="relative">
+              <div className="text-7xl sm:text-8xl animate-[bounce_1s_ease-in-out_3]">🏆</div>
+              <div className="absolute inset-0 animate-ping opacity-20">🏆</div>
+            </div>
 
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-emerald-300 to-teal-400 bg-clip-text text-transparent">
-              Game Over
+            <h1 className="text-4xl sm:text-6xl font-black tracking-tight bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-400 bg-clip-text text-transparent animate-[shimmer_2s_ease-in-out_infinite]">
+              Victory!
             </h1>
 
-            <p className="text-lg sm:text-xl text-emerald-300 font-semibold">
-              {winner?.name || "Winner"} Wins!
+            <p className="text-xl sm:text-3xl text-emerald-300 font-bold drop-shadow-lg">
+              {winner?.name || "Winner"} Dominates!
             </p>
 
-            <div className="h-px w-32 bg-gradient-to-r from-transparent via-white/40 to-transparent mt-2" />
+            <div className="h-px w-40 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent mt-2" />
           </div>
 
-          {/* Winner Spotlight */}
-          <div className="mt-10 relative">
-            <div className="absolute inset-0 bg-emerald-500/10 blur-2xl rounded-3xl" />
+          {/* Winner Showcase */}
+          <div className="mt-8 relative group">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-cyan-500/20 blur-3xl rounded-3xl animate-pulse" />
 
-            <div className="relative rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-6 flex flex-col items-center text-center gap-3 shadow-lg">
-              <div className="text-sm uppercase tracking-widest text-emerald-300">
-                Champion
-              </div>
-
-              <div className="text-2xl font-extrabold text-white">
-                {winner?.name || "Winner"}
-              </div>
-
-              {winner?.money !== undefined && (
-                <div className="text-emerald-300 text-sm font-medium">
-                  Rs. {winner.money.toLocaleString()}
+            <div className="relative rounded-2xl border-2 border-emerald-400/40 bg-gradient-to-br from-emerald-500/20 via-teal-500/15 to-cyan-500/20 p-6 sm:p-8 shadow-2xl transform transition-transform hover:scale-[1.02]">
+              <div className="flex flex-col items-center gap-4">
+                {/* Champion Badge */}
+                <div className="flex items-center gap-3">
+                  <span className="text-5xl">{getMedalEmoji(0)}</span>
+                  <div className="text-center">
+                    <div className="text-xs sm:text-sm uppercase tracking-[0.2em] text-amber-300 font-bold">
+                      Champion
+                    </div>
+                    <div className="text-2xl sm:text-3xl font-black text-white drop-shadow-md">
+                      {winner?.name || "Winner"}
+                    </div>
+                  </div>
                 </div>
-              )}
+
+                {/* Winner Stats Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full mt-4">
+                  <div className="bg-white/5 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
+                    <div className="text-2xl sm:text-3xl font-bold text-emerald-400">
+                      Rs. {(winner?.money || 0).toLocaleString()}
+                    </div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">Cash</div>
+                  </div>
+                  
+                  <div className="bg-white/5 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
+                    <div className="text-2xl sm:text-3xl font-bold text-blue-400">
+                      {winnerStats.properties}
+                    </div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">Properties</div>
+                  </div>
+                  
+                  <div className="bg-white/5 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
+                    <div className="text-2xl sm:text-3xl font-bold text-amber-400">
+                      {winnerStats.houses}
+                    </div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">Houses</div>
+                  </div>
+                  
+                  <div className="bg-white/5 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
+                    <div className="text-2xl sm:text-3xl font-bold text-purple-400">
+                      {winnerStats.hotels}
+                    </div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">Hotels</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Other Players Ranking */}
-          {otherPlayers.length > 0 && (
+          {/* Final Rankings */}
+          {rankedPlayers.length > 1 && (
             <div className="mt-10">
-              <div className="text-xs uppercase tracking-widest text-gray-400 mb-4 text-center">
-                Final Standings
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/20" />
+                <div className="text-sm uppercase tracking-[0.2em] text-gray-400 font-bold px-4">
+                  Final Standings
+                </div>
+                <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/20" />
               </div>
 
-              <div className="space-y-3">
-                {otherPlayers.map((player, index) => (
-                  <div
-                    key={player.id}
-                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:bg-white/10 transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="text-xs font-bold text-gray-400">
-                        #{index + 2}
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+                {rankedPlayers.map((player, index) => {
+                  const stats = calculatePlayerStats(player);
+                  const isWinner = index === 0;
+                  
+                  return (
+                    <div
+                      key={player.id}
+                      className={`flex items-center justify-between rounded-xl border p-4 transition-all hover:scale-[1.02] ${
+                        isWinner
+                          ? 'border-emerald-400/50 bg-emerald-500/10 shadow-lg shadow-emerald-500/20'
+                          : index === 1
+                          ? 'border-gray-300/30 bg-gray-500/10'
+                          : index === 2
+                          ? 'border-amber-600/30 bg-amber-900/10'
+                          : 'border-white/10 bg-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className={`text-2xl ${isWinner ? 'animate-pulse' : ''}`}>
+                          {getMedalEmoji(index)}
+                        </div>
+                        <div className="flex-1">
+                          <span className={`text-base sm:text-lg font-bold ${isWinner ? 'text-emerald-300' : 'text-gray-100'}`}>
+                            {player.name}
+                          </span>
+                          <div className="flex gap-3 mt-1 text-xs text-gray-400">
+                            <span>🏠 {stats.properties}</span>
+                            <span>🏘️ {stats.houses}</span>
+                            <span>🏨 {stats.hotels}</span>
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-sm font-semibold text-gray-100">
-                        {player.name}
-                      </span>
-                    </div>
 
-                    {player.money !== undefined && (
-                      <span className="text-xs text-gray-300">
-                        Rs. {player.money.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                      <div className="text-right">
+                        <div className={`text-base sm:text-lg font-bold ${
+                          isWinner ? 'text-emerald-400' : 'text-gray-300'
+                        }`}>
+                          Rs. {(player.money || 0).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* Action Button */}
-          <div className="mt-10 flex justify-center">
+          {/* Action Buttons */}
+          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all duration-200 font-semibold text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 active:scale-95 transition-all duration-200 font-bold text-white shadow-lg shadow-emerald-500/40 hover:shadow-emerald-500/60 text-lg"
             >
-              Play Again
+              🎮 Play Again
+            </button>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 active:scale-95 transition-all duration-200 font-semibold text-white text-lg"
+            >
+              🏠 Home
             </button>
           </div>
         </div>
+
+        {/* CSS Animation for Confetti Fall */}
+        <style jsx>{`
+          @keyframes fall {
+            to {
+              transform: translateY(100vh) rotate(360deg);
+            }
+          }
+          
+          @keyframes shimmer {
+            0%, 100% {
+              background-position: 0% 50%;
+            }
+            50% {
+              background-position: 100% 50%;
+            }
+          }
+          
+          .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+          }
+          
+          .scrollbar-thumb-white\/20::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+          }
+          
+          .scrollbar-track-transparent::-webkit-scrollbar-track {
+            background-color: transparent;
+          }
+        `}</style>
       </div>
     );
   }

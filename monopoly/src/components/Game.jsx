@@ -1158,6 +1158,50 @@ const Game = () => {
     pendingEventCards,
   ]);
 
+  // Auto-handle turn after auction completion
+  const prevPendingActionRef = useRef(null);
+  
+  useEffect(() => {
+    if (!currentGame) return;
+
+    const prevPendingAction = prevPendingActionRef.current;
+    const currentPendingAction = currentGame.pendingAction;
+
+    // Detect when auction or buy property has just ended
+    const actionJustEnded =
+      (prevPendingAction?.type === "AUCTION" ||
+        prevPendingAction?.type === "BUY_PROPERTY") &&
+      (!currentPendingAction ||
+        (currentPendingAction.type !== "AUCTION" &&
+          currentPendingAction.type !== "BUY_PROPERTY"));
+
+    if (actionJustEnded) {
+      const turnPlayer = currentGame.players[currentGame.currentTurnIndex];
+      const isMyTurn = turnPlayer && turnPlayer.id === currentPlayerId;
+
+      if (isMyTurn && currentGame.lastDice) {
+        const wasDoubles =
+          currentGame.lastDice.die1 === currentGame.lastDice.die2;
+
+        // If doubles were rolled and player is not in jail, they can roll again
+        if (wasDoubles && !turnPlayer.inJail) {
+          setHasRolled(false);
+          showNotification("You rolled doubles! Roll again.", "success");
+        } else {
+          // No doubles, show End Turn button
+          setHasRolled(true);
+        }
+      }
+    }
+
+    // Update the ref for next comparison
+    prevPendingActionRef.current = currentPendingAction;
+  }, [
+    currentGame,
+    currentPlayerId,
+    showNotification,
+  ]);
+
   // Determine current player and turn state
   const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];
   const currentUser = currentGame?.players?.find(

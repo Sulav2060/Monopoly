@@ -1231,7 +1231,27 @@ const Game = () => {
     (player) => player.id === currentPlayerId,
   );
   const isCurrentUserBankrupt = currentUser?.isBankrupt ?? false;
+  const isCurrentUserInDebt = !!currentUser?.debtResolution;
   const isMyTurn = currentPlayer?.id === currentPlayerId;
+
+  // Detect debt resolution and notify user
+  const previousDebtRef = useRef(false);
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const isInDebt = !!currentUser.debtResolution;
+
+    if (isInDebt && !previousDebtRef.current) {
+      // Just entered debt
+      const debtAmount = currentUser.debtResolution?.amount ?? 0;
+      showNotification(
+        `💰 Debt of Rs. ${debtAmount}! Sell or mortgage properties to resolve.`,
+        "error",
+      );
+    }
+
+    previousDebtRef.current = isInDebt;
+  }, [currentUser?.debtResolution, showNotification]);
   const gameOverEvent = currentGame?.events
     ?.slice()
     .reverse()
@@ -1258,15 +1278,29 @@ const Game = () => {
   }
 
   if (gameOverEvent) {
-    // Calculate player stats
+    // Calculate player stats from currentGame.properties
     const calculatePlayerStats = (player) => {
-      const properties = player.properties?.length || 0;
-      const houses =
-        player.properties?.reduce((sum, prop) => sum + (prop.houses || 0), 0) ||
-        0;
-      const hotels =
-        player.properties?.reduce((sum, prop) => sum + (prop.hotels || 0), 0) ||
-        0;
+      const playerProperties = (currentGame?.properties || []).filter(
+        (prop) =>
+          prop.ownerId === player.id ||
+          prop.owner === player.id ||
+          prop.playerId === player.id,
+      );
+
+      const properties = playerProperties.length;
+
+      let houses = 0;
+      let hotels = 0;
+
+      playerProperties.forEach((prop) => {
+        const houseCount = prop.houses ?? 0;
+        if (houseCount === 5) {
+          hotels += 1;
+        } else if (houseCount > 0) {
+          houses += houseCount;
+        }
+      });
+
       return { properties, houses, hotels };
     };
 
@@ -1285,7 +1319,7 @@ const Game = () => {
     const winnerStats = calculatePlayerStats(winner);
 
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,#1f2937_0%,#0b1221_45%,#05070d_100%)] text-gray-100 p-4 sm:p-6 overflow-y-auto overflow-x-hidden relative">
+      <div className="w-screen h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,#1f2937_0%,#0b1221_45%,#05070d_100%)] text-gray-100 p-4 sm:p-6 overflow-hidden relative">
         {/* Animated Background Effects */}
         <div className="absolute top-[-200px] left-1/4 w-[600px] h-[600px] bg-emerald-500/20 blur-[140px] rounded-full animate-pulse" />
         <div className="absolute bottom-[-200px] right-1/4 w-[600px] h-[600px] bg-amber-500/15 blur-[140px] rounded-full animate-pulse delay-1000" />
@@ -1313,7 +1347,7 @@ const Game = () => {
           ))}
         </div>
 
-        <div className="relative w-full max-w-4xl rounded-3xl border border-white/10 bg-white/5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] backdrop-blur-xl p-6 sm:p-10 animate-[fadeIn_.8s_ease-out] my-8">
+        <div className="relative w-full max-w-4xl rounded-3xl border border-white/10 bg-white/5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] backdrop-blur-xl p-6 sm:p-10 animate-[fadeIn_.8s_ease-out] ">
           {/* Header with Trophy */}
           <div className="flex flex-col items-center text-center gap-3 mb-8">
             <div className="relative">
@@ -1332,67 +1366,6 @@ const Game = () => {
             </p>
 
             <div className="h-px w-40 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent mt-2" />
-          </div>
-
-          {/* Winner Showcase */}
-          <div className="mt-8 relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-teal-500/20 to-cyan-500/20 blur-3xl rounded-3xl animate-pulse" />
-
-            <div className="relative rounded-2xl border-2 border-emerald-400/40 bg-gradient-to-br from-emerald-500/20 via-teal-500/15 to-cyan-500/20 p-6 sm:p-8 shadow-2xl transform transition-transform hover:scale-[1.02]">
-              <div className="flex flex-col items-center gap-4">
-                {/* Champion Badge */}
-                <div className="flex items-center gap-3">
-                  <span className="text-5xl">{getMedalEmoji(0)}</span>
-                  <div className="text-center">
-                    <div className="text-xs sm:text-sm uppercase tracking-[0.2em] text-amber-300 font-bold">
-                      Champion
-                    </div>
-                    <div className="text-2xl sm:text-3xl font-black text-white drop-shadow-md">
-                      {winner?.name || "Winner"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Winner Stats Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 w-full mt-4">
-                  <div className="bg-white/5 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
-                    <div className="text-2xl sm:text-3xl font-bold text-emerald-400">
-                      Rs. {(winner?.money || 0).toLocaleString()}
-                    </div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">
-                      Cash
-                    </div>
-                  </div>
-
-                  <div className="bg-white/5 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
-                    <div className="text-2xl sm:text-3xl font-bold text-blue-400">
-                      {winnerStats.properties}
-                    </div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">
-                      Properties
-                    </div>
-                  </div>
-
-                  <div className="bg-white/5 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
-                    <div className="text-2xl sm:text-3xl font-bold text-amber-400">
-                      {winnerStats.houses}
-                    </div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">
-                      Houses
-                    </div>
-                  </div>
-
-                  <div className="bg-white/5 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
-                    <div className="text-2xl sm:text-3xl font-bold text-purple-400">
-                      {winnerStats.hotels}
-                    </div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">
-                      Hotels
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Final Rankings */}
@@ -1437,9 +1410,9 @@ const Game = () => {
                             {player.name}
                           </span>
                           <div className="flex gap-3 mt-1 text-xs text-gray-400">
-                            <span>🏠 {stats.properties}</span>
-                            <span>🏘️ {stats.houses}</span>
-                            <span>🏨 {stats.hotels}</span>
+                            <span>🏠 {stats.properties} Properties</span>
+                            <span>🏘️ {stats.houses} Houses</span>
+                            <span>🏨 {stats.hotels} Hotels</span>
                           </div>
                         </div>
                       </div>
@@ -1546,15 +1519,25 @@ const Game = () => {
             const isCurrentTurn = index === currentGame.currentTurnIndex;
             const isYou = p.id === currentPlayerId;
             const isBankrupt = p.isBankrupt;
+            const isInDebt = !!p.debtResolution;
 
             return (
               <div
                 key={p.id}
-                className={`relative group py-2 px-4 transition-all duration-500 overflow-hidden ${isBankrupt ? "opacity-40" : ""}`}
+                className={`relative group py-2 px-4 transition-all duration-500 overflow-hidden ${isBankrupt ? "opacity-40" : ""} ${
+                  isInDebt && isYou
+                    ? "animate-[pulse-red-glow_1.5s_ease-in-out_infinite]"
+                    : ""
+                }`}
               >
                 {/* Active Turn Glow Indicator */}
                 {isCurrentTurn && !isBankrupt && (
                   <div className="absolute top-0 left-0 w-1 h-full rounded-3xl bg-amber-500 " />
+                )}
+
+                {/* Debt indicator glow */}
+                {isInDebt && isYou && (
+                  <div className="absolute inset-0 rounded-lg bg-red-500/10 animate-[pulse-red-glow_1.5s_ease-in-out_infinite]" />
                 )}
 
                 <div className="flex items-center justify-between relative z-10">
@@ -1565,6 +1548,12 @@ const Game = () => {
                       {isCurrentTurn && !isBankrupt && (
                         <div className="absolute inset-0 rounded-full bg-amber-500 animate-ping opacity-20" />
                       )}
+
+                      {/* Debt pulsing ring */}
+                      {isInDebt && isYou && (
+                        <div className="absolute inset-0 rounded-full bg-red-500 animate-[pulse-red_1.5s_ease-in-out_infinite] opacity-50" />
+                      )}
+
                       <div
                         className={`w-7 h-7 rounded-full flex items-center justify-center border-2 shadow-inner ${PLAYER_COLORS[index]?.color} ${PLAYER_COLORS[index]?.borderColor} ${isBankrupt ? "grayscale opacity-50" : ""}`}
                       ></div>
@@ -1573,10 +1562,21 @@ const Game = () => {
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`font-bold text-sm tracking-wide ${isBankrupt ? "text-gray-500 line-through" : "text-gray-100"}`}
+                          className={`font-bold text-sm tracking-wide ${
+                            isBankrupt
+                              ? "text-gray-500 line-through"
+                              : isInDebt && isYou
+                                ? "text-red-400 animate-[pulse-red_1.5s_ease-in-out_infinite]"
+                                : "text-gray-100"
+                          }`}
                         >
                           {p.name}
                         </span>
+                        {isInDebt && isYou && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 border border-red-400/50 text-red-300 font-semibold animate-pulse">
+                            DEBT
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1671,6 +1671,7 @@ const Game = () => {
               !!currentGame?.pendingAction &&
               currentGame.pendingAction.type !== "AUCTION" // AUCTION handles itself via modal
             }
+            isPendingDebt={isCurrentUserInDebt}
             onRollDice={rollDice}
             onEndTurn={endTurn}
             onRollComplete={() => {
@@ -1827,25 +1828,18 @@ const Game = () => {
                       : "new",
                 );
               }}
-              className={`py-3 rounded-xl font-semibold transition-all border text-sm relative ${
-                isMyTurn ||
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm relative bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5 ${
                 (currentGame?.pendingTrades || []).some(
                   (t) => t.targetPlayerId === currentPlayerId,
                 )
-                  ? "bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5"
-                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                  ? "animate-pulse"
+                  : ""
               }`}
             >
               🤝 Trade
-              {(currentGame?.pendingTrades || []).filter(
-                (t) => t.targetPlayerId === currentPlayerId,
-              ).length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {
-                    (currentGame?.pendingTrades || []).filter(
-                      (t) => t.targetPlayerId === currentPlayerId,
-                    ).length
-                  }
+              {(currentGame?.pendingTrades || []).length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {(currentGame?.pendingTrades || []).length}
                 </span>
               )}
             </button>
@@ -3269,6 +3263,31 @@ const Game = () => {
 
       {/* Rules Modal */}
       <Rules isOpen={showRules} onClose={() => setShowRules(false)} />
+
+      {/* CSS Animations for Debt Resolution */}
+      <style jsx>{`
+        @keyframes pulse-red {
+          0%,
+          100% {
+            color: rgb(248, 113, 113);
+            opacity: 1;
+          }
+          50% {
+            color: rgb(220, 38, 38);
+            opacity: 0.7;
+          }
+        }
+
+        @keyframes pulse-red-glow {
+          0%,
+          100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+          }
+          50% {
+            box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+          }
+        }
+      `}</style>
     </div>
   );
 };

@@ -20,6 +20,7 @@ const Board = ({
   prevPositions = {},
   currentGame,
   isPendingAction,
+  isPendingDebt,
 }) => {
   const getTileColorClass = (group) => {
     const colorMap = {
@@ -394,6 +395,7 @@ const Board = ({
               onEndTurn={onEndTurn}
               currentPlayer={players[currentTurnIndex]}
               isPendingAction={isPendingAction}
+              isPendingDebt={isPendingDebt}
             />
           </div>
         </div>

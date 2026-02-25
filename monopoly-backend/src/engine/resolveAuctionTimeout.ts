@@ -1,6 +1,7 @@
 // engine/resolveAuctionTimeout.ts
 import { GameState } from "../types/game";
 import { finalizeAuction } from "./finalizeAuction";
+import { endTurn } from "./endTurn";
 
 export function resolveAuctionTimeout(state: GameState): GameState {
   //noone bids for the property within the time limit
@@ -8,9 +9,9 @@ export function resolveAuctionTimeout(state: GameState): GameState {
 
   const auction = state.pendingAction.auction;
 
-  // No bids → unsold
+  // No bids → unsold, end turn
   if (!auction.highestBidderId) {
-    return {
+    return endTurn({
       ...state,
       pendingAction: null,
       events: [
@@ -20,9 +21,9 @@ export function resolveAuctionTimeout(state: GameState): GameState {
           tileIndex: auction.property.tileIndex,
         },
       ],
-    };
+    });
   }
 
-  //if Bid exists → finalize sale
+  //if Bid exists → finalize sale (which also ends turn)
   return finalizeAuction(state);
 }

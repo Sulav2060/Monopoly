@@ -2,9 +2,10 @@ import React, { useEffect, useState, useRef } from "react";
 
 const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTimeout }) => {
   const [bidAmount, setBidAmount] = useState(auction.highestBid + 10);
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [timeLeft, setTimeLeft] = useState(5);
   const [isMinimized, setIsMinimized] = useState(false);
   const timerRef = useRef(null);
+  const TIMER_DURATION = 5; 
 
   // Helper to get player name by ID
   const getPlayerName = (playerId) => {
@@ -14,7 +15,7 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
 
   // Reset timer and bid input when highest bid changes
   useEffect(() => {
-    setTimeLeft(5);
+    setTimeLeft(TIMER_DURATION);
     setBidAmount(Math.max(bidAmount, auction.highestBid + 10));
   }, [auction.highestBid]);
 
@@ -156,7 +157,7 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
                 className={`h-full transition-all duration-1000 ease-linear ${
                   timeLeft <= 3 ? "bg-red-500" : timeLeft <= 5 ? "bg-orange-400" : "bg-emerald-500"
                 }`}
-                style={{ width: `${(timeLeft / 10) * 100}%` }}
+                style={{ width: `${(timeLeft / TIMER_DURATION) * 100}%` }}
               />
             </div>
           </div>

@@ -359,13 +359,7 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
                 );
               })}
             </div>
-
-            {/* STAMP EFFECT */}
-            <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 opacity-10 -rotate-12 pointer-events-none">
-              <div className="border-2 sm:border-4 border-[#DC143C] p-1 sm:p-2 rounded-lg text-[#DC143C] font-black text-lg sm:text-2xl uppercase">
-                Approved
-              </div>
-            </div>
+            
           </div>
         </div>
       </motion.div>

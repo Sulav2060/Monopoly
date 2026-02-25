@@ -1,5 +1,6 @@
 import { GameState, PlayerId } from "../types/game";
 import { checkGameOver } from "./gameOver";
+import { endTurn } from "./endTurn";
 
 export function bankruptPlayer(
   state: GameState,
@@ -38,5 +39,8 @@ export function bankruptPlayer(
   };
 
   // Check if game is over after bankruptcy
-  return checkGameOver(bankruptState);
+  const gameOverState = checkGameOver(bankruptState);
+
+  // End the bankrupt player's turn
+  return endTurn(gameOverState);
 }

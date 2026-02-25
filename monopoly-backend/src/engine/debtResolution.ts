@@ -126,10 +126,9 @@ export function afterAssetChange(state: GameState): GameState {
     return settleDebt(state, player.id);
   }
 
-  // Player can't recover - bankrupt them and end their turn
+  // Player can't recover - bankrupt them (bankruptPlayer now handles turn ending)
   if (!canRecover(state, player.id)) {
-    const bankruptState = bankruptPlayer(state, player.id, creditorId);
-    return endTurn(bankruptState);
+    return bankruptPlayer(state, player.id, creditorId);
   }
 
   // Still in debt, but can potentially recover - stay in debtResolution

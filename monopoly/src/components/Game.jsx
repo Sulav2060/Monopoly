@@ -797,6 +797,12 @@ const Game = () => {
   const rollDice = useCallback(async () => {
     if (isAnimating || hasRolled || isLoadingAction || !currentGame) return;
 
+    // Check if user is in debt (money < 0)
+    if (currentUser && currentUser.money < 0) {
+      showNotification("❌ Resolve your debt first by selling/mortgaging properties!", "error");
+      return;
+    }
+
     try {
       setIsLoadingAction(true);
 
@@ -842,11 +848,17 @@ const Game = () => {
     } finally {
       setIsLoadingAction(false);
     }
-  }, [isAnimating, hasRolled, isLoadingAction, currentGame, contextRollDice]);
+  }, [isAnimating, hasRolled, isLoadingAction, currentGame, contextRollDice, currentUser, showNotification]);
 
   // End Turn Function
   const endTurn = useCallback(async () => {
     if (isAnimating || isLoadingAction || !currentGame) return;
+
+    // Check if user is in debt (money < 0)
+    if (currentUser && currentUser.money < 0) {
+      showNotification("❌ Resolve your debt first by selling/mortgaging properties!", "error");
+      return;
+    }
 
     try {
       setIsLoadingAction(true);
@@ -858,7 +870,7 @@ const Game = () => {
     } finally {
       setIsLoadingAction(false);
     }
-  }, [isAnimating, isLoadingAction, currentGame, contextEndTurn]);
+  }, [isAnimating, isLoadingAction, currentGame, contextEndTurn, currentUser, showNotification]);
 
   // Helper to get tile at position
   const getTileAtPosition = (position) => {

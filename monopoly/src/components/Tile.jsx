@@ -9,9 +9,23 @@ const Tile = ({
   group,
   type,
   ownedBy,
+  isMortgaged,
   image,
   icon, // emoji icon for the property
+  houses,
 }) => {
+  // Debug logging for house building
+  React.useEffect(() => {
+    if (group && houses > 0) {
+      console.log(`🏠 Tile "${title}" has ${houses} houses`, {
+        id,
+        group,
+        houses,
+        ownedBy,
+      });
+    }
+  }, [houses, title, group, id, ownedBy]);
+
   const tileImage = image || lakeside;
 
   // Modern color palette with better contrast
@@ -40,7 +54,9 @@ const Tile = ({
     if (type === "community-chest") {
       return (
         <div className="flex flex-col items-center gap-1 w-full overflow-hidden">
-          <div className="font-bold text-[0.5rem] sm:text-xs tracking-tight text-center wrap-break-words w-full px-0.5">{title}</div>
+          <div className="font-bold text-[0.5rem] sm:text-xs tracking-tight text-center wrap-break-words w-full px-0.5">
+            {title}
+          </div>
         </div>
       );
     }
@@ -48,7 +64,9 @@ const Tile = ({
     if (type === "chance") {
       return (
         <div className="flex flex-col items-center gap-1 w-full overflow-hidden">
-          <div className="font-bold text-[0.5rem] sm:text-xs tracking-tight text-center wrap-break-words w-full px-0.5">{title}</div>
+          <div className="font-bold text-[0.5rem] sm:text-xs tracking-tight text-center wrap-break-words w-full px-0.5">
+            {title}
+          </div>
         </div>
       );
     }
@@ -56,7 +74,9 @@ const Tile = ({
     if (type === "tax") {
       return (
         <div className="flex flex-col items-center gap-0.5 w-full overflow-hidden">
-          <div className="font-bold text-[0.6rem] sm:text-xs tracking-tight text-center truncate w-full px-0.5">{title}</div>
+          <div className="font-bold text-[0.6rem] sm:text-xs tracking-tight text-center truncate w-full px-0.5">
+            {title}
+          </div>
           {price && (
             <div className="text-[0.5rem] sm:text-xs font-semibold bg-black/40 px-1.5 py-0.5 rounded-full text-white">
               Rs. {price}
@@ -110,7 +130,13 @@ const Tile = ({
   return (
     <div
       id={id}
-      className="relative  border border-white/20 overflow-visible w-full h-full flex flex-col rounded-lg shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] bg-linear-to-br from-white/8 via-white/5 to-white/2 backdrop-blur-md"
+      className={`relative border border-white/20 overflow-visible w-full h-full 
+              flex flex-col rounded-lg 
+              shadow-[0_8px_32px_-8px_rgba(0,0,0,0.8)] 
+              bg-linear-to-br from-white/8 via-white/5 to-white/2 
+              backdrop-blur-md
+              ${isMortgaged ? "grayscale-20 opacity-70" : ""}
+  `}
     >
       {/* Background image with dark overlay */}
       <div
@@ -138,12 +164,12 @@ const Tile = ({
         rotation === 0
           ? "bottom-0 w-full h-[18%] rounded-b-lg"
           : rotation === 180
-          ? "top-0 w-full h-[18%] rounded-t-lg"
-          : rotation === 90
-          ? "left-0 h-full w-[18%] rounded-l-lg"
-          : rotation === -90
-          ? "right-0 h-full w-[18%] rounded-r-lg"
-          : ""
+            ? "top-0 w-full h-[18%] rounded-t-lg"
+            : rotation === 90
+              ? "left-0 h-full w-[18%] rounded-l-lg"
+              : rotation === -90
+                ? "right-0 h-full w-[18%] rounded-r-lg"
+                : ""
       }
     `}
           style={{
@@ -193,12 +219,10 @@ const Tile = ({
         </div>
       </div>
 
-      {/* House/Hotel Display - bottom space opposite of group bar */}
-      {group && (
+      {/* Owner stripe - opposite side of group color bar */}
+      {group && ownerBgClass && (
         <div
-          className={`absolute ${
-            ownerBgClass || "bg-white/10"
-          } border border-white/20 rounded-sm flex items-center justify-center gap-0.5`}
+          className={`absolute ${ownerBgClass} border border-white/20 rounded-sm`}
           style={{
             zIndex: 15,
             ...(rotation === 0 && {
@@ -226,8 +250,79 @@ const Tile = ({
               width: "12%",
             }),
           }}
+        />
+      )}
+
+      {isMortgaged && (
+        <div
+          className="absolute z-30 flex items-center justify-center
+               rounded-full bg-yellow-400 text-black
+               shadow-[0_0_12px_rgba(255,215,0,0.9)] text-[0.7rem] sm:text-xs
+               w-6 h-6 sm:w-7 sm:h-7"
+          style={{
+            ...(rotation === 0 && {
+              top: 4,
+              left: "50%",
+              transform: "translateX(-50%)",
+            }),
+
+            ...(rotation === 180 && {
+              bottom: 4,
+              left: "50%",
+              transform: "translateX(-50%)",
+            }),
+
+            ...(rotation === 90 && {
+              right: 4,
+              top: "50%",
+              transform: "translateY(-50%)",
+            }),
+
+            ...(rotation === -90 && {
+              left: 4,
+              top: "50%",
+              transform: "translateY(-50%)",
+            }),
+          }}
         >
-          {/* Houses/hotels will be rendered here */}
+          🔒
+        </div>
+      )}
+
+      {/* House/Hotel Display - circular badge with neutral color */}
+      {group && houses > 0 && (
+        <div
+          className="absolute z-30 flex items-center justify-center
+               rounded-full bg-gray-700/90 text-white border border-white/30
+               shadow-[0_0_12px_rgba(0,0,0,0.6)] text-[0.6rem] sm:text-xs
+               w-6 h-6 sm:w-7 sm:h-7 font-bold"
+          style={{
+            ...(rotation === 0 && {
+              top: 4,
+              left: "50%",
+              transform: "translateX(-50%)",
+            }),
+
+            ...(rotation === 180 && {
+              bottom: 4,
+              left: "50%",
+              transform: "translateX(-50%)",
+            }),
+
+            ...(rotation === 90 && {
+              right: 4,
+              top: "50%",
+              transform: "translateY(-50%)",
+            }),
+
+            ...(rotation === -90 && {
+              left: 4,
+              top: "50%",
+              transform: "translateY(-50%)",
+            }),
+          }}
+        >
+          {houses > 4 ? "🏨" : `${houses}🏠`}
         </div>
       )}
     </div>

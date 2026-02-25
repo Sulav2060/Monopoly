@@ -17,6 +17,7 @@ test("auction assigns property to highest bidder", () => {
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
+        debtResolution: undefined,
       },
       {
         id: "p2",
@@ -26,6 +27,7 @@ test("auction assigns property to highest bidder", () => {
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
+        debtResolution: undefined,
       },
     ],
     currentTurnIndex: 0,
@@ -43,17 +45,27 @@ test("auction assigns property to highest bidder", () => {
         currentBidderIndex: 0,
       },
     },
+    pendingTrades: [],
   };
 
   const result = finalizeAuction(state);
 
   expect(result.properties[0]).toEqual({
-    propertyId: testProperty.id,
+    tileIndex: 1,
     ownerId: "p2",
+    houses: 0,
+    isMortaged: false,
   });
 
   expect(result.players[1]!.money).toBe(200);
   expect(result.pendingAction).toBeNull();
+
+  // After auction finalization, turn should advance
+  expect(result.currentTurnIndex).toBe(1);
+  expect(result.events).toContainEqual({
+    type: "TURN_ENDED",
+    nextPlayerId: "p2",
+  });
 });
 
 //TODO: Check how these things are implemented and rewrite the tests if needed

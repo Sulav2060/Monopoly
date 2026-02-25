@@ -14,6 +14,7 @@ describe("buyPendingProperty", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -37,6 +38,7 @@ describe("buyPendingProperty", () => {
           houseBuildCost: 70,
         },
       },
+      pendingTrades: [],
     };
 
     const result = buyPendingProperty(state);
@@ -73,6 +75,7 @@ describe("buyPendingProperty", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -81,6 +84,7 @@ describe("buyPendingProperty", () => {
       communityChestDeck: [],
       communityChestIndex: 0,
       pendingAction: null,
+      pendingTrades: [],
     };
 
     const result = buyPendingProperty(state);
@@ -99,6 +103,7 @@ describe("buyPendingProperty", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -109,6 +114,7 @@ describe("buyPendingProperty", () => {
       } as any,
       communityChestDeck: [],
       communityChestIndex: 0,
+      pendingTrades: [],
     };
 
     const result = buyPendingProperty(state);
@@ -127,6 +133,7 @@ describe("buyPendingProperty", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -150,6 +157,7 @@ describe("buyPendingProperty", () => {
       },
       communityChestDeck: [],
       communityChestIndex: 0,
+      pendingTrades: [],
     };
 
     const result = buyPendingProperty(state);
@@ -171,6 +179,7 @@ describe("buyPendingProperty", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -194,6 +203,7 @@ describe("buyPendingProperty", () => {
       },
       communityChestDeck: [],
       communityChestIndex: 0,
+      pendingTrades: [],
     };
 
     buyPendingProperty(state);

@@ -11,8 +11,12 @@ import { buyPendingProperty } from "../engine/buyPendingProperty";
 import { resolveAuctionTimeout } from "../engine/resolveAuctionTimeout";
 import { placeBid } from "../engine/placeBid";
 import { buildProperty } from "../engine/buildProperty";
+import { breakHouses } from "../engine/breakHouses";
 import { initiateTrade } from "../engine/initiateTrade";
 import { acceptTrade, rejectTrade, deleteTrade } from "../engine/finalizeTrade";
+import { mortgageProperty } from "../engine/mortgage";
+import { unmortgageProperty } from "../engine/unmortgage";
+import { bankruptPlayer } from "../engine/bankruptPlayer";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
@@ -95,6 +99,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             inJail: false,
             jailTurns: 0,
             isBankrupt: false,
+            debtResolution: undefined,
             communityChestDeck: [
               { type: "MONEY", amount: 200 },
               { type: "GO_TO_JAIL" },
@@ -176,6 +181,16 @@ export function setupWebSocket(wss: WebSocketServer) {
             return;
           }
 
+          // Check if player is in debt resolution
+          if (currentPlayer.debtResolution) {
+            safeSend(socket, {
+              type: "ERROR",
+              message:
+                "Cannot roll dice while in debt resolution. Please mortgage properties, sell houses, or accept trades to recover.",
+            });
+            return;
+          }
+
           if (game.state.pendingAction) {
             safeSend(socket, {
               type: "ERROR",
@@ -219,6 +234,17 @@ export function setupWebSocket(wss: WebSocketServer) {
             });
             return;
           }
+
+          // Check if player is in debt resolution
+          if (currentPlayer.debtResolution) {
+            safeSend(socket, {
+              type: "ERROR",
+              message:
+                "Cannot end turn while in debt resolution. Please mortgage properties, sell houses, or accept trades to recover.",
+            });
+            return;
+          }
+
           // 👇 NEW LOGIC
           let currentState;
           if (game.state.pendingAction?.type === "BUY_PROPERTY") {
@@ -365,6 +391,40 @@ export function setupWebSocket(wss: WebSocketServer) {
 
           console.log(
             `🏠 ${currentPlayer.name} built on property ${msg.tileIndex} in game ${msg.gameId}`,
+          );
+          return;
+        }
+
+        /* =======================
+           BREAK_PROPERTY
+        ======================= */
+        if (msg.type === "BREAK_PROPERTY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const currentPlayer = getCurrentPlayerSafe(game.state);
+          if (currentPlayer.id !== msg.playerId) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Not your turn",
+            });
+            return;
+          }
+
+          const newState = breakHouses(game.state, msg.playerId, msg.tileIndex);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🗑️ ${currentPlayer.name} broke houses on property ${msg.tileIndex} in game ${msg.gameId}`,
           );
           return;
         }
@@ -531,6 +591,109 @@ export function setupWebSocket(wss: WebSocketServer) {
             `🗑️ ${initiatingPlayer?.name} deleted trade ${msg.tradeId} with ${targetPlayer?.name} in game ${msg.gameId}`,
           );
 
+          return;
+        }
+
+        /* =======================
+           MORTGAGE_PROPERTY
+        ======================= */
+        if (msg.type === "MORTGAGE_PROPERTY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const player = game.state.players.find((p) => p.id === msg.playerId);
+          if (!player) {
+            safeSend(socket, { type: "ERROR", message: "Player not found" });
+            return;
+          }
+
+          const newState = mortgageProperty(game.state, msg.tileIndex);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🏦 ${player.name} mortgaged property at ${msg.tileIndex} in game ${msg.gameId}`,
+          );
+          return;
+        }
+
+        /* =======================
+           UNMORTGAGE_PROPERTY
+        ======================= */
+        if (msg.type === "UNMORTGAGE_PROPERTY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const player = game.state.players.find((p) => p.id === msg.playerId);
+          if (!player) {
+            safeSend(socket, { type: "ERROR", message: "Player not found" });
+            return;
+          }
+
+          const newState = unmortgageProperty(game.state, msg.tileIndex);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `🏦 ${player.name} unmortgaged property at ${msg.tileIndex} in game ${msg.gameId}`,
+          );
+          return;
+        }
+
+        /* =======================
+           DECLARE_BANKRUPTCY
+        ======================= */
+        if (msg.type === "DECLARE_BANKRUPTCY") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const player = game.state.players.find((p) => p.id === msg.playerId);
+          if (!player) {
+            safeSend(socket, { type: "ERROR", message: "Player not found" });
+            return;
+          }
+
+          // Check if player is already bankrupt
+          if (player.isBankrupt) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Player is already bankrupt",
+            });
+            return;
+          }
+
+          // Declare bankruptcy (no causedBy since it's voluntary)
+          const newState = bankruptPlayer(game.state, msg.playerId);
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          console.log(
+            `💸 ${player.name} declared bankruptcy in game ${msg.gameId}`,
+          );
           return;
         }
 

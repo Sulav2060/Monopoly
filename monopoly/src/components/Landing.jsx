@@ -1,55 +1,47 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Shield,
-  Castle,
-  Zap,
-  Target,
-  Box,
-  ChevronRight,
-  Terminal,
-  Cpu,
-  Activity,
+  MapPin,
+  Coins,
+  Mountain,
   Dices,
   HelpCircle,
+  Play,
+  ArrowRight,
+  Landmark,
+  Compass,
 } from "lucide-react";
 import Rules from "./Rules";
 
-// --- Gaming Title Animation ---
-const FlipTitle = () => {
-  const words = ["NE-POLY", "NEPAL", "MONOPOLY"];
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % words.length);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+// --- Bouncy Game Title ---
+const GameTitle = () => {
+  const letters = "NE-POLY".split("");
 
   return (
-    <div className="relative flex justify-center items-center h-[80px] lg:h-[120px]">
-      <AnimatePresence mode="popLayout">
-        <motion.div key={index} className="flex gap-2">
-          {words[index].split("").map((char, i) => (
-            <motion.span
-              key={`${index}-${i}`}
-              initial={{ y: 80, opacity: 0, scale: 0.5 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: -80, opacity: 0, scale: 0.5 }}
-              transition={{
-                duration: 0.4,
-                delay: i * 0.04,
-                type: "spring",
-                stiffness: 150,
-              }}
-              className="inline-block text-[3.5rem] lg:text-[6rem] font-black italic tracking-tighter text-[#d4ff00] drop-shadow-[0_0_15px_rgba(212,255,0,0.4)]"
-            >
-              {char}
-            </motion.span>
-          ))}
-        </motion.div>
-      </AnimatePresence>
+    <div className="flex justify-center items-center mb-2">
+      {letters.map((char, i) => (
+        <motion.span
+          key={i}
+          initial={{ y: -50, opacity: 0, rotate: -10 }}
+          animate={{ y: 0, opacity: 1, rotate: 0 }}
+          transition={{
+            duration: 0.6,
+            delay: i * 0.1,
+            type: "spring",
+            stiffness: 200,
+            damping: 10,
+          }}
+          className={`text-5xl sm:text-7xl md:text-8xl font-black uppercase drop-shadow-xl ${
+            char === "-" ? "text-white" : "text-[#FFD700]"
+          }`}
+          style={{
+            WebkitTextStroke: "2px #8B0000", // Dark red stroke for that board game pop
+            textShadow: "4px 4px 0px #8B0000, 8px 8px 15px rgba(0,0,0,0.5)",
+          }}
+        >
+          {char}
+        </motion.span>
+      ))}
     </div>
   );
 };
@@ -63,42 +55,26 @@ const Landing = ({
   setJoinGameId,
   isProcessing,
 }) => {
-  const [activeField, setActiveField] = useState(null);
   const [shouldProceed, setShouldProceed] = useState(false);
   const [showRules, setShowRules] = useState(false);
 
-  // --- LOGIC: Player Names ---
+  // --- Fun Nepal-Themed / Generic Names ---
   const PLAYER_NAMES = [
-    "Bob",
-    "Max",
-    "Leo",
-    "Alex",
-    "Sam",
-    "Emma",
-    "Zoe",
-    "Mia",
-    "Ava",
-    "Ivy",
-    "Jack",
-    "Tom",
-    "Dan",
-    "Ben",
-    "Kai",
-    "Lily",
-    "Eva",
-    "Anna",
-    "Nina",
-    "Ren",
-    "Rio",
-    "Ash",
-    "Rey",
-    "Sage",
-    "Sky",
-    "Nash",
-    "Beck",
-    "Felix",
-    "Rohan",
-    "Sera",
+    "Sherpa",
+    "Yeti",
+    "Gurkha",
+    "Danfe",
+    "Everest",
+    "Lumbini",
+    "Rhino",
+    "Tiger",
+    "Momo",
+    "DalBhat",
+    "Patan",
+    "Koshi",
+    "Gandaki",
+    "Karnali",
+    "Guras",
   ];
 
   const generateRandomName = () => {
@@ -107,7 +83,6 @@ const Landing = ({
     setNameInput(randomName);
   };
 
-  // --- LOGIC: Handle Action Effect ---
   useEffect(() => {
     if (shouldProceed && nameInput.trim()) {
       if (joinGameId.trim()) {
@@ -128,191 +103,179 @@ const Landing = ({
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#0a0a0b] text-[#808080] font-mono selection:bg-[#d4ff00] selection:text-black overflow-hidden flex flex-col">
-      {/* --- HUD BACKGROUND FX --- */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/asfalt-dark.png')] opacity-30" />
-        <div className="absolute inset-0 border-[10px] lg:border-[20px] border-[#1a1a1c]" />
-        <motion.div
-          animate={{ y: ["0%", "100%"] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-          className="absolute inset-0 w-full h-[1px] bg-[#d4ff00]/10 z-50"
-        />
-        <div className="absolute top-8 left-12 flex flex-col gap-1 text-[10px] text-[#d4ff00] font-bold">
-          <span>SYSTEM_8848_ACTIVE</span>
-          <span>LAT_27.71 | LON_85.32</span>
-        </div>
-      </div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-[#003893] via-[#1a4b9e] to-[#DC143C] font-sans selection:bg-[#FFD700] selection:text-black flex flex-col relative overflow-hidden">
+      {/* --- BACKGROUND DECORATIONS --- */}
+      {/* Mountain Silhouettes using CSS polygons */}
+      <div
+        className="absolute bottom-0 left-0 w-full h-64 bg-white/5 clip-mountain-1 pointer-events-none"
+        style={{
+          clipPath:
+            "polygon(0% 100%, 20% 40%, 40% 100%, 60% 20%, 80% 100%, 100% 50%, 100% 100%)",
+        }}
+      />
+      <div
+        className="absolute bottom-0 left-0 w-full h-48 bg-white/10 clip-mountain-2 pointer-events-none"
+        style={{
+          clipPath:
+            "polygon(0% 100%, 15% 60%, 35% 100%, 50% 40%, 75% 100%, 90% 70%, 100% 100%)",
+        }}
+      />
 
-      {/* --- HEADER --- */}
-      <div className="relative z-10 w-full py-6 px-12 flex justify-between items-center border-b border-white/5 bg-black/40 backdrop-blur-md">
-        <div className="flex items-center gap-4">
-          <div className="p-2 bg-[#d4ff00] text-black">
-            <Terminal size={18} />
-          </div>
-          <div className="text-[10px] font-black tracking-[0.3em] text-white">
-            NE-POLY
-          </div>
-        </div>
-        <div className="hidden sm:flex gap-8 text-[10px] font-bold tracking-widest uppercase">
-          <span className="text-[#d4ff00] flex items-center gap-2">
-            <Activity size={12} /> NEPAL THEMED MONOPOLY
+      {/* Sun/Mandala hint */}
+      <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-gradient-to-tr from-[#FFD700]/20 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+      {/* --- TOP NAV --- */}
+      <header className="relative z-10 w-full p-4 sm:p-6 flex justify-between items-center">
+        <div className="flex items-center gap-2 text-white/90">
+          <Compass className="w-6 h-6 sm:w-8 sm:h-8 text-[#FFD700]" />
+          <span className="text-sm sm:text-base font-bold tracking-widest uppercase shadow-sm">
+            Property Trading Game
           </span>
         </div>
         <button
           onClick={() => setShowRules(true)}
-          className="p-2 bg-[#d4ff00]/10 hover:bg-[#d4ff00]/20 border border-[#d4ff00]/30 hover:border-[#d4ff00] transition-all group"
-          title="Game Rules"
+          className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/30 rounded-full text-white backdrop-blur-sm transition-all shadow-lg hover:shadow-xl hover:scale-105"
         >
-          <HelpCircle
-            size={20}
-            className="text-[#d4ff00] group-hover:scale-110 transition-transform"
-          />
+          <HelpCircle size={18} />
+          <span className="font-bold text-sm">RULES</span>
         </button>
-      </div>
+      </header>
 
-      {/* --- MAIN INTERFACE --- */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4">
-        <div className="text-center mb-8">
+      {/* --- MAIN HERO --- */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-8 w-full max-w-lg mx-auto">
+        {/* Title Area */}
+        <div className="text-center mb-8 w-full">
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-[10px] font-black tracking-[0.5em] text-[#d4ff00]/60 mb-2 uppercase"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-white/90 font-bold tracking-[0.3em] uppercase mb-2 text-sm drop-shadow-md"
           >
-            Start Your Journey
+            Welcome to the Himalayas
           </motion.div>
-          <FlipTitle />
+          <GameTitle />
         </div>
 
-        {/* COMMAND MODULE (INPUT HUB) */}
+        {/* --- THE PROPERTY CARD (MAIN MENU) --- */}
         <motion.div
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="w-full max-w-xl bg-[#121214] border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden"
+          initial={{ y: 50, opacity: 0, scale: 0.95 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.3, type: "spring" }}
+          className="w-full bg-[#FAFAFA] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden  border-white"
         >
-          {/* 01: Operator Identity */}
-          <div
-            className={`p-6 flex items-center gap-6 transition-all border-b border-white/5 ${activeField === "name" ? "bg-[#d4ff00]/5" : ""}`}
-          >
-            <div className="flex flex-col items-end min-w-[60px]">
-              <span className="text-[10px] font-bold text-[#444]">01</span>
-              <span className="text-[10px] font-black text-[#d4ff00]">
-                NAME
-              </span>
+          {/* Card Header (Like a Monopoly Property) */}
+          <div className="bg-[#DC143C] py-6 px-4 text-center border-b-4 border-black/10">
+            <h2 className="text-white font-black text-2xl tracking-widest uppercase drop-shadow-md">
+              Player Registry
+            </h2>
+            <p className="text-white/80 text-xs font-bold uppercase tracking-wider mt-1">
+              Title Deed / Entry Pass
+            </p>
+          </div>
+
+          {/* Card Body */}
+          <div className="p-6 sm:p-8 space-y-6">
+            {/* Name Input */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-700 uppercase">
+                <MapPin size={16} className="text-[#003893]" />
+                Your Token Name
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder="E.g. YETI_99"
+                  className="flex-1 bg-gray-100 border-2 border-gray-200 focus:border-[#003893] rounded-xl px-4 py-3 text-lg font-bold text-gray-800 placeholder:text-gray-400 outline-none transition-all uppercase"
+                />
+                <button
+                  onClick={generateRandomName}
+                  className="bg-gray-100 hover:bg-gray-200 border-2 border-gray-200 rounded-xl px-4 flex items-center justify-center text-gray-600 hover:text-[#003893] transition-colors"
+                  title="Roll a random name"
+                >
+                  <Dices size={24} />
+                </button>
+              </div>
             </div>
-            <div className="flex-1 flex items-center gap-2">
+
+            {/* Room Code Input */}
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-700 uppercase">
+                <Landmark size={16} className="text-[#DC143C]" />
+                Room Code (Optional)
+              </label>
               <input
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                onFocus={() => setActiveField("name")}
-                onBlur={() => setActiveField(null)}
-                placeholder="Player Name"
-                className="w-full bg-transparent border-none outline-none text-white font-black text-xl placeholder:text-white/5 uppercase tracking-tighter"
+                type="text"
+                value={joinGameId}
+                onChange={(e) => setJoinGameId(e.target.value)}
+                placeholder="Leave blank to create new"
+                className="w-full bg-gray-100 border-2 border-gray-200 focus:border-[#DC143C] rounded-xl px-4 py-3 text-lg font-bold text-gray-800 placeholder:text-gray-400 outline-none transition-all uppercase tracking-widest"
               />
-              <button
-                onClick={generateRandomName}
-                title="Randomize Name"
-                className="p-2 hover:bg-white/5 rounded text-[#444] hover:text-[#d4ff00] transition-colors"
-              >
-                <Dices size={20} />
-              </button>
             </div>
-            <Cpu
-              size={20}
-              className={
-                activeField === "name" ? "text-[#d4ff00]" : "text-[#222]"
-              }
-            />
+
+            {/* Big Action Button */}
+            <button
+              onClick={handleAction}
+              disabled={isProcessing}
+              className={`w-full relative group overflow-hidden p-1 transition-all transform active:scale-95 ${
+                isProcessing ? "opacity-70 cursor-not-allowed" : ""
+              }`}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-[#003893] via-[#DC143C] to-[#003893] bg-[length:200%_auto] animate-gradient" />
+              <div className="relative bg-white/10 backdrop-blur-md text-white font-black text-xl py-4 rounded-lg flex items-center justify-center gap-3 uppercase tracking-wider shadow-inner">
+                {isProcessing ? (
+                  "Rolling Dice..."
+                ) : joinGameId.trim() ? (
+                  <>
+                    <ArrowRight className="w-6 h-6" /> Join Game
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-6 h-6 fill-current" /> Create Lobby
+                  </>
+                )}
+              </div>
+            </button>
           </div>
-
-          {/* 02: Deployment Sector */}
-          <div
-            className={`p-6 flex items-center gap-6 transition-all border-b border-white/5 ${activeField === "room" ? "bg-[#d4ff00]/5" : ""}`}
-          >
-            <div className="flex flex-col items-end min-w-[60px]">
-              <span className="text-[10px] font-bold text-[#444]">02</span>
-              <span className="text-[10px] font-black text-amber-500">
-                ROOM CODE
-              </span>
-            </div>
-            <input
-              value={joinGameId}
-              onChange={(e) => setJoinGameId(e.target.value)}
-              onFocus={() => setActiveField("room")}
-              onBlur={() => setActiveField(null)}
-              placeholder="ENTER ROOM CODE (OR LEAVE BLANK)"
-              className="flex-1 bg-transparent border-none outline-none text-white font-bold text-sm placeholder:text-white/5 tracking-widest uppercase"
-            />
-            <Box
-              size={20}
-              className={
-                activeField === "room" ? "text-amber-500" : "text-[#222]"
-              }
-            />
-          </div>
-
-          {/* 03: Execute Button */}
-          <button
-            onClick={handleAction}
-            disabled={isProcessing}
-            className="w-full group relative h-20 bg-[#d4ff00] disabled:bg-[#1a1a1c] disabled:text-[#444] transition-all flex items-center justify-center overflow-hidden"
-          >
-            {/* Button Background Pattern */}
-            <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity">
-              <div className="w-full h-full bg-[linear-gradient(45deg,black_25%,transparent_25%,transparent_50%,black_50%,black_75%,transparent_75%,transparent)] bg-[length:4px_4px]" />
-            </div>
-
-            <span className="relative z-10 text-black font-black italic text-2xl tracking-[0.2em] flex items-center gap-4">
-              {isProcessing
-                ? "PROCESSING..."
-                : joinGameId.trim()
-                  ? "JOIN_EXISTING_LOBBY"
-                  : "CREATE_NEW_LOBBY"}
-              <ChevronRight className="group-hover:translate-x-2 transition-transform" />
-            </span>
-          </button>
         </motion.div>
       </main>
 
-      {/* --- HUD STATS FOOTER --- */}
-      <footer className="relative z-10 bg-[#0a0a0b] border-t border-white/5 px-12 py-8 grid grid-cols-2 lg:grid-cols-4 gap-8">
-        <StatBlock
-          icon={<Shield size={16} />}
-          label="MAP_INTEGRITY"
-          value="100%_NEPAL"
-        />
-        <StatBlock icon={<Zap size={16} />} label="TASK" value="ROLL_TRADE" />
-        <StatBlock
-          icon={<Target size={16} />}
-          label="MISSION"
-          value="PROPERTY_WAR"
-        />
-        <StatBlock
-          icon={<Castle size={16} />}
-          label="GOAL"
-          value="CREATE_EMPIRE"
-        />
+      {/* --- FOOTER FEATURES --- */}
+      <footer className="relative z-10 w-full p-4 sm:p-6 mt-auto">
+        <div className="max-w-4xl mx-auto flex flex-wrap justify-center gap-4 sm:gap-12 opacity-80">
+          <Feature icon={<Mountain />} text="8848m High Stakes" />
+          <Feature icon={<Landmark />} text="Buy Heritage Sites" />
+          <Feature icon={<Coins />} text="Trade in Rupees" />
+        </div>
       </footer>
 
-      {/* Rules Modal */}
       <Rules isOpen={showRules} onClose={() => setShowRules(false)} />
+
+      {/* Tailwind Custom Animation Injection */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @keyframes gradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-gradient {
+          animation: gradient 3s ease infinite;
+        }
+      `,
+        }}
+      />
     </div>
   );
 };
 
-const StatBlock = ({ icon, label, value }) => (
-  <div className="flex items-center gap-4 border-l border-white/5 pl-6 hover:border-[#d4ff00] transition-colors group">
-    <div className="text-[#333] group-hover:text-[#d4ff00] transition-colors">
-      {icon}
-    </div>
-    <div className="flex flex-col">
-      <span className="text-[9px] font-bold tracking-[0.2em] text-[#444] uppercase">
-        {label}
-      </span>
-      <span className="text-sm font-black text-white group-hover:text-[#d4ff00] uppercase">
-        {value}
-      </span>
-    </div>
+const Feature = ({ icon, text }) => (
+  <div className="flex items-center gap-2 text-white">
+    <div className="text-[#FFD700]">{icon}</div>
+    <span className="font-bold text-xs sm:text-sm uppercase tracking-wider">
+      {text}
+    </span>
   </div>
 );
 

@@ -78,17 +78,32 @@ const Game = () => {
   const [_showPropertyCard, setShowPropertyCard] = useState(null);
   const [showBuildMenu, setShowBuildMenu] = useState(false);
   const [showTradeModal, setShowTradeModal] = useState(false);
+  const [showBankruptcyModal, setShowBankruptcyModal] = useState(false);
   const [tradeTargetPlayerId, setTradeTargetPlayerId] = useState("");
   const [tradeOfferMoney, setTradeOfferMoney] = useState("");
   const [tradeOfferProperties, setTradeOfferProperties] = useState([]);
   const [tradeRequestMoney, setTradeRequestMoney] = useState("");
   const [tradeRequestProperties, setTradeRequestProperties] = useState([]);
   const [tradeTab, setTradeTab] = useState("new"); // "new" or "incoming"
+  const [showMortgageModal, setShowMortgageModal] = useState(false);
+  const [mortgageTab, setMortgageTab] = useState("mortgage");
+  const [selectedMortgageTiles, setSelectedMortgageTiles] = useState([]);
   const [showRules, setShowRules] = useState(false);
   const [notification, setNotification] = useState(null);
   const [eventCards, setEventCards] = useState([]);
   const [pendingEventCards, setPendingEventCards] = useState([]);
   const [pendingSounds, setPendingSounds] = useState([]);
+
+  // Trade Modal State
+  const [tradeWithPlayerId, setTradeWithPlayerId] = useState(null);
+  const [myTradeOffer, setMyTradeOffer] = useState({
+    money: 0,
+    properties: [],
+  });
+  const [theirTradeRequest, setTheirTradeRequest] = useState({
+    money: 0,
+    properties: [],
+  });
   const eventCardTimeoutRef = useRef(null);
   const [_gameLog, setGameLog] = useState([]);
   const lastEventCountRef = useRef(0);
@@ -341,6 +356,22 @@ const Game = () => {
         const buildingType =
           houses === 5 ? "hotel" : houses === 1 ? "house" : "houses";
         return `🏗️ ${player?.name || "Player"} built ${houses === 5 ? "a " : ""}${houses === 5 ? "hotel" : houses + " " + buildingType} on ${propertyName}`;
+      }
+
+      case "PROPERTY_MORTGAGED": {
+        const player = players.find((p) => p.id === event.playerId);
+        const tile = getTileAtPosition(event.tileIndex);
+        const propertyName = tile?.title || "a property";
+        const amount = event.amount ?? 0;
+        return `💰 ${player?.name || "Player"} mortgaged ${propertyName} for Rs. ${amount}`;
+      }
+
+      case "PROPERTY_UNMORTGAGED": {
+        const player = players.find((p) => p.id === event.playerId);
+        const tile = getTileAtPosition(event.tileIndex);
+        const propertyName = tile?.title || "a property";
+        const amount = event.amount ?? 0;
+        return `💸 ${player?.name || "Player"} unmortgaged ${propertyName} for Rs. ${amount}`;
       }
 
       case "AUCTION_STARTED": {
@@ -651,28 +682,42 @@ const Game = () => {
       }
 
       if (cardEvents.length > 0) {
-        // Immediately show PASSED_GO, queue others
+        // If there's a COMMUNITY_CHEST event with PASSED_GO, queue them in correct order
+        const hasCommunityChestOrChance = cardEvents.some(
+          (evt) => evt.type === "COMMUNITY_CHEST",
+        );
         const passedGoEvents = cardEvents.filter((e) => e.type === "PASSED_GO");
         const otherEvents = cardEvents.filter((e) => e.type !== "PASSED_GO");
 
-        if (passedGoEvents.length > 0) {
-          setEventCards((prev) => {
-            // Filter out any existing PASSED_GO cards to avoid duplicates if multiple events fire
-            const filteredPrev = prev.filter((c) => c.type !== "PASSED_GO");
-            const newCards = [...filteredPrev, ...passedGoEvents];
-            if (eventCardTimeoutRef.current) {
-              clearTimeout(eventCardTimeoutRef.current);
-            }
-            eventCardTimeoutRef.current = setTimeout(
-              () => setEventCards([]),
-              4000,
-            );
-            return newCards;
-          });
-        }
+        // If there's a community chest/chance card with PASSED_GO, queue in proper order
+        if (hasCommunityChestOrChance && passedGoEvents.length > 0) {
+          // Queue community chest/chance first, then PASSED_GO
+          setPendingEventCards((prev) => [
+            ...prev,
+            ...otherEvents,
+            ...passedGoEvents,
+          ]);
+        } else {
+          // Original logic: show PASSED_GO immediately if no community chest/chance
+          if (passedGoEvents.length > 0) {
+            setEventCards((prev) => {
+              // Filter out any existing PASSED_GO cards to avoid duplicates if multiple events fire
+              const filteredPrev = prev.filter((c) => c.type !== "PASSED_GO");
+              const newCards = [...filteredPrev, ...passedGoEvents];
+              if (eventCardTimeoutRef.current) {
+                clearTimeout(eventCardTimeoutRef.current);
+              }
+              eventCardTimeoutRef.current = setTimeout(
+                () => setEventCards([]),
+                4000,
+              );
+              return newCards;
+            });
+          }
 
-        if (otherEvents.length > 0) {
-          setPendingEventCards((prev) => [...prev, ...otherEvents]);
+          if (otherEvents.length > 0) {
+            setPendingEventCards((prev) => [...prev, ...otherEvents]);
+          }
         }
       }
 
@@ -752,6 +797,18 @@ const Game = () => {
   const rollDice = useCallback(async () => {
     if (isAnimating || hasRolled || isLoadingAction || !currentGame) return;
 
+    // Check if user is in debt (money < 0)
+    const currentPlayer = currentGame?.players?.find(
+      (player) => player.id === currentPlayerId,
+    );
+    if (currentPlayer && currentPlayer.money < 0) {
+      showNotification(
+        "❌ Resolve your debt first by selling/mortgaging properties!",
+        "error",
+      );
+      return;
+    }
+
     try {
       setIsLoadingAction(true);
 
@@ -766,7 +823,6 @@ const Game = () => {
 
       // Now roll the dice (this will update positions on backend)
       const diceRoll = await contextRollDice();
-
 
       // //console.log(
       //   "Rolled:",
@@ -798,11 +854,31 @@ const Game = () => {
     } finally {
       setIsLoadingAction(false);
     }
-  }, [isAnimating, hasRolled, isLoadingAction, currentGame, contextRollDice]);
+  }, [
+    isAnimating,
+    hasRolled,
+    isLoadingAction,
+    currentGame,
+    contextRollDice,
+    currentPlayerId,
+    showNotification,
+  ]);
 
   // End Turn Function
   const endTurn = useCallback(async () => {
     if (isAnimating || isLoadingAction || !currentGame) return;
+
+    // Check if user is in debt (money < 0)
+    const currentPlayer = currentGame?.players?.find(
+      (player) => player.id === currentPlayerId,
+    );
+    if (currentPlayer && currentPlayer.money < 0) {
+      showNotification(
+        "❌ Resolve your debt first by selling/mortgaging properties!",
+        "error",
+      );
+      return;
+    }
 
     try {
       setIsLoadingAction(true);
@@ -814,7 +890,14 @@ const Game = () => {
     } finally {
       setIsLoadingAction(false);
     }
-  }, [isAnimating, isLoadingAction, currentGame, contextEndTurn]);
+  }, [
+    isAnimating,
+    isLoadingAction,
+    currentGame,
+    contextEndTurn,
+    currentPlayerId,
+    showNotification,
+  ]);
 
   // Helper to get tile at position
   const getTileAtPosition = (position) => {
@@ -910,6 +993,24 @@ const Game = () => {
     });
   };
 
+  const mortgageProperty = (tileIndex) => {
+    wsClient.send({
+      type: "MORTGAGE_PROPERTY",
+      gameId: currentGame.id,
+      playerId: currentPlayerId,
+      tileIndex,
+    });
+  };
+
+  const unmortgageProperty = (tileIndex) => {
+    wsClient.send({
+      type: "UNMORTGAGE_PROPERTY",
+      gameId: currentGame.id,
+      playerId: currentPlayerId,
+      tileIndex,
+    });
+  };
+
   const deleteTrade = (tradeId) => {
     wsClient.send({
       type: "DELETE_TRADE",
@@ -918,6 +1019,14 @@ const Game = () => {
       tradeId,
     });
     showNotification("Trade offer cancelled", "success");
+  };
+
+  const declareBankruptcy = () => {
+    wsClient.send({
+      type: "DECLARE_BANKRUPTCY",
+      gameId: currentGame.id,
+      playerId: currentPlayerId,
+    });
   };
 
   // Bot auto-play removed to prevent unintended rolls on other players' turns
@@ -1115,9 +1224,73 @@ const Game = () => {
     pendingEventCards,
   ]);
 
+  // Auto-handle turn after auction completion
+  const prevPendingActionRef = useRef(null);
+
+  useEffect(() => {
+    if (!currentGame) return;
+
+    const prevPendingAction = prevPendingActionRef.current;
+    const currentPendingAction = currentGame.pendingAction;
+
+    // Detect when auction or buy property has just ended
+    const actionJustEnded =
+      (prevPendingAction?.type === "AUCTION" ||
+        prevPendingAction?.type === "BUY_PROPERTY") &&
+      (!currentPendingAction ||
+        (currentPendingAction.type !== "AUCTION" &&
+          currentPendingAction.type !== "BUY_PROPERTY"));
+
+    if (actionJustEnded) {
+      const turnPlayer = currentGame.players[currentGame.currentTurnIndex];
+      const isMyTurn = turnPlayer && turnPlayer.id === currentPlayerId;
+
+      if (isMyTurn && currentGame.lastDice) {
+        const wasDoubles =
+          currentGame.lastDice.die1 === currentGame.lastDice.die2;
+
+        // If doubles were rolled and player is not in jail, they can roll again
+        if (wasDoubles && !turnPlayer.inJail) {
+          setHasRolled(false);
+          showNotification("You rolled doubles! Roll again.", "success");
+        } else {
+          // No doubles, show End Turn button
+          setHasRolled(true);
+        }
+      }
+    }
+
+    // Update the ref for next comparison
+    prevPendingActionRef.current = currentPendingAction;
+  }, [currentGame, currentPlayerId, showNotification]);
+
   // Determine current player and turn state
   const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];
+  const currentUser = currentGame?.players?.find(
+    (player) => player.id === currentPlayerId,
+  );
+  const isCurrentUserBankrupt = currentUser?.isBankrupt ?? false;
+  const isCurrentUserInDebt = !!currentUser?.debtResolution;
   const isMyTurn = currentPlayer?.id === currentPlayerId;
+
+  // Detect debt resolution and notify user
+  const previousDebtRef = useRef(false);
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const isInDebt = !!currentUser.debtResolution;
+
+    if (isInDebt && !previousDebtRef.current) {
+      // Just entered debt
+      const debtAmount = currentUser.debtResolution?.amount ?? 0;
+      showNotification(
+        `💰 Debt of Rs. ${debtAmount}! Sell or mortgage properties to resolve.`,
+        "error",
+      );
+    }
+
+    previousDebtRef.current = isInDebt;
+  }, [currentUser?.debtResolution, showNotification]);
   const gameOverEvent = currentGame?.events
     ?.slice()
     .reverse()
@@ -1144,91 +1317,209 @@ const Game = () => {
   }
 
   if (gameOverEvent) {
+    // Calculate player stats from currentGame.properties
+    const calculatePlayerStats = (player) => {
+      const playerProperties = (currentGame?.properties || []).filter(
+        (prop) =>
+          prop.ownerId === player.id ||
+          prop.owner === player.id ||
+          prop.playerId === player.id,
+      );
+
+      const properties = playerProperties.length;
+
+      let houses = 0;
+      let hotels = 0;
+
+      playerProperties.forEach((prop) => {
+        const houseCount = prop.houses ?? 0;
+        if (houseCount === 5) {
+          hotels += 1;
+        } else if (houseCount > 0) {
+          houses += houseCount;
+        }
+      });
+
+      return { properties, houses, hotels };
+    };
+
+    // Sort all players by money for rankings with medals
+    const rankedPlayers = [...(currentGame?.players || [])].sort(
+      (a, b) => (b.money || 0) - (a.money || 0),
+    );
+
+    const getMedalEmoji = (index) => {
+      if (index === 0) return "🥇";
+      if (index === 1) return "🥈";
+      if (index === 2) return "🥉";
+      return `#${index + 1}`;
+    };
+
+    const winnerStats = calculatePlayerStats(winner);
+
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,#1f2937_0%,#0b1221_45%,#05070d_100%)] text-gray-100 p-6 overflow-hidden relative">
-        {/* Glow Background Effect */}
-        <div className="absolute top-[-200px] w-[600px] h-[600px] bg-emerald-500/20 blur-[140px] rounded-full animate-pulse" />
+      <div className="w-screen h-screen flex items-center justify-center bg-[radial-gradient(circle_at_top,#1f2937_0%,#0b1221_45%,#05070d_100%)] text-gray-100 p-4 sm:p-6 overflow-hidden relative">
+        {/* Animated Background Effects */}
+        <div className="absolute top-[-200px] left-1/4 w-[600px] h-[600px] bg-emerald-500/20 blur-[140px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-200px] right-1/4 w-[600px] h-[600px] bg-amber-500/15 blur-[140px] rounded-full animate-pulse delay-1000" />
 
-        <div className="relative w-full max-w-3xl rounded-3xl border border-white/10 bg-white/5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] backdrop-blur-xl p-8 sm:p-10 animate-[fadeIn_.6s_ease-out]">
-          {/* Header */}
-          <div className="flex flex-col items-center text-center gap-3">
-            <div className="text-6xl animate-bounce">🏆</div>
+        {/* Confetti Effect */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 rounded-full animate-[fall_3s_linear_infinite]"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `-${Math.random() * 20}px`,
+                backgroundColor: [
+                  "#10b981",
+                  "#f59e0b",
+                  "#3b82f6",
+                  "#ef4444",
+                  "#8b5cf6",
+                ][i % 5],
+                animationDelay: `${Math.random() * 3}s`,
+                opacity: 0.6,
+              }}
+            />
+          ))}
+        </div>
 
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-emerald-300 to-teal-400 bg-clip-text text-transparent">
-              Game Over
+        <div className="relative w-full max-w-4xl rounded-3xl border border-white/10 bg-white/5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.9)] backdrop-blur-xl p-6 sm:p-10 animate-[fadeIn_.8s_ease-out] ">
+          {/* Header with Trophy */}
+          <div className="flex flex-col items-center text-center gap-3 mb-8">
+            <div className="relative">
+              <div className="text-7xl sm:text-8xl animate-[bounce_1s_ease-in-out_3]">
+                🏆
+              </div>
+              <div className="absolute inset-0 animate-ping opacity-20">🏆</div>
+            </div>
+
+            <h1 className="text-4xl sm:text-6xl font-black tracking-tight bg-gradient-to-r from-yellow-300 via-amber-300 to-orange-400 bg-clip-text text-transparent animate-[shimmer_2s_ease-in-out_infinite]">
+              Victory!
             </h1>
 
-            <p className="text-lg sm:text-xl text-emerald-300 font-semibold">
-              {winner?.name || "Winner"} Wins!
+            <p className="text-xl sm:text-3xl text-emerald-300 font-bold drop-shadow-lg">
+              {winner?.name || "Winner"} Dominates!
             </p>
 
-            <div className="h-px w-32 bg-gradient-to-r from-transparent via-white/40 to-transparent mt-2" />
+            <div className="h-px w-40 bg-gradient-to-r from-transparent via-amber-400/60 to-transparent mt-2" />
           </div>
 
-          {/* Winner Spotlight */}
-          <div className="mt-10 relative">
-            <div className="absolute inset-0 bg-emerald-500/10 blur-2xl rounded-3xl" />
-
-            <div className="relative rounded-3xl border border-emerald-400/30 bg-gradient-to-br from-emerald-500/10 to-teal-500/10 p-6 flex flex-col items-center text-center gap-3 shadow-lg">
-              <div className="text-sm uppercase tracking-widest text-emerald-300">
-                Champion
-              </div>
-
-              <div className="text-2xl font-extrabold text-white">
-                {winner?.name || "Winner"}
-              </div>
-
-              {winner?.money !== undefined && (
-                <div className="text-emerald-300 text-sm font-medium">
-                  Rs. {winner.money.toLocaleString()}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Other Players Ranking */}
-          {otherPlayers.length > 0 && (
+          {/* Final Rankings */}
+          {rankedPlayers.length > 1 && (
             <div className="mt-10">
-              <div className="text-xs uppercase tracking-widest text-gray-400 mb-4 text-center">
-                Final Standings
+              <div className="flex items-center justify-center gap-2 mb-6">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/20" />
+                <div className="text-sm uppercase tracking-[0.2em] text-gray-400 font-bold px-4">
+                  Final Standings
+                </div>
+                <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/20" />
               </div>
 
-              <div className="space-y-3">
-                {otherPlayers.map((player, index) => (
-                  <div
-                    key={player.id}
-                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 hover:bg-white/10 transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="text-xs font-bold text-gray-400">
-                        #{index + 2}
-                      </div>
-                      <span className="text-sm font-semibold text-gray-100">
-                        {player.name}
-                      </span>
-                    </div>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+                {rankedPlayers.map((player, index) => {
+                  const stats = calculatePlayerStats(player);
+                  const isWinner = index === 0;
 
-                    {player.money !== undefined && (
-                      <span className="text-xs text-gray-300">
-                        Rs. {player.money.toLocaleString()}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                  return (
+                    <div
+                      key={player.id}
+                      className={`flex items-center justify-between rounded-xl border p-4 transition-all hover:scale-[1.02] ${
+                        isWinner
+                          ? "border-emerald-400/50 bg-emerald-500/10 shadow-lg shadow-emerald-500/20"
+                          : index === 1
+                            ? "border-gray-300/30 bg-gray-500/10"
+                            : index === 2
+                              ? "border-amber-600/30 bg-amber-900/10"
+                              : "border-white/10 bg-white/5"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <div
+                          className={`text-2xl ${isWinner ? "animate-pulse" : ""}`}
+                        >
+                          {getMedalEmoji(index)}
+                        </div>
+                        <div className="flex-1">
+                          <span
+                            className={`text-base sm:text-lg font-bold ${isWinner ? "text-emerald-300" : "text-gray-100"}`}
+                          >
+                            {player.name}
+                          </span>
+                          <div className="flex gap-3 mt-1 text-xs text-gray-400">
+                            <span>🏠 {stats.properties} Properties</span>
+                            <span>🏘️ {stats.houses} Houses</span>
+                            <span>🏨 {stats.hotels} Hotels</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        <div
+                          className={`text-base sm:text-lg font-bold ${
+                            isWinner ? "text-emerald-400" : "text-gray-300"
+                          }`}
+                        >
+                          Rs. {(player.money || 0).toLocaleString()}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* Action Button */}
-          <div className="mt-10 flex justify-center">
+          {/* Action Buttons */}
+          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all duration-200 font-semibold text-white shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50"
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 active:scale-95 transition-all duration-200 font-bold text-white shadow-lg shadow-emerald-500/40 hover:shadow-emerald-500/60 text-lg"
             >
-              Play Again
+              🎮 Play Again
+            </button>
+            <button
+              onClick={() => (window.location.href = "/")}
+              className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 active:scale-95 transition-all duration-200 font-semibold text-white text-lg"
+            >
+              🏠 Home
             </button>
           </div>
         </div>
+
+        {/* CSS Animation for Confetti Fall */}
+        <style jsx>{`
+          @keyframes fall {
+            to {
+              transform: translateY(100vh) rotate(360deg);
+            }
+          }
+
+          @keyframes shimmer {
+            0%,
+            100% {
+              background-position: 0% 50%;
+            }
+            50% {
+              background-position: 100% 50%;
+            }
+          }
+
+          .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+          }
+
+          .scrollbar-thumb-white\/20::-webkit-scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+          }
+
+          .scrollbar-track-transparent::-webkit-scrollbar-track {
+            background-color: transparent;
+          }
+        `}</style>
       </div>
     );
   }
@@ -1266,15 +1557,26 @@ const Game = () => {
           {currentGame.players.map((p, index) => {
             const isCurrentTurn = index === currentGame.currentTurnIndex;
             const isYou = p.id === currentPlayerId;
+            const isBankrupt = p.isBankrupt;
+            const isInDebt = !!p.debtResolution;
 
             return (
               <div
                 key={p.id}
-                className={`relative group py-2 px-4 transition-all duration-500 overflow-hidden`}
+                className={`relative group py-2 px-4 transition-all duration-500 overflow-hidden ${isBankrupt ? "opacity-40" : ""} ${
+                  isInDebt && isYou
+                    ? "animate-[pulse-red-glow_1.5s_ease-in-out_infinite]"
+                    : ""
+                }`}
               >
                 {/* Active Turn Glow Indicator */}
-                {isCurrentTurn && (
+                {isCurrentTurn && !isBankrupt && (
                   <div className="absolute top-0 left-0 w-1 h-full rounded-3xl bg-amber-500 " />
+                )}
+
+                {/* Debt indicator glow */}
+                {isInDebt && isYou && (
+                  <div className="absolute inset-0 rounded-lg bg-red-500/10 animate-[pulse-red-glow_1.5s_ease-in-out_infinite]" />
                 )}
 
                 <div className="flex items-center justify-between relative z-10">
@@ -1282,21 +1584,38 @@ const Game = () => {
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       {/* Pulsing ring for current turn */}
-                      {isCurrentTurn && (
+                      {isCurrentTurn && !isBankrupt && (
                         <div className="absolute inset-0 rounded-full bg-amber-500 animate-ping opacity-20" />
                       )}
+
+                      {/* Debt pulsing ring */}
+                      {isInDebt && isYou && (
+                        <div className="absolute inset-0 rounded-full bg-red-500 animate-[pulse-red_1.5s_ease-in-out_infinite] opacity-50" />
+                      )}
+
                       <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center border-2 shadow-inner ${PLAYER_COLORS[index]?.color} ${PLAYER_COLORS[index]?.borderColor}`}
+                        className={`w-7 h-7 rounded-full flex items-center justify-center border-2 shadow-inner ${PLAYER_COLORS[index]?.color} ${PLAYER_COLORS[index]?.borderColor} ${isBankrupt ? "grayscale opacity-50" : ""}`}
                       ></div>
                     </div>
 
                     <div className="flex flex-col">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`font-bold text-sm tracking-wide text-gray-100}`}
+                          className={`font-bold text-sm tracking-wide ${
+                            isBankrupt
+                              ? "text-gray-500 line-through"
+                              : isInDebt && isYou
+                                ? "text-red-400 animate-[pulse-red_1.5s_ease-in-out_infinite]"
+                                : "text-gray-100"
+                          }`}
                         >
                           {p.name}
                         </span>
+                        {isInDebt && isYou && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 border border-red-400/50 text-red-300 font-semibold animate-pulse">
+                            DEBT
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1305,7 +1624,7 @@ const Game = () => {
                   <div className="text-right">
                     <div className="flex items-center gap-1 justify-end">
                       <span
-                        className={`text-sm font-mono font-bold ${isCurrentTurn ? "text-emerald-400" : "text-emerald-500/70"}`}
+                        className={`text-sm font-mono font-bold ${isBankrupt ? "text-gray-600" : isCurrentTurn ? "text-emerald-400" : "text-emerald-500/70"}`}
                       >
                         Rs. {p.money.toLocaleString()}
                       </span>
@@ -1391,6 +1710,7 @@ const Game = () => {
               !!currentGame?.pendingAction &&
               currentGame.pendingAction.type !== "AUCTION" // AUCTION handles itself via modal
             }
+            isPendingDebt={isCurrentUserInDebt}
             onRollDice={rollDice}
             onEndTurn={endTurn}
             onRollComplete={() => {
@@ -1547,30 +1867,28 @@ const Game = () => {
                       : "new",
                 );
               }}
-              className={`py-3 rounded-xl font-semibold transition-all border text-sm relative ${
-                isMyTurn ||
+              className={`py-3 rounded-xl font-semibold transition-all border text-sm relative bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5 ${
                 (currentGame?.pendingTrades || []).some(
                   (t) => t.targetPlayerId === currentPlayerId,
                 )
-                  ? "bg-indigo-500/80 border-indigo-400/70 text-white shadow-[0_10px_30px_-15px_rgba(99,102,241,0.8)] hover:-translate-y-0.5"
-                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                  ? "animate-pulse"
+                  : ""
               }`}
             >
               🤝 Trade
-              {(currentGame?.pendingTrades || []).filter(
-                (t) => t.targetPlayerId === currentPlayerId,
-              ).length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {
-                    (currentGame?.pendingTrades || []).filter(
-                      (t) => t.targetPlayerId === currentPlayerId,
-                    ).length
-                  }
+              {(currentGame?.pendingTrades || []).length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {(currentGame?.pendingTrades || []).length}
                 </span>
               )}
             </button>
 
             <button
+              onClick={() => {
+                setMortgageTab("mortgage");
+                setSelectedMortgageTiles([]);
+                setShowMortgageModal(true);
+              }}
               disabled={!isMyTurn}
               className={`py-3 rounded-xl font-semibold transition-all border text-sm ${
                 isMyTurn
@@ -1581,6 +1899,18 @@ const Game = () => {
               💰 Mortgage
             </button>
           </div>
+
+          <button
+            onClick={() => setShowBankruptcyModal(true)}
+            disabled={isCurrentUserBankrupt}
+            className={`w-full py-2.5 rounded-xl font-semibold transition-all border text-sm ${
+              isCurrentUserBankrupt
+                ? "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                : "bg-red-500/80 border-red-400/70 text-white shadow-[0_10px_30px_-18px_rgba(239,68,68,0.7)] hover:-translate-y-0.5"
+            }`}
+          >
+            💀 Declare Bankruptcy
+          </button>
 
           {/* Player Portfolio */}
           <div className="border-t border-white/10 pt-3">
@@ -1643,14 +1973,83 @@ const Game = () => {
                       </span>
                     </div>
                   )}
-                  {_showPropertyCard.tile.price && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-400">Mortgage</span>
-                      <span className="text-white font-semibold">
-                        ${Math.floor(_showPropertyCard.tile.price / 2)}
-                      </span>
-                    </div>
-                  )}
+                  {_showPropertyCard.tile.price &&
+                    (() => {
+                      const mortgageValue = Math.floor(
+                        _showPropertyCard.tile.price / 2,
+                      );
+                      const unmortgageCost = Math.floor(mortgageValue * 1.1);
+                      const tileIndex = _showPropertyCard.index;
+                      const selectedProperty = currentGame?.properties?.find(
+                        (prop) =>
+                          prop.tileIndex === tileIndex ||
+                          prop.propertyId === tileIndex ||
+                          prop.tile === tileIndex,
+                      );
+                      const ownerId =
+                        selectedProperty?.ownerId ||
+                        selectedProperty?.owner ||
+                        selectedProperty?.playerId;
+                      const isOwnedByMe = ownerId === currentPlayerId;
+                      const isMortgaged =
+                        selectedProperty?.isMortgaged ??
+                        selectedProperty?.isMortaged ??
+                        false;
+                      const hasBuildings =
+                        (selectedProperty?.houses ?? 0) > 0 ||
+                        (selectedProperty?.hotel ?? 0) > 0;
+                      const canMortgage =
+                        isOwnedByMe && !isMortgaged && !hasBuildings;
+                      const canUnmortgage =
+                        isOwnedByMe &&
+                        isMortgaged &&
+                        (currentPlayer?.money ?? 0) >= unmortgageCost;
+
+                      return (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Mortgage</span>
+                            <span className="text-white font-semibold">
+                              ${mortgageValue}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Unmortgage</span>
+                            <span className="text-white font-semibold">
+                              ${unmortgageCost}
+                            </span>
+                          </div>
+                          {isOwnedByMe && (
+                            <div className="flex gap-2 pt-2">
+                              <button
+                                type="button"
+                                onClick={() => mortgageProperty(tileIndex)}
+                                disabled={!canMortgage}
+                                className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-all border ${
+                                  canMortgage
+                                    ? "bg-amber-500/20 border-amber-400/40 text-amber-200 hover:bg-amber-500/30"
+                                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                                }`}
+                              >
+                                Mortgage
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => unmortgageProperty(tileIndex)}
+                                disabled={!canUnmortgage}
+                                className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-all border ${
+                                  canUnmortgage
+                                    ? "bg-emerald-500/20 border-emerald-400/40 text-emerald-200 hover:bg-emerald-500/30"
+                                    : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                                }`}
+                              >
+                                Unmortgage
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   {_showPropertyCard.tile.houseCost && (
                     <div className="flex justify-between">
                       <span className="text-gray-400">House Cost</span>
@@ -1847,9 +2246,284 @@ const Game = () => {
                   playerId: currentPlayerId,
                   tileIndex: propertyId,
                 });
-                setShowBuildMenu(false);
+              }}
+              onDestroy={(propertyId, destroyType) => {
+                wsClient.send({
+                  type: "BREAK_PROPERTY",
+                  gameId: currentGame.id,
+                  playerId: currentPlayerId,
+                  tileIndex: propertyId,
+                });
               }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Mortgage / Unmortgage Modal */}
+      {showMortgageModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowMortgageModal(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-white font-bold text-lg">
+                💰 Mortgage Center
+              </h2>
+              <button
+                onClick={() => setShowMortgageModal(false)}
+                className="text-gray-400 hover:text-white text-2xl font-bold leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex gap-4 mb-4 border-b border-slate-700 pb-2">
+              <button
+                onClick={() => {
+                  setMortgageTab("mortgage");
+                  setSelectedMortgageTiles([]);
+                }}
+                className={`px-4 py-2 font-semibold transition-colors ${
+                  mortgageTab === "mortgage"
+                    ? "text-amber-300 border-b-2 border-amber-400"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                Mortgage
+              </button>
+              <button
+                onClick={() => {
+                  setMortgageTab("unmortgage");
+                  setSelectedMortgageTiles([]);
+                }}
+                className={`px-4 py-2 font-semibold transition-colors ${
+                  mortgageTab === "unmortgage"
+                    ? "text-emerald-300 border-b-2 border-emerald-400"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                Unmortgage
+              </button>
+            </div>
+
+            {(() => {
+              const myProperties =
+                currentGame?.properties?.filter(
+                  (prop) =>
+                    prop.ownerId === currentPlayerId ||
+                    prop.owner === currentPlayerId ||
+                    prop.playerId === currentPlayerId,
+                ) || [];
+
+              const eligibleProperties = myProperties.filter((prop) => {
+                const isMortgaged =
+                  prop.isMortgaged ?? prop.isMortaged ?? false;
+                const hasBuildings =
+                  (prop.houses ?? 0) > 0 || (prop.hotel ?? 0) > 0;
+                return mortgageTab === "mortgage"
+                  ? !isMortgaged && !hasBuildings
+                  : isMortgaged;
+              });
+
+              const selectedProperties = eligibleProperties.filter((prop) => {
+                const tileIndex =
+                  prop.tileIndex ?? prop.propertyId ?? prop.tile;
+                return selectedMortgageTiles.includes(tileIndex);
+              });
+
+              const selectedTiles = selectedProperties.map((prop) => {
+                const tileIndex =
+                  prop.tileIndex ?? prop.propertyId ?? prop.tile;
+                return {
+                  tileIndex,
+                  tile: getTileAtIndex(tileIndex),
+                };
+              });
+
+              const currentMoney = currentPlayer?.money ?? 0;
+              const totalMortgageValue = selectedTiles.reduce((sum, item) => {
+                const price = item.tile?.price ?? 0;
+                return sum + Math.floor(price / 2);
+              }, 0);
+              const totalUnmortgageCost = selectedTiles.reduce((sum, item) => {
+                const price = item.tile?.price ?? 0;
+                const mortgageValue = Math.floor(price / 2);
+                return sum + Math.floor(mortgageValue * 1.1);
+              }, 0);
+              const nextMoney =
+                mortgageTab === "mortgage"
+                  ? currentMoney + totalMortgageValue
+                  : currentMoney - totalUnmortgageCost;
+              const canConfirm =
+                selectedProperties.length > 0 &&
+                (mortgageTab === "mortgage" ||
+                  currentMoney >= totalUnmortgageCost);
+
+              return (
+                <>
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    {eligibleProperties.length === 0 ? (
+                      <p className="text-gray-500 text-sm italic">
+                        No properties available
+                      </p>
+                    ) : (
+                      eligibleProperties.map((prop) => {
+                        const tileIndex =
+                          prop.tileIndex ?? prop.propertyId ?? prop.tile;
+                        const tile = getTileAtIndex(tileIndex);
+                        const value = Math.floor((tile?.price ?? 0) / 2);
+                        const cost = Math.floor(value * 1.1);
+                        const isSelected =
+                          selectedMortgageTiles.includes(tileIndex);
+
+                        return (
+                          <button
+                            type="button"
+                            key={`${tileIndex}-${prop.ownerId}`}
+                            onClick={() => {
+                              setSelectedMortgageTiles((prev) =>
+                                prev.includes(tileIndex)
+                                  ? prev.filter((id) => id !== tileIndex)
+                                  : [...prev, tileIndex],
+                              );
+                            }}
+                            className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
+                              isSelected
+                                ? "border-amber-400/60 bg-amber-500/10 text-white"
+                                : "border-white/10 bg-white/5 text-gray-200 hover:bg-white/10"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-semibold">
+                                {tile?.title || `Tile #${tileIndex}`}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {mortgageTab === "mortgage"
+                                  ? `+$${value}`
+                                  : `-$${cost}`}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Current Money</span>
+                      <span className="text-white font-semibold">
+                        Rs. {currentMoney.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">After Action</span>
+                      <span className="text-white font-semibold">
+                        Rs. {nextMoney.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setShowMortgageModal(false)}
+                      className="px-5 py-2.5 rounded-lg bg-slate-800 text-gray-200 border border-slate-700 hover:bg-slate-700"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!canConfirm}
+                      onClick={() => {
+                        if (!canConfirm) return;
+                        selectedProperties.forEach((prop) => {
+                          const tileIndex =
+                            prop.tileIndex ?? prop.propertyId ?? prop.tile;
+                          if (mortgageTab === "mortgage") {
+                            mortgageProperty(tileIndex);
+                          } else {
+                            unmortgageProperty(tileIndex);
+                          }
+                        });
+                        setShowMortgageModal(false);
+                      }}
+                      className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
+                        canConfirm
+                          ? mortgageTab === "mortgage"
+                            ? "bg-amber-500 text-white hover:bg-amber-400"
+                            : "bg-emerald-500 text-white hover:bg-emerald-400"
+                          : "bg-slate-700 text-gray-500 cursor-not-allowed"
+                      }`}
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Declare Bankruptcy Modal */}
+      {showBankruptcyModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowBankruptcyModal(false)}
+        >
+          <div
+            className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-white font-bold text-lg">
+                💀 Declare Bankruptcy
+              </h2>
+              <button
+                onClick={() => setShowBankruptcyModal(false)}
+                className="text-gray-400 hover:text-white text-2xl font-bold leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-sm text-gray-300">
+              This will set your money to Rs. 0 and remove all your properties
+              from the game. This action cannot be undone.
+            </p>
+            <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-gray-300">
+              Your status will be marked as bankrupt and you will no longer
+              participate in turns.
+            </div>
+            <div className="mt-5 flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowBankruptcyModal(false)}
+                className="px-5 py-2.5 rounded-lg bg-slate-800 text-gray-200 border border-slate-700 hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isCurrentUserBankrupt}
+                onClick={() => {
+                  declareBankruptcy();
+                  setShowBankruptcyModal(false);
+                }}
+                className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${
+                  isCurrentUserBankrupt
+                    ? "bg-slate-700 text-gray-500 cursor-not-allowed"
+                    : "bg-red-500 text-white hover:bg-red-400"
+                }`}
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -2628,6 +3302,31 @@ const Game = () => {
 
       {/* Rules Modal */}
       <Rules isOpen={showRules} onClose={() => setShowRules(false)} />
+
+      {/* CSS Animations for Debt Resolution */}
+      <style jsx>{`
+        @keyframes pulse-red {
+          0%,
+          100% {
+            color: rgb(248, 113, 113);
+            opacity: 1;
+          }
+          50% {
+            color: rgb(220, 38, 38);
+            opacity: 0.7;
+          }
+        }
+
+        @keyframes pulse-red-glow {
+          0%,
+          100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+          }
+          50% {
+            box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
+          }
+        }
+      `}</style>
     </div>
   );
 };

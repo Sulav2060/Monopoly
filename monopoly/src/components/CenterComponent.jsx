@@ -15,6 +15,7 @@ const CenterComponent = ({
   onEndTurn,
   currentPlayer,
   isPendingAction,
+  isPendingDebt,
 }) => {
   const rollBg = currentPlayer?.color?.color || "bg-emerald-600";
   const showControls = !!isMyTurn;
@@ -31,7 +32,8 @@ const CenterComponent = ({
     isAnimating ||
     (!isEndState && hasRolled) ||
     (!isEndState && !isMyTurn) ||
-    isPendingAction;
+    isPendingAction ||
+    isPendingDebt;
   const buttonTone = isEndState
     ? "bg-indigo-500/80 border-indigo-400/60 hover:bg-indigo-500"
     : `${rollBg} border-white/20 hover:opacity-90`;

@@ -1,6 +1,12 @@
 import { PropertyTile, Tile } from "./board";
 export type PlayerId = string;
 
+export type DebtResolutionState = {
+  type: "DEBT_RESOLUTION";
+  amount: number; // Amount of debt
+  creditorId: PlayerId; // Who they owe money to
+};
+
 export type PlayerState = {
   id: PlayerId;
   name: string;
@@ -9,6 +15,7 @@ export type PlayerState = {
   inJail: boolean;
   jailTurns: number; //TODO: learn about this jailTurns what it is?->how many times the person is in jail
   isBankrupt: boolean;
+  debtResolution: DebtResolutionState | undefined; // Active debt resolution state
 };
 
 export type AuctionState = {
@@ -70,6 +77,19 @@ export type GameEvent =
       playerId: PlayerId;
       causedBy?: PlayerId; // rent owner, optional TODO: still unclear about this
     }
+  //debt resolution regarding events
+  | {
+      type: "DEBT_RESOLUTION_ENTERED";
+      playerId: PlayerId;
+      amount: number;
+      creditorId: PlayerId;
+    }
+  | {
+      type: "DEBT_RESOLVED";
+      playerId: PlayerId;
+      amount: number;
+      creditorId: PlayerId;
+    }
   //game ends
   | { type: "GAME_OVER"; winnerId: PlayerId }
   //tax regarding event
@@ -94,6 +114,26 @@ export type GameEvent =
       tileIndex: number;
       houses: number;
       cost: number;
+    }
+  | {
+      type: "PROPERTY_BROKEN";
+      playerId: PlayerId;
+      tileIndex: number;
+      houses: number;
+      refund: number;
+    }
+  //mortgage regarding events
+  | {
+      type: "PROPERTY_MORTGAGED";
+      playerId: PlayerId;
+      tileIndex: number;
+      amount: number;
+    }
+  | {
+      type: "PROPERTY_UNMORTGAGED";
+      playerId: PlayerId;
+      tileIndex: number;
+      amount: number;
     }
   //auction regarding events
   | { type: "AUCTION_STARTED"; property: PropertyTile }

@@ -95,7 +95,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             id: msg.playerId ?? randomUUID(),
             name: msg.playerName,
             position: 0,
-            money: 500,
+            money: 1500,
             inJail: false,
             jailTurns: 0,
             isBankrupt: false,

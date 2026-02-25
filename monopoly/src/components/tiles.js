@@ -269,14 +269,6 @@ export const tiles = {
       rotation: 180,
       image: "https://imgs.search.brave.com/LsuU_EQYS09B8hygZOGvTRBrb3TjZ3JQg21Q417wWuY/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93d3cu/aW52ZXN0b3BhcGVy/LmNvbS93cC1jb250/ZW50L3VwbG9hZHMv/MjAyMC8wNi9uZXBh/bC10ZWxlY29tLW50/Yy0xLTc5Nng0NDUu/anBn" // Communication tower
     },
-     {
-      type: "utility",
-      title: "Telecom",
-      price: 150,
-      rentMultiplier: [4, 10],
-      rotation: 180,
-      image: "https://images.unsplash.com/photo-1516031190212-da133013de50?auto=format&fit=crop&w=800&q=80" // Communication tower
-    },
     {
       type: "property",
       group: "yellow",

@@ -219,6 +219,40 @@ const Tile = ({
         </div>
       </div>
 
+      {/* Owner stripe - opposite side of group color bar */}
+      {group && ownerBgClass && (
+        <div
+          className={`absolute ${ownerBgClass} border border-white/20 rounded-sm`}
+          style={{
+            zIndex: 15,
+            ...(rotation === 0 && {
+              top: 2,
+              left: 2,
+              right: 2,
+              height: "12%",
+            }),
+            ...(rotation === 180 && {
+              bottom: 2,
+              left: 2,
+              right: 2,
+              height: "12%",
+            }),
+            ...(rotation === 90 && {
+              right: 2,
+              top: 2,
+              bottom: 2,
+              width: "12%",
+            }),
+            ...(rotation === -90 && {
+              left: 2,
+              top: 2,
+              bottom: 2,
+              width: "12%",
+            }),
+          }}
+        />
+      )}
+
       {isMortgaged && (
         <div
           className="absolute z-30 flex items-center justify-center
@@ -254,65 +288,41 @@ const Tile = ({
           🔒
         </div>
       )}
-      {/* House/Hotel Display - bottom space opposite of group bar */}
-      {group && (
+
+      {/* House/Hotel Display - circular badge with neutral color */}
+      {group && houses > 0 && (
         <div
-          className={`absolute ${
-            ownerBgClass || "bg-white/10"
-          } border border-white/20 rounded-sm flex items-center justify-center gap-0.5`}
+          className="absolute z-30 flex items-center justify-center
+               rounded-full bg-gray-700/90 text-white border border-white/30
+               shadow-[0_0_12px_rgba(0,0,0,0.6)] text-[0.6rem] sm:text-xs
+               w-6 h-6 sm:w-7 sm:h-7 font-bold"
           style={{
-            zIndex: 15,
             ...(rotation === 0 && {
-              top: 2,
-              left: 2,
-              right: 2,
-              height: "12%",
+              top: 4,
+              left: "50%",
+              transform: "translateX(-50%)",
             }),
+
             ...(rotation === 180 && {
-              bottom: 2,
-              left: 2,
-              right: 2,
-              height: "12%",
+              bottom: 4,
+              left: "50%",
+              transform: "translateX(-50%)",
             }),
+
             ...(rotation === 90 && {
-              right: 2,
-              top: 2,
-              bottom: 2,
-              width: "12%",
+              right: 4,
+              top: "50%",
+              transform: "translateY(-50%)",
             }),
+
             ...(rotation === -90 && {
-              left: 2,
-              top: 2,
-              bottom: 2,
-              width: "12%",
+              left: 4,
+              top: "50%",
+              transform: "translateY(-50%)",
             }),
           }}
         >
-          {/* Houses/hotels will be rendered here */}
-          {houses > 4 ? (
-            <div className="flex items-center justify-center gap-0.5">
-              <span className="text-xs sm:text-sm">🏨</span>
-            </div>
-          ) : (
-            /* Houses Display - show houses if 1-4 houses */
-            houses > 0 && (
-              <div
-                className={`flex items-center justify-center ${isVertical ? "flex-col gap-0" : "gap-0.5"}`}
-              >
-                <span className="text-[0.6rem] sm:text-xs">🏠</span>
-                {houses > 1 && (
-                  <>
-                    <span className="text-[0.5rem] sm:text-[0.6rem] font-bold text-white">
-                      x
-                    </span>
-                    <span className="text-[0.5rem] sm:text-[0.6rem] font-bold text-white">
-                      {houses}
-                    </span>
-                  </>
-                )}
-              </div>
-            )
-          )}
+          {houses > 4 ? "🏨" : `${houses}🏠`}
         </div>
       )}
     </div>

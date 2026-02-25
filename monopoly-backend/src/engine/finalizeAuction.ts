@@ -1,6 +1,5 @@
 // engine/finalizeAuction.ts
 import { GameState } from "../types/game";
-import { endTurn } from "./endTurn";
 
 export function finalizeAuction(state: GameState): GameState {
   //finalize/finish auction when just one player remains or highest bid exists
@@ -10,7 +9,7 @@ export function finalizeAuction(state: GameState): GameState {
   if (!auction.highestBidderId)
     throw new Error("Cannot finalize auction without a highest bidder");
 
-  const auctionComplete = {
+  return {
     ...state,
     players: state.players.map((p) =>
       p.id === auction.highestBidderId
@@ -34,10 +33,7 @@ export function finalizeAuction(state: GameState): GameState {
         playerId: auction.highestBidderId,
         tileIndex: auction.property.tileIndex,
         amount: auction.highestBid,
-      } as const,
+      },
     ],
   };
-
-  // Automatically end turn after auction completes
-  return endTurn(auctionComplete);
 }

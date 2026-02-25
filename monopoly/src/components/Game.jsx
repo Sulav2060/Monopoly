@@ -798,8 +798,14 @@ const Game = () => {
     if (isAnimating || hasRolled || isLoadingAction || !currentGame) return;
 
     // Check if user is in debt (money < 0)
-    if (currentUser && currentUser.money < 0) {
-      showNotification("❌ Resolve your debt first by selling/mortgaging properties!", "error");
+    const currentPlayer = currentGame?.players?.find(
+      (player) => player.id === currentPlayerId,
+    );
+    if (currentPlayer && currentPlayer.money < 0) {
+      showNotification(
+        "❌ Resolve your debt first by selling/mortgaging properties!",
+        "error",
+      );
       return;
     }
 
@@ -848,15 +854,29 @@ const Game = () => {
     } finally {
       setIsLoadingAction(false);
     }
-  }, [isAnimating, hasRolled, isLoadingAction, currentGame, contextRollDice, currentUser, showNotification]);
+  }, [
+    isAnimating,
+    hasRolled,
+    isLoadingAction,
+    currentGame,
+    contextRollDice,
+    currentPlayerId,
+    showNotification,
+  ]);
 
   // End Turn Function
   const endTurn = useCallback(async () => {
     if (isAnimating || isLoadingAction || !currentGame) return;
 
     // Check if user is in debt (money < 0)
-    if (currentUser && currentUser.money < 0) {
-      showNotification("❌ Resolve your debt first by selling/mortgaging properties!", "error");
+    const currentPlayer = currentGame?.players?.find(
+      (player) => player.id === currentPlayerId,
+    );
+    if (currentPlayer && currentPlayer.money < 0) {
+      showNotification(
+        "❌ Resolve your debt first by selling/mortgaging properties!",
+        "error",
+      );
       return;
     }
 
@@ -870,7 +890,14 @@ const Game = () => {
     } finally {
       setIsLoadingAction(false);
     }
-  }, [isAnimating, isLoadingAction, currentGame, contextEndTurn, currentUser, showNotification]);
+  }, [
+    isAnimating,
+    isLoadingAction,
+    currentGame,
+    contextEndTurn,
+    currentPlayerId,
+    showNotification,
+  ]);
 
   // Helper to get tile at position
   const getTileAtPosition = (position) => {

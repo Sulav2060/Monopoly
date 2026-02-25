@@ -17,6 +17,7 @@ test("auction assigns property to highest bidder", () => {
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
+        debtResolution: undefined,
       },
       {
         id: "p2",
@@ -26,6 +27,7 @@ test("auction assigns property to highest bidder", () => {
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
+        debtResolution: undefined,
       },
     ],
     currentTurnIndex: 0,
@@ -43,6 +45,7 @@ test("auction assigns property to highest bidder", () => {
         currentBidderIndex: 0,
       },
     },
+    pendingTrades: [],
   };
 
   const result = finalizeAuction(state);

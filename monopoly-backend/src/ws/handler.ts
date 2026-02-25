@@ -99,6 +99,7 @@ export function setupWebSocket(wss: WebSocketServer) {
             inJail: false,
             jailTurns: 0,
             isBankrupt: false,
+            debtResolution: undefined,
             communityChestDeck: [
               { type: "MONEY", amount: 200 },
               { type: "GO_TO_JAIL" },

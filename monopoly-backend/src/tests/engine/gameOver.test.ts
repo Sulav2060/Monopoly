@@ -12,6 +12,7 @@ test("emits GAME_OVER when only one player remains", () => {
         inJail: false,
         jailTurns: 0,
         isBankrupt: true,
+        debtResolution: undefined,
       },
       {
         id: "p2",
@@ -21,6 +22,7 @@ test("emits GAME_OVER when only one player remains", () => {
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
+        debtResolution: undefined,
       },
     ],
     currentTurnIndex: 1,
@@ -33,6 +35,7 @@ test("emits GAME_OVER when only one player remains", () => {
     ],
     communityChestIndex: 0,
     pendingAction: null,
+    pendingTrades: [],
   };
 
   const result = checkGameOver(state);

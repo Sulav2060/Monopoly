@@ -13,6 +13,7 @@ describe("handleTax", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -23,6 +24,7 @@ describe("handleTax", () => {
       communityChestDeck: [],
       communityChestIndex: 0,
       pendingAction: null,
+      pendingTrades: [],
     };
 
     const result = handleTax(state, 200);
@@ -42,6 +44,7 @@ describe("handleTax", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -52,6 +55,7 @@ describe("handleTax", () => {
       communityChestDeck: [],
       communityChestIndex: 0,
       pendingAction: null,
+      pendingTrades: [],
     };
 
     const result = handleTax(state, 150);
@@ -75,6 +79,7 @@ describe("handleTax", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -85,6 +90,7 @@ describe("handleTax", () => {
       communityChestDeck: [],
       communityChestIndex: 0,
       pendingAction: null,
+      pendingTrades: [],
     };
 
     handleTax(state, 100);

@@ -14,6 +14,7 @@ describe("buildProperty", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
         {
           id: "p2",
@@ -23,6 +24,7 @@ describe("buildProperty", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -31,6 +33,7 @@ describe("buildProperty", () => {
       communityChestDeck: [],
       communityChestIndex: 0,
       pendingAction: null,
+      pendingTrades: [],
     };
   }
 

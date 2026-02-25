@@ -17,7 +17,12 @@ const Tile = ({
   // Debug logging for house building
   React.useEffect(() => {
     if (group && houses > 0) {
-      console.log(`🏠 Tile "${title}" has ${houses} houses`, { id, group, houses, ownedBy });
+      console.log(`🏠 Tile "${title}" has ${houses} houses`, {
+        id,
+        group,
+        houses,
+        ownedBy,
+      });
     }
   }, [houses, title, group, id, ownedBy]);
 

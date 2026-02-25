@@ -17,6 +17,7 @@ export function createBaseState(): GameState {
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
+        debtResolution: undefined,
       },
       {
         id: "p2",
@@ -26,6 +27,7 @@ export function createBaseState(): GameState {
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
+        debtResolution: undefined,
       },
     ],
     properties: [

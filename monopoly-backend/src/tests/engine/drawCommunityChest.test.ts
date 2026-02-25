@@ -13,6 +13,7 @@ describe("drawCommunityChest", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -21,6 +22,7 @@ describe("drawCommunityChest", () => {
       communityChestDeck: [{ type: "MONEY", amount: 200 }],
       communityChestIndex: 0,
       pendingAction: null,
+      pendingTrades: [],
     };
 
     const result = drawCommunityChest(state);
@@ -44,6 +46,7 @@ describe("drawCommunityChest", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -52,6 +55,7 @@ describe("drawCommunityChest", () => {
       communityChestDeck: [{ type: "GO_TO_JAIL" }],
       communityChestIndex: 0,
       pendingAction: null,
+      pendingTrades: [],
     };
 
     const result = drawCommunityChest(state);

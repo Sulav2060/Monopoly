@@ -17,6 +17,7 @@ describe("mortgageProperty", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
         {
           id: "p2",
@@ -26,6 +27,7 @@ describe("mortgageProperty", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -190,6 +192,7 @@ describe("unmortgageProperty", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
         {
           id: "p2",
@@ -199,6 +202,7 @@ describe("unmortgageProperty", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -363,6 +367,7 @@ describe("mortgage integration with rent", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
         {
           id: "p2",
@@ -372,6 +377,7 @@ describe("mortgage integration with rent", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -458,6 +464,7 @@ describe("mortgage and unmortgage workflow", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
         {
           id: "p2",
@@ -467,6 +474,7 @@ describe("mortgage and unmortgage workflow", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,

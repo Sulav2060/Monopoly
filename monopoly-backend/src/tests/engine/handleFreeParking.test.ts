@@ -13,6 +13,7 @@ describe("handleFreeParking", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -26,6 +27,7 @@ describe("handleFreeParking", () => {
       ],
       communityChestIndex: 0,
       pendingAction: null,
+      pendingTrades: [],
     };
 
     const result = handleFreeParking(state);
@@ -44,6 +46,7 @@ describe("handleFreeParking", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -57,6 +60,7 @@ describe("handleFreeParking", () => {
       ],
       communityChestIndex: 0,
       pendingAction: null,
+      pendingTrades: [],
     };
 
     const result = handleFreeParking(state);
@@ -81,6 +85,7 @@ describe("handleFreeParking", () => {
           inJail: false,
           jailTurns: 0,
           isBankrupt: false,
+          debtResolution: undefined,
         },
       ],
       currentTurnIndex: 0,
@@ -94,6 +99,7 @@ describe("handleFreeParking", () => {
       ],
       communityChestIndex: 0,
       pendingAction: null,
+      pendingTrades: [],
     };
 
     handleFreeParking(state);

@@ -98,6 +98,7 @@ describe("Trade Feature", () => {
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
+        debtResolution: undefined,
       });
       state.properties = [
         {
@@ -708,6 +709,7 @@ describe("Trade Feature", () => {
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
+        debtResolution: undefined,
       });
       state.properties = [
         {
@@ -797,6 +799,7 @@ describe("Trade Feature", () => {
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
+        debtResolution: undefined,
       });
       state.properties = [
         {
@@ -961,6 +964,7 @@ describe("Trade Feature", () => {
         inJail: false,
         jailTurns: 0,
         isBankrupt: false,
+        debtResolution: undefined,
       });
       state.properties = [
         {

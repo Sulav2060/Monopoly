@@ -14,6 +14,7 @@ export const baseState: GameState = {
       inJail: false,
       jailTurns: 0,
       isBankrupt: false,
+      debtResolution: undefined,
     },
     {
       id: "p2",
@@ -23,12 +24,14 @@ export const baseState: GameState = {
       inJail: false,
       jailTurns: 0,
       isBankrupt: false,
+      debtResolution: undefined,
     },
   ],
   currentTurnIndex: 0,
   properties: [],
   events: [],
   pendingAction: null,
+  pendingTrades: [],
 };
 
 test("player moves correct number of steps", () => {

@@ -2210,7 +2210,7 @@ const Game = () => {
               }}
               onDestroy={(propertyId, destroyType) => {
                 wsClient.send({
-                  type: "DESTROY_PROPERTY",
+                  type: "BREAK_PROPERTY",
                   gameId: currentGame.id,
                   playerId: currentPlayerId,
                   tileIndex: propertyId,

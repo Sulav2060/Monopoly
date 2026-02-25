@@ -296,12 +296,17 @@ const Tile = ({
           ) : (
             /* Houses Display - show houses if 1-4 houses */
             houses > 0 && (
-              <div className="flex items-center justify-center gap-0.5">
+              <div className={`flex items-center justify-center ${isVertical ? 'flex-col gap-0' : 'gap-0.5'}`}>
                 <span className="text-[0.6rem] sm:text-xs">🏠</span>
                 {houses > 1 && (
-                  <span className="text-[0.5rem] sm:text-[0.6rem] font-bold text-white">
-                    x{houses}
-                  </span>
+                  <>
+                    <span className="text-[0.5rem] sm:text-[0.6rem] font-bold text-white">
+                      x
+                    </span>
+                    <span className="text-[0.5rem] sm:text-[0.6rem] font-bold text-white">
+                      {houses}
+                    </span>
+                  </>
                 )}
               </div>
             )

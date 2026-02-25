@@ -13,6 +13,18 @@ function generateShortId(length = 6): string {
   return result;
 }
 
+// Health check endpoint - must be before /:gameId
+router.get("/health", (req, res) => {
+  const { getAllGameIds, getGameCount } = require("../ws/gameStore");
+  res.json({ 
+    status: "ok", 
+    uptime: process.uptime(),
+    gameCount: getGameCount(),
+    games: getAllGameIds(),
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Create a new game instance
 router.post("/create", (req, res) => {
   const gameId = generateShortId();

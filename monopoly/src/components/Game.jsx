@@ -1248,14 +1248,19 @@ const Game = () => {
     // Calculate player stats
     const calculatePlayerStats = (player) => {
       const properties = player.properties?.length || 0;
-      const houses = player.properties?.reduce((sum, prop) => sum + (prop.houses || 0), 0) || 0;
-      const hotels = player.properties?.reduce((sum, prop) => sum + (prop.hotels || 0), 0) || 0;
+      const houses =
+        player.properties?.reduce((sum, prop) => sum + (prop.houses || 0), 0) ||
+        0;
+      const hotels =
+        player.properties?.reduce((sum, prop) => sum + (prop.hotels || 0), 0) ||
+        0;
       return { properties, houses, hotels };
     };
 
     // Sort all players by money for rankings with medals
-    const rankedPlayers = [...(currentGame?.players || [])]
-      .sort((a, b) => (b.money || 0) - (a.money || 0));
+    const rankedPlayers = [...(currentGame?.players || [])].sort(
+      (a, b) => (b.money || 0) - (a.money || 0),
+    );
 
     const getMedalEmoji = (index) => {
       if (index === 0) return "🥇";
@@ -1271,7 +1276,7 @@ const Game = () => {
         {/* Animated Background Effects */}
         <div className="absolute top-[-200px] left-1/4 w-[600px] h-[600px] bg-emerald-500/20 blur-[140px] rounded-full animate-pulse" />
         <div className="absolute bottom-[-200px] right-1/4 w-[600px] h-[600px] bg-amber-500/15 blur-[140px] rounded-full animate-pulse delay-1000" />
-        
+
         {/* Confetti Effect */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {[...Array(30)].map((_, i) => (
@@ -1281,7 +1286,13 @@ const Game = () => {
               style={{
                 left: `${Math.random() * 100}%`,
                 top: `-${Math.random() * 20}px`,
-                backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'][i % 5],
+                backgroundColor: [
+                  "#10b981",
+                  "#f59e0b",
+                  "#3b82f6",
+                  "#ef4444",
+                  "#8b5cf6",
+                ][i % 5],
                 animationDelay: `${Math.random() * 3}s`,
                 opacity: 0.6,
               }}
@@ -1293,7 +1304,9 @@ const Game = () => {
           {/* Header with Trophy */}
           <div className="flex flex-col items-center text-center gap-3 mb-8">
             <div className="relative">
-              <div className="text-7xl sm:text-8xl animate-[bounce_1s_ease-in-out_3]">🏆</div>
+              <div className="text-7xl sm:text-8xl animate-[bounce_1s_ease-in-out_3]">
+                🏆
+              </div>
               <div className="absolute inset-0 animate-ping opacity-20">🏆</div>
             </div>
 
@@ -1333,28 +1346,36 @@ const Game = () => {
                     <div className="text-2xl sm:text-3xl font-bold text-emerald-400">
                       Rs. {(winner?.money || 0).toLocaleString()}
                     </div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">Cash</div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">
+                      Cash
+                    </div>
                   </div>
-                  
+
                   <div className="bg-white/5 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
                     <div className="text-2xl sm:text-3xl font-bold text-blue-400">
                       {winnerStats.properties}
                     </div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">Properties</div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">
+                      Properties
+                    </div>
                   </div>
-                  
+
                   <div className="bg-white/5 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
                     <div className="text-2xl sm:text-3xl font-bold text-amber-400">
                       {winnerStats.houses}
                     </div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">Houses</div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">
+                      Houses
+                    </div>
                   </div>
-                  
+
                   <div className="bg-white/5 rounded-xl p-3 border border-white/10 backdrop-blur-sm">
                     <div className="text-2xl sm:text-3xl font-bold text-purple-400">
                       {winnerStats.hotels}
                     </div>
-                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">Hotels</div>
+                    <div className="text-xs text-gray-400 uppercase tracking-wide mt-1">
+                      Hotels
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1376,26 +1397,30 @@ const Game = () => {
                 {rankedPlayers.map((player, index) => {
                   const stats = calculatePlayerStats(player);
                   const isWinner = index === 0;
-                  
+
                   return (
                     <div
                       key={player.id}
                       className={`flex items-center justify-between rounded-xl border p-4 transition-all hover:scale-[1.02] ${
                         isWinner
-                          ? 'border-emerald-400/50 bg-emerald-500/10 shadow-lg shadow-emerald-500/20'
+                          ? "border-emerald-400/50 bg-emerald-500/10 shadow-lg shadow-emerald-500/20"
                           : index === 1
-                          ? 'border-gray-300/30 bg-gray-500/10'
-                          : index === 2
-                          ? 'border-amber-600/30 bg-amber-900/10'
-                          : 'border-white/10 bg-white/5'
+                            ? "border-gray-300/30 bg-gray-500/10"
+                            : index === 2
+                              ? "border-amber-600/30 bg-amber-900/10"
+                              : "border-white/10 bg-white/5"
                       }`}
                     >
                       <div className="flex items-center gap-3 flex-1">
-                        <div className={`text-2xl ${isWinner ? 'animate-pulse' : ''}`}>
+                        <div
+                          className={`text-2xl ${isWinner ? "animate-pulse" : ""}`}
+                        >
                           {getMedalEmoji(index)}
                         </div>
                         <div className="flex-1">
-                          <span className={`text-base sm:text-lg font-bold ${isWinner ? 'text-emerald-300' : 'text-gray-100'}`}>
+                          <span
+                            className={`text-base sm:text-lg font-bold ${isWinner ? "text-emerald-300" : "text-gray-100"}`}
+                          >
                             {player.name}
                           </span>
                           <div className="flex gap-3 mt-1 text-xs text-gray-400">
@@ -1407,9 +1432,11 @@ const Game = () => {
                       </div>
 
                       <div className="text-right">
-                        <div className={`text-base sm:text-lg font-bold ${
-                          isWinner ? 'text-emerald-400' : 'text-gray-300'
-                        }`}>
+                        <div
+                          className={`text-base sm:text-lg font-bold ${
+                            isWinner ? "text-emerald-400" : "text-gray-300"
+                          }`}
+                        >
                           Rs. {(player.money || 0).toLocaleString()}
                         </div>
                       </div>
@@ -1429,7 +1456,7 @@ const Game = () => {
               🎮 Play Again
             </button>
             <button
-              onClick={() => window.location.href = '/'}
+              onClick={() => (window.location.href = "/")}
               className="w-full sm:w-auto px-8 py-4 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 active:scale-95 transition-all duration-200 font-semibold text-white text-lg"
             >
               🏠 Home
@@ -1444,25 +1471,26 @@ const Game = () => {
               transform: translateY(100vh) rotate(360deg);
             }
           }
-          
+
           @keyframes shimmer {
-            0%, 100% {
+            0%,
+            100% {
               background-position: 0% 50%;
             }
             50% {
               background-position: 100% 50%;
             }
           }
-          
+
           .scrollbar-thin::-webkit-scrollbar {
             width: 6px;
           }
-          
+
           .scrollbar-thumb-white\/20::-webkit-scrollbar-thumb {
             background-color: rgba(255, 255, 255, 0.2);
             border-radius: 3px;
           }
-          
+
           .scrollbar-track-transparent::-webkit-scrollbar-track {
             background-color: transparent;
           }

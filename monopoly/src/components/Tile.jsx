@@ -12,7 +12,15 @@ const Tile = ({
   isMortgaged,
   image,
   icon, // emoji icon for the property
+  houses,
 }) => {
+  // Debug logging for house building
+  React.useEffect(() => {
+    if (group && houses > 0) {
+      console.log(`🏠 Tile "${title}" has ${houses} houses`, { id, group, houses, ownedBy });
+    }
+  }, [houses, title, group, id, ownedBy]);
+
   const tileImage = image || lakeside;
 
   // Modern color palette with better contrast
@@ -276,6 +284,23 @@ const Tile = ({
           }}
         >
           {/* Houses/hotels will be rendered here */}
+          {houses > 4 ? (
+            <div className="flex items-center justify-center gap-0.5">
+              <span className="text-xs sm:text-sm">🏨</span>
+            </div>
+          ) : (
+            /* Houses Display - show houses if 1-4 houses */
+            houses > 0 && (
+              <div className="flex items-center justify-center gap-0.5">
+                <span className="text-[0.6rem] sm:text-xs">🏠</span>
+                {houses > 1 && (
+                  <span className="text-[0.5rem] sm:text-[0.6rem] font-bold text-white">
+                    x{houses}
+                  </span>
+                )}
+              </div>
+            )
+          )}
         </div>
       )}
     </div>

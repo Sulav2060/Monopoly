@@ -93,6 +93,17 @@ const Game = () => {
   const [eventCards, setEventCards] = useState([]);
   const [pendingEventCards, setPendingEventCards] = useState([]);
   const [pendingSounds, setPendingSounds] = useState([]);
+
+  // Trade Modal State
+  const [tradeWithPlayerId, setTradeWithPlayerId] = useState(null);
+  const [myTradeOffer, setMyTradeOffer] = useState({
+    money: 0,
+    properties: [],
+  });
+  const [theirTradeRequest, setTheirTradeRequest] = useState({
+    money: 0,
+    properties: [],
+  });
   const eventCardTimeoutRef = useRef(null);
   const [_gameLog, setGameLog] = useState([]);
   const lastEventCountRef = useRef(0);
@@ -800,7 +811,6 @@ const Game = () => {
 
       // Now roll the dice (this will update positions on backend)
       const diceRoll = await contextRollDice();
-
 
       // //console.log(
       //   "Rolled:",
@@ -2203,7 +2213,14 @@ const Game = () => {
                   playerId: currentPlayerId,
                   tileIndex: propertyId,
                 });
-                setShowBuildMenu(false);
+              }}
+              onDestroy={(propertyId, destroyType) => {
+                wsClient.send({
+                  type: "DESTROY_PROPERTY",
+                  gameId: currentGame.id,
+                  playerId: currentPlayerId,
+                  tileIndex: propertyId,
+                });
               }}
             />
           </div>

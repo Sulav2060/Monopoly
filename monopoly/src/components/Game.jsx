@@ -559,16 +559,30 @@ const Game = () => {
       showNotification("Disconnected from server", "error");
     };
 
+    const handleGameStateUpdate = (newState) => {
+      if (newState && newState.id === currentGame?.id) {
+        console.log(`📊 Game State Update received:`, {
+          playerMoney: newState.players?.find((p) => p.id === currentPlayerId)
+            ?.money,
+          playerDebt: newState.players?.find((p) => p.id === currentPlayerId)
+            ?.debtResolution,
+        });
+        syncGameFromSocket(newState);
+      }
+    };
+
     // Register listeners
     wsClient.on("error", handleError);
     wsClient.on("disconnect", handleDisconnect);
+    wsClient.on("gameStateUpdate", handleGameStateUpdate);
 
     // CLEANUP listeners on unmount or re-run
     return () => {
       wsClient.off("error", handleError);
       wsClient.off("disconnect", handleDisconnect);
+      wsClient.off("gameStateUpdate", handleGameStateUpdate);
     };
-  }, [currentGame?.id, currentPlayerId]);
+  }, [currentGame?.id, currentPlayerId, syncGameFromSocket]);
 
   // Reset hasRolled when turn changes
   useEffect(() => {
@@ -1283,6 +1297,11 @@ const Game = () => {
     if (isInDebt && !previousDebtRef.current) {
       // Just entered debt
       const debtAmount = currentUser.debtResolution?.amount ?? 0;
+      console.log(`💳 DEBT TRIGGERED for ${currentUser.name}:`, {
+        money: currentUser.money,
+        debtAmount,
+        debtResolution: currentUser.debtResolution,
+      });
       showNotification(
         `💰 Debt of Rs. ${debtAmount}! Sell or mortgage properties to resolve.`,
         "error",
@@ -1290,7 +1309,12 @@ const Game = () => {
     }
 
     previousDebtRef.current = isInDebt;
-  }, [currentUser?.debtResolution, showNotification]);
+  }, [
+    currentUser?.debtResolution,
+    showNotification,
+    currentUser?.money,
+    currentUser?.name,
+  ]);
   const gameOverEvent = currentGame?.events
     ?.slice()
     .reverse()
@@ -1611,11 +1635,6 @@ const Game = () => {
                         >
                           {p.name}
                         </span>
-                        {isInDebt && isYou && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/20 border border-red-400/50 text-red-300 font-semibold animate-pulse">
-                            DEBT
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -1624,9 +1643,21 @@ const Game = () => {
                   <div className="text-right">
                     <div className="flex items-center gap-1 justify-end">
                       <span
-                        className={`text-sm font-mono font-bold ${isBankrupt ? "text-gray-600" : isCurrentTurn ? "text-emerald-400" : "text-emerald-500/70"}`}
+                        className={`text-sm font-mono font-bold ${
+                          isBankrupt
+                            ? "text-gray-600"
+                            : isInDebt && isYou
+                              ? "text-red-400 animate-[pulse-red_1.5s_ease-in-out_infinite]"
+                              : isCurrentTurn
+                                ? "text-emerald-400"
+                                : "text-emerald-500/70"
+                        }`}
                       >
-                        Rs. {p.money.toLocaleString()}
+                        Rs.{" "}
+                        {(isInDebt
+                          ? p.money - p.debtResolution?.amount
+                          : p.money
+                        ).toLocaleString()}
                       </span>
                     </div>
                   </div>

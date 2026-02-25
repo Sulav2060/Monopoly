@@ -14,6 +14,9 @@ export function getGame(gameId: string): Game | undefined {
   const game = games.get(gameId);
   if (game) {
     game.lastActive = Date.now();
+    console.log(`✅ Game found: ${gameId}`);
+  } else {
+    console.log(`❌ Game NOT found: ${gameId} (Total games: ${games.size}, Available: ${Array.from(games.keys()).join(', ') || 'none'})`);
   }
   return game;
 }
@@ -24,6 +27,15 @@ export function createGame(gameId: string, state: GameState) {
     state, 
     lastActive: Date.now() 
   });
+  console.log(`📝 Game created: ${gameId} (Total games: ${games.size})`);
+}
+
+export function getAllGameIds(): string[] {
+  return Array.from(games.keys());
+}
+
+export function getGameCount(): number {
+  return games.size;
 }
 
 export function updateGame(gameId: string, state: GameState) {

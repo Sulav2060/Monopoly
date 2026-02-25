@@ -1,6 +1,7 @@
 import { GameState } from "../types/game";
 import { BOARD } from "./board";
 import { getCurrentPlayerSafe } from "./assertions";
+import { afterAssetChange } from "./debtResolution";
 
 /**
  * Mortgage a property
@@ -54,7 +55,7 @@ export function mortgageProperty(
   const mortgageValue = Math.floor(tile.price / 2);
 
   // Update the game state
-  return {
+  const newState = {
     ...state,
     players: state.players.map((p) =>
       p.id === player.id ? { ...p, money: p.money + mortgageValue } : p,
@@ -69,7 +70,10 @@ export function mortgageProperty(
         playerId: player.id,
         tileIndex: tileIndex,
         amount: mortgageValue,
-      },
+      } as const //TODO: why needed as const
     ],
   };
+
+  // Check if this resolves any debt
+  return afterAssetChange(newState);
 }

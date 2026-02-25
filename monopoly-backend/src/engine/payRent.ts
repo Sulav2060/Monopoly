@@ -1,8 +1,8 @@
 import { PropertyTile } from "../types/board";
 import { GameState } from "../types/game";
 import { getCurrentPlayerSafe } from "./assertions";
-import { bankruptPlayer } from "./bankruptPlayer";
 import { getPropertyOwner } from "./propertyHelpers";
+import { enterDebtResolution } from "./debtResolution";
 
 export function payRent(state: GameState, tile: PropertyTile): GameState {
   //change pay rent based on houses.
@@ -30,29 +30,32 @@ export function payRent(state: GameState, tile: PropertyTile): GameState {
 
   const newMoney = player.money - rent;
 
-  if (newMoney < 0) {
-    return bankruptPlayer(state, player.id, ownership.ownerId);
+  // If player can afford rent, pay it directly
+  if (newMoney >= 0) {
+    return {
+      ...state,
+      players: state.players.map((p) => {
+        if (p.id === player.id) {
+          return { ...p, money: p.money - rent };
+        }
+        if (p.id === ownership.ownerId) {
+          return { ...p, money: p.money + rent };
+        }
+        return p;
+      }),
+      events: [
+        ...state.events,
+        {
+          type: "RENT_PAID",
+          from: player.id,
+          to: ownership.ownerId,
+          amount: rent,
+        },
+      ],
+    };
   }
 
-  return {
-    ...state,
-    players: state.players.map((p) => {
-      if (p.id === player.id) {
-        return { ...p, money: p.money - rent };
-      }
-      if (p.id === ownership.ownerId) {
-        return { ...p, money: p.money + rent };
-      }
-      return p;
-    }),
-    events: [
-      ...state.events,
-      {
-        type: "RENT_PAID",
-        from: player.id,
-        to: ownership.ownerId,
-        amount: rent,
-      },
-    ],
-  };
+  // Player can't afford rent - enter debt resolution
+  // Money is deducted as debt obligation
+  return enterDebtResolution(state, player.id, rent, ownership.ownerId);
 }

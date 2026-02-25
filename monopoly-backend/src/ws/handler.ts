@@ -180,6 +180,16 @@ export function setupWebSocket(wss: WebSocketServer) {
             return;
           }
 
+          // Check if player is in debt resolution
+          if (currentPlayer.debtResolution) {
+            safeSend(socket, {
+              type: "ERROR",
+              message:
+                "Cannot roll dice while in debt resolution. Please mortgage properties, sell houses, or accept trades to recover.",
+            });
+            return;
+          }
+
           if (game.state.pendingAction) {
             safeSend(socket, {
               type: "ERROR",
@@ -223,6 +233,17 @@ export function setupWebSocket(wss: WebSocketServer) {
             });
             return;
           }
+
+          // Check if player is in debt resolution
+          if (currentPlayer.debtResolution) {
+            safeSend(socket, {
+              type: "ERROR",
+              message:
+                "Cannot end turn while in debt resolution. Please mortgage properties, sell houses, or accept trades to recover.",
+            });
+            return;
+          }
+
           // 👇 NEW LOGIC
           let currentState;
           if (game.state.pendingAction?.type === "BUY_PROPERTY") {

@@ -285,6 +285,14 @@ const Board = ({
 
     const Component = tile.type === "corner" ? CornerTile : Tile;
     const ownerColor = getOwnerColorForTile(index);
+    const propertyEntry = propertiesFromGame.find(
+      (prop) =>
+        prop.tileIndex === index ||
+        prop.propertyId === index ||
+        prop.tile === index,
+    );
+    const isMortgaged =
+      propertyEntry?.isMortgaged ?? propertyEntry?.isMortaged ?? false;
 
     const handleClick = (e) => {
       setActiveIndex(index);
@@ -301,7 +309,7 @@ const Board = ({
         onClick={handleClick}
         className="cursor-pointer"
       >
-        <Component {...tile} ownedBy={ownerColor} />
+        <Component {...tile} ownedBy={ownerColor} isMortgaged={isMortgaged} />
       </div>
     );
   });

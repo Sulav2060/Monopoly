@@ -1160,7 +1160,7 @@ const Game = () => {
 
   // Auto-handle turn after auction completion
   const prevPendingActionRef = useRef(null);
-  
+
   useEffect(() => {
     if (!currentGame) return;
 
@@ -1196,11 +1196,7 @@ const Game = () => {
 
     // Update the ref for next comparison
     prevPendingActionRef.current = currentPendingAction;
-  }, [
-    currentGame,
-    currentPlayerId,
-    showNotification,
-  ]);
+  }, [currentGame, currentPlayerId, showNotification]);
 
   // Determine current player and turn state
   const currentPlayer = currentGame?.players?.[currentGame?.currentTurnIndex];

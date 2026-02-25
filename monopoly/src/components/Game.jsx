@@ -2186,6 +2186,7 @@ const Game = () => {
         <AuctionModal
           auction={currentGame.pendingAction.auction}
           currentPlayerId={currentPlayerId}
+          players={currentGame.players}
           onPlaceBid={(amount) => {
             wsClient.send({
               type: "PLACE_BID",

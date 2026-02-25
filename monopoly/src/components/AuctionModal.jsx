@@ -1,14 +1,21 @@
 import React, { useEffect, useState, useRef } from "react";
 
-const AuctionModal = ({ auction, currentPlayerId, onPlaceBid, onTimeout }) => {
-  const [bidAmount, setBidAmount] = useState(auction.highestBid + 7);
+const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTimeout }) => {
+  const [bidAmount, setBidAmount] = useState(auction.highestBid + 10);
   const [timeLeft, setTimeLeft] = useState(10);
+  const [isMinimized, setIsMinimized] = useState(false);
   const timerRef = useRef(null);
+
+  // Helper to get player name by ID
+  const getPlayerName = (playerId) => {
+    const player = players.find(p => p.id === playerId);
+    return player?.name || `Player ${playerId.slice(-4)}`;
+  };
 
   // Reset timer and bid input when highest bid changes
   useEffect(() => {
     setTimeLeft(5);
-    setBidAmount(Math.max(bidAmount, auction.highestBid + 3));
+    setBidAmount(Math.max(bidAmount, auction.highestBid + 10));
   }, [auction.highestBid]);
 
   // Timer countdown
@@ -35,65 +42,176 @@ const AuctionModal = ({ auction, currentPlayerId, onPlaceBid, onTimeout }) => {
 
   if (!auction) return null;
 
+  const property = auction.property;
+  const colorClass = property.color 
+    ? `bg-${property.color}-500` 
+    : property.type === "railroad" 
+      ? "bg-gray-800" 
+      : "bg-blue-300";
+
+  // Minimized view (compact bar at bottom)
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom">
+        <div 
+          onClick={() => setIsMinimized(false)}
+          className="bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 px-6 py-3 rounded-full shadow-2xl cursor-pointer hover:scale-105 transition-transform flex items-center gap-3 border-2 border-amber-300"
+        >
+          <span className="text-2xl">🔨</span>
+          <span className="font-bold">Auction: {property.name}</span>
+          <div className="bg-slate-900/20 px-3 py-1 rounded-full text-sm font-mono">
+            {timeLeft}s
+          </div>
+          <span className="text-sm opacity-80">Click to bid</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Full auction panel (non-blocking side panel)
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl text-center relative overflow-hidden">
-        {/* Animated background glow */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-transparent via-amber-500 to-transparent animate-pulse" />
-
-        <h2 className="text-3xl text-amber-500 font-bold mb-2">🔨 Auction!</h2>
-        <h3 className="text-xl text-white font-semibold mb-6">
-          {auction.property.name}
-        </h3>
-
-        <div className="bg-slate-800 rounded-xl p-4 mb-6 border border-slate-700">
-          <div className="text-slate-400 text-sm mb-1">Current Highest Bid</div>
-          <div className="text-3xl font-mono font-bold text-emerald-400">
-            Rs. {auction.highestBid}
+    <div className="fixed inset-0 z-50 pointer-events-none">
+      {/* Subtle backdrop - only slight dimming */}
+      <div className="absolute inset-0 bg-black/20 pointer-events-auto" />
+      
+      {/* Auction Panel - Bottom on mobile, Right side on desktop */}
+      <div className="fixed bottom-0 left-0 right-0 md:bottom-auto md:right-4 md:top-1/2 md:-translate-y-1/2 md:left-auto md:w-96 pointer-events-auto animate-in slide-in-from-bottom md:slide-in-from-right duration-300">
+        <div className="bg-slate-900/95 backdrop-blur-md border-2 border-amber-500/50 rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="relative bg-gradient-to-r from-amber-500 to-orange-500 p-4">
+            <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
+            <div className="relative flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">🔨</span>
+                <div>
+                  <div className="text-slate-900 font-bold text-sm">LIVE AUCTION</div>
+                  <div className="text-slate-800 text-xs">Highest bid wins</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsMinimized(true)}
+                className="bg-slate-900/30 hover:bg-slate-900/50 text-slate-900 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors"
+              >
+                Minimize
+              </button>
+            </div>
           </div>
-          {auction.highestBidderId && (
-            <div className="text-xs text-slate-500 mt-1">
-              held by {auction.highestBidderId === currentPlayerId ? "You" : "Player " + auction.highestBidderId.slice(0, 4)}
-            </div>
-          )}
-        </div>
 
-        <div className="mb-6">
-            <div className="text-slate-200 mb-2 font-medium">Time Remaining</div>
-            <div className={`text-4xl font-bold transition-colors ${timeLeft <= 3 ? "text-red-500 scale-110" : "text-white"}`}>
-                {timeLeft}s
+          {/* Property Info Card */}
+          <div className="p-4 border-b border-slate-700/50">
+            <div className="bg-slate-800/80 rounded-xl overflow-hidden border border-slate-700">
+              {/* Property color strip */}
+              {property.color && (
+                <div className={`h-2 ${colorClass}`} />
+              )}
+              <div className="p-3">
+                <h3 className="text-white font-bold text-lg mb-1">{property.name}</h3>
+                <div className="flex gap-2 text-xs">
+                  <span className="bg-slate-700/50 text-slate-300 px-2 py-1 rounded">
+                    {property.type === "property" ? "Property" : property.type === "railroad" ? "Railroad" : "Utility"}
+                  </span>
+                  <span className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded font-mono">
+                    Listed: Rs. {property.price}
+                  </span>
+                </div>
+              </div>
             </div>
-        </div>
+          </div>
 
-        <div className="flex flex-col gap-3">
-          <div className="flex gap-2">
-            <button 
+          {/* Auction Status */}
+          <div className="p-4 bg-slate-800/50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex-1">
+                <div className="text-slate-400 text-xs mb-1">Current Highest Bid</div>
+                <div className="text-3xl font-mono font-bold text-emerald-400">
+                  Rs. {auction.highestBid}
+                </div>
+                {auction.highestBidderId && (
+                  <div className="text-xs text-slate-500 mt-1">
+                    {auction.highestBidderId === currentPlayerId ? (
+                      <span className="text-emerald-400">✓ You're winning!</span>
+                    ) : (
+                      <span>{getPlayerName(auction.highestBidderId)}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="text-center">
+                <div className="text-slate-400 text-xs mb-1">Time Left</div>
+                <div className={`text-4xl font-bold transition-all ${
+                  timeLeft <= 3 
+                    ? "text-red-500 animate-pulse scale-110" 
+                    : timeLeft <= 5
+                      ? "text-orange-400"
+                      : "text-white"
+                }`}>
+                  {timeLeft}
+                </div>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full bg-slate-700 rounded-full h-1.5 overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-1000 ease-linear ${
+                  timeLeft <= 3 ? "bg-red-500" : timeLeft <= 5 ? "bg-orange-400" : "bg-emerald-500"
+                }`}
+                style={{ width: `${(timeLeft / 10) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Bidding Controls */}
+          <div className="p-4 space-y-3">
+            <div className="flex gap-2 items-center">
+              <button 
                 onClick={() => setBidAmount(amount => Math.max(auction.highestBid + 1, amount - 10))}
-                className="px-3 bg-slate-700 rounded-lg text-white font-bold hover:bg-slate-600"
-            >-</button>
-            <input
-                type="number"
-                value={bidAmount}
-                onChange={(e) => setBidAmount(parseInt(e.target.value) || 0)}
-                className="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-center text-white font-bold text-lg focus:outline-none focus:border-amber-500"
-            />
-            <button 
+                className="px-4 py-2 bg-slate-700 rounded-lg text-white font-bold hover:bg-slate-600 transition-colors"
+              >
+                -10
+              </button>
+              <div className="flex-1 relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rs.</span>
+                <input
+                  type="number"
+                  value={bidAmount}
+                  onChange={(e) => setBidAmount(parseInt(e.target.value) || 0)}
+                  className="w-full bg-slate-800 border-2 border-slate-600 rounded-lg pl-12 pr-4 py-3 text-center text-white font-bold text-xl focus:outline-none focus:border-amber-500 transition-colors"
+                />
+              </div>
+              <button 
                 onClick={() => setBidAmount(amount => amount + 10)}
-                className="px-3 bg-slate-700 rounded-lg text-white font-bold hover:bg-slate-600"
-            >+</button>
-          </div>
+                className="px-4 py-2 bg-slate-700 rounded-lg text-white font-bold hover:bg-slate-600 transition-colors"
+              >
+                +10
+              </button>
+            </div>
 
-          <button
-            onClick={handleBid}
-            disabled={bidAmount <= auction.highestBid}
-            className={`w-full py-3 rounded-xl font-bold text-lg transition-all ${
+            {/* Quick bid buttons */}
+            <div className="grid grid-cols-3 gap-2">
+              {[10, 25, 50].map(inc => (
+                <button
+                  key={inc}
+                  onClick={() => setBidAmount(auction.highestBid + inc)}
+                  className="py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-sm rounded-lg transition-colors"
+                >
+                  +{inc}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={handleBid}
+              disabled={bidAmount <= auction.highestBid}
+              className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
                 bidAmount > auction.highestBid
-                ? "bg-amber-500 text-slate-900 hover:bg-amber-400 shadow-lg shadow-amber-500/20"
-                : "bg-slate-800 text-slate-500 cursor-not-allowed"
-            }`}
-          >
-            Place Bid
-          </button>
+                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 hover:shadow-2xl hover:shadow-amber-500/30 hover:scale-[1.02] active:scale-[0.98]"
+                  : "bg-slate-800 text-slate-600 cursor-not-allowed"
+              }`}
+            >
+              {bidAmount > auction.highestBid ? "🔨 Place Bid" : "Bid Too Low"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

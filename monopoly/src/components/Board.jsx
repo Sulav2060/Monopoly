@@ -374,7 +374,8 @@ const Board = ({
           </div>
         </div>
 
-        {players?.map((player, index) => {
+        {players?.filter(player => !player.isBankrupt).map((player) => {
+          const originalIndex = players.findIndex(p => p.id === player.id);
           const prevPos = prevPositions?.[player.id] ?? player.position ?? 0;
           const steps = (player.position - prevPos + tilesCount) % tilesCount;
           const isAnimatingPlayer =
@@ -387,9 +388,9 @@ const Board = ({
               position={player.position}
               color={player.color}
               isAnimatingPlayer={isAnimatingPlayer}
-              isCurrentPlayer={index === currentTurnIndex}
+              isCurrentPlayer={originalIndex === currentTurnIndex}
               playerCount={players.length}
-              playerIndex={index}
+              playerIndex={originalIndex}
               animationStep={animationStep}
               startPosition={prevPos}
               moveSteps={steps}

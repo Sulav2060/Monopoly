@@ -55,7 +55,7 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom">
         <div 
           onClick={() => setIsMinimized(false)}
-          className="bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 px-6 py-3 rounded-full shadow-2xl cursor-pointer hover:scale-105 transition-transform flex items-center gap-3 border-2 border-amber-300"
+          className="bg-linear-to-r from-amber-500 to-orange-500 text-slate-900 px-6 py-3 rounded-full shadow-2xl cursor-pointer hover:scale-105 transition-transform flex items-center gap-3 border-2 border-amber-300"
         >
           <span className="text-2xl">🔨</span>
           <span className="font-bold">Auction: {property.name}</span>
@@ -78,8 +78,8 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
       <div className="fixed bottom-0 left-0 right-0 md:bottom-auto md:right-4 md:top-1/2 md:-translate-y-1/2 md:left-auto md:w-96 pointer-events-auto animate-in slide-in-from-bottom md:slide-in-from-right duration-300">
         <div className="bg-slate-900/95 backdrop-blur-md border-2 border-amber-500/50 rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden">
           {/* Header */}
-          <div className="relative bg-gradient-to-r from-amber-500 to-orange-500 p-4">
-            <div className="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent" />
+          <div className="relative bg-linear-to-r from-amber-500 to-orange-500 p-4">
+            <div className="absolute inset-0 bg-linear-to-b from-white/10 to-transparent" />
             <div className="relative flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">🔨</span>
@@ -165,10 +165,10 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
           <div className="p-4 space-y-3">
             <div className="flex gap-2 items-center">
               <button 
-                onClick={() => setBidAmount(amount => Math.max(auction.highestBid + 1, amount - 10))}
+                onClick={() => setBidAmount(amount => Math.max(auction.highestBid + 1, amount - 5))}
                 className="px-4 py-2 bg-slate-700 rounded-lg text-white font-bold hover:bg-slate-600 transition-colors"
               >
-                -10
+                -5
               </button>
               <div className="flex-1 relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">Rs.</span>
@@ -180,24 +180,27 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
                 />
               </div>
               <button 
-                onClick={() => setBidAmount(amount => amount + 10)}
+                onClick={() => setBidAmount(amount => amount + 5)}
                 className="px-4 py-2 bg-slate-700 rounded-lg text-white font-bold hover:bg-slate-600 transition-colors"
               >
-                +10
+                +5
               </button>
             </div>
 
-            {/* Quick bid buttons */}
+            {/* Quick bid buttons - Auto-place bid */}
             <div className="grid grid-cols-3 gap-2">
-              {[10, 25, 50].map(inc => (
-                <button
-                  key={inc}
-                  onClick={() => setBidAmount(auction.highestBid + inc)}
-                  className="py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-300 text-sm rounded-lg transition-colors"
-                >
-                  +{inc}
-                </button>
-              ))}
+              {[10, 25, 50].map(inc => {
+                const quickBidAmount = auction.highestBid + inc;
+                return (
+                  <button
+                    key={inc}
+                    onClick={() => onPlaceBid(quickBidAmount)}
+                    className="py-2 bg-linear-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-sm font-semibold rounded-lg transition-all hover:scale-105 active:scale-95"
+                  >
+                    +{inc}
+                  </button>
+                );
+              })}
             </div>
 
             <button
@@ -205,7 +208,7 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
               disabled={bidAmount <= auction.highestBid}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
                 bidAmount > auction.highestBid
-                  ? "bg-gradient-to-r from-amber-500 to-orange-500 text-slate-900 hover:shadow-2xl hover:shadow-amber-500/30 hover:scale-[1.02] active:scale-[0.98]"
+                  ? "bg-linear-to-r from-amber-500 to-orange-500 text-slate-900 hover:shadow-2xl hover:shadow-amber-500/30 hover:scale-[1.02] active:scale-[0.98]"
                   : "bg-slate-800 text-slate-600 cursor-not-allowed"
               }`}
             >

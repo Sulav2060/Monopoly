@@ -49,7 +49,7 @@ const Die = ({
   };
 
   const bind = useDrag(
-    ({ active, movement: [x, y], memo, timeStamp }) => {
+    ({ active, movement: [x, y], memo }) => {
       // If no dice click handler (e.g. not my turn) or already rolling, ignore
       if (!onDiceClick || isRolling) return;
 
@@ -76,7 +76,10 @@ const Die = ({
         if (onDiceClick) onDiceClick();
       }
     },
-    { pointerEvents: true }
+    {
+      pointerEvents: true,
+      eventOptions: { passive: false },
+    }
   );
 
   useEffect(() => {
@@ -374,9 +377,12 @@ const Dice3D = ({
   onDiceClick,
 }) => {
   return (
-    <div className="w-full h-full" style={{ minHeight: '100%', minWidth: '100%' }}>
+    <div
+      className="w-full h-full"
+      style={{ minHeight: "100%", minWidth: "100%", touchAction: "none" }}
+    >
       <Canvas
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: "100%", height: "100%", touchAction: "none" }}
         camera={{
           position: [0, 12, 0.1],
           fov: 35, // Reduced FOV slightly for a more "product photography" telephoto look

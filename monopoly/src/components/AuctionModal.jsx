@@ -5,7 +5,7 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
   const [timeLeft, setTimeLeft] = useState(5);
   const [isMinimized, setIsMinimized] = useState(false);
   const timerRef = useRef(null);
-  const TIMER_DURATION = 5; 
+  const TIMER_DURATION = 7; 
 
   // Helper to get player name by ID
   const getPlayerName = (playerId) => {
@@ -53,17 +53,21 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
   // Minimized view (compact bar at bottom)
   if (isMinimized) {
     return (
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom">
-        <div 
+      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom">
+        <div
           onClick={() => setIsMinimized(false)}
-          className="bg-linear-to-r from-amber-500 to-orange-500 text-slate-900 px-6 py-3 rounded-full shadow-2xl cursor-pointer hover:scale-105 transition-transform flex items-center gap-3 border-2 border-amber-300"
+          className="bg-linear-to-r from-amber-400 to-orange-400 text-slate-900 px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full shadow-xl cursor-pointer hover:scale-[1.02] transition-transform flex items-center gap-2 sm:gap-3 border border-amber-300/70 max-w-[92vw]"
         >
-          <span className="text-2xl">🔨</span>
-          <span className="font-bold">Auction: {property.name}</span>
-          <div className="bg-slate-900/20 px-3 py-1 rounded-full text-sm font-mono">
+          <span className="text-lg sm:text-2xl">🔨</span>
+          <span className="font-semibold text-xs sm:text-sm truncate max-w-[40vw] sm:max-w-[60vw]">
+            {property.name}
+          </span>
+          <div className="bg-slate-900/15 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-mono">
             {timeLeft}s
           </div>
-          <span className="text-sm opacity-80">Click to bid</span>
+          <span className="text-[10px] sm:text-xs opacity-80 hidden xs:inline">
+            Tap to bid
+          </span>
         </div>
       </div>
     );
@@ -75,12 +79,12 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
       {/* Subtle backdrop - only slight dimming */}
       <div className="absolute inset-0 bg-black/20 pointer-events-auto" />
       
-      {/* Auction Panel - Bottom on mobile, Right side on desktop */}
-      <div className="fixed bottom-0 left-0 right-0 md:bottom-auto md:right-4 md:top-1/2 md:-translate-y-1/2 md:left-auto md:w-96 pointer-events-auto animate-in slide-in-from-bottom md:slide-in-from-right duration-300">
-        <div className="bg-slate-900/95 backdrop-blur-md border-2 border-amber-500/50 rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden">
+      {/* Auction Panel - Centered */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-auto animate-in zoom-in-95 duration-300">
+        <div className="w-[420px] max-w-[92vw] bg-slate-800/90 backdrop-blur-md border-2 border-amber-400/40 rounded-2xl shadow-2xl overflow-hidden">
           {/* Header */}
-          <div className="relative bg-linear-to-r from-amber-500 to-orange-500 p-4">
-            <div className="absolute inset-0 bg-linear-to-b from-white/10 to-transparent" />
+          <div className="relative bg-linear-to-r from-amber-300 to-orange-300 p-4">
+            <div className="absolute inset-0 bg-linear-to-b from-white/20 to-transparent" />
             <div className="relative flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <span className="text-3xl">🔨</span>
@@ -91,7 +95,7 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
               </div>
               <button
                 onClick={() => setIsMinimized(true)}
-                className="bg-slate-900/30 hover:bg-slate-900/50 text-slate-900 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors"
+                className="bg-white/40 hover:bg-white/55 text-slate-900 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors"
               >
                 Minimize
               </button>
@@ -120,7 +124,7 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
           </div>
 
           {/* Auction Status */}
-          <div className="p-4 bg-slate-800/50">
+          <div className="p-4 bg-slate-800/40">
             <div className="flex items-center justify-between mb-3">
               <div className="flex-1">
                 <div className="text-slate-400 text-xs mb-1">Current Highest Bid</div>
@@ -209,7 +213,7 @@ const AuctionModal = ({ auction, currentPlayerId, players = [], onPlaceBid, onTi
               disabled={bidAmount <= auction.highestBid}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
                 bidAmount > auction.highestBid
-                  ? "bg-linear-to-r from-amber-500 to-orange-500 text-slate-900 hover:shadow-2xl hover:shadow-amber-500/30 hover:scale-[1.02] active:scale-[0.98]"
+                  ? "bg-linear-to-r from-amber-400 to-orange-400 text-slate-900 hover:shadow-2xl hover:shadow-amber-400/25 hover:scale-[1.02] active:scale-[0.98]"
                   : "bg-slate-800 text-slate-600 cursor-not-allowed"
               }`}
             >

@@ -797,6 +797,18 @@ const Game = () => {
   const rollDice = useCallback(async () => {
     if (isAnimating || hasRolled || isLoadingAction || !currentGame) return;
 
+    // Check if user is in debt (money < 0)
+    const currentPlayer = currentGame?.players?.find(
+      (player) => player.id === currentPlayerId,
+    );
+    if (currentPlayer && currentPlayer.money < 0) {
+      showNotification(
+        "❌ Resolve your debt first by selling/mortgaging properties!",
+        "error",
+      );
+      return;
+    }
+
     try {
       setIsLoadingAction(true);
 
@@ -842,11 +854,31 @@ const Game = () => {
     } finally {
       setIsLoadingAction(false);
     }
-  }, [isAnimating, hasRolled, isLoadingAction, currentGame, contextRollDice]);
+  }, [
+    isAnimating,
+    hasRolled,
+    isLoadingAction,
+    currentGame,
+    contextRollDice,
+    currentPlayerId,
+    showNotification,
+  ]);
 
   // End Turn Function
   const endTurn = useCallback(async () => {
     if (isAnimating || isLoadingAction || !currentGame) return;
+
+    // Check if user is in debt (money < 0)
+    const currentPlayer = currentGame?.players?.find(
+      (player) => player.id === currentPlayerId,
+    );
+    if (currentPlayer && currentPlayer.money < 0) {
+      showNotification(
+        "❌ Resolve your debt first by selling/mortgaging properties!",
+        "error",
+      );
+      return;
+    }
 
     try {
       setIsLoadingAction(true);
@@ -858,7 +890,14 @@ const Game = () => {
     } finally {
       setIsLoadingAction(false);
     }
-  }, [isAnimating, isLoadingAction, currentGame, contextEndTurn]);
+  }, [
+    isAnimating,
+    isLoadingAction,
+    currentGame,
+    contextEndTurn,
+    currentPlayerId,
+    showNotification,
+  ]);
 
   // Helper to get tile at position
   const getTileAtPosition = (position) => {

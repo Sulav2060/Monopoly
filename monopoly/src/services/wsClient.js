@@ -213,6 +213,24 @@ class GameSocketManager {
   }
 
   /**
+   * Vote to kick an inactive player
+   */
+  voteKick(targetPlayerId) {
+    if (!this.gameId || !this.playerId) {
+      throw new Error(
+        `Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`,
+      );
+    }
+
+    this.send({
+      type: "VOTE_KICK",
+      gameId: this.gameId,
+      playerId: this.playerId,
+      targetPlayerId,
+    });
+  }
+
+  /**
    * Listen for events
    * @param {string} event - Event name ('gameStateUpdate', 'error', 'connect', etc.)
    * @param {function} callback - Handler function

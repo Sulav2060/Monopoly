@@ -102,6 +102,7 @@ describe("voluntary bankruptcy", () => {
       events: [],
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = bankruptPlayer(state, "p1");
@@ -154,6 +155,7 @@ describe("voluntary bankruptcy", () => {
       events: [],
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = bankruptPlayer(state, "p1");
@@ -268,6 +270,7 @@ describe("voluntary bankruptcy", () => {
       events: [],
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = bankruptPlayer(state, "p1");
@@ -314,6 +317,7 @@ describe("debt resolution and bankruptcy", () => {
       events: [],
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = enterDebtResolution(state, "p1", 500, "p2");
@@ -366,6 +370,7 @@ describe("debt resolution and bankruptcy", () => {
       events: [],
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = settleDebt(state, "p1");
@@ -519,6 +524,7 @@ describe("debt resolution and bankruptcy", () => {
       events: [],
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = afterAssetChange(state);
@@ -565,6 +571,7 @@ describe("debt resolution and bankruptcy", () => {
       events: [],
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     expect(canRecover(state, "p1")).toBe(true);
@@ -594,6 +601,7 @@ describe("debt resolution and bankruptcy", () => {
       events: [],
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     expect(canRecover(state, "p1")).toBe(false);
@@ -670,6 +678,7 @@ describe("debt resolution and bankruptcy", () => {
       events: [],
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = afterAssetChange(state);
@@ -717,6 +726,7 @@ describe("debt resolution and bankruptcy", () => {
       events: [],
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = bankruptPlayer(state, "p1", "p2");

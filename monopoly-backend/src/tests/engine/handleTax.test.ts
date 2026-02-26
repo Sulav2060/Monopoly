@@ -25,6 +25,7 @@ describe("handleTax", () => {
       communityChestIndex: 0,
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = handleTax(state, 200);
@@ -56,6 +57,7 @@ describe("handleTax", () => {
       communityChestIndex: 0,
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = handleTax(state, 150);
@@ -91,6 +93,7 @@ describe("handleTax", () => {
       communityChestIndex: 0,
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     handleTax(state, 100);

@@ -36,6 +36,7 @@ test("emits GAME_OVER when only one player remains", () => {
     communityChestIndex: 0,
     pendingAction: null,
     pendingTrades: [],
+    voteout: null,
   };
 
   const result = checkGameOver(state);

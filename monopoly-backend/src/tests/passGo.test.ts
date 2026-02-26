@@ -7,8 +7,9 @@ test("player gets money when passing GO", () => {
   const state: GameState = {
     ...baseState,
     players: baseState.players.map((p, index) =>
-      index === 0 ? { ...p, position: 39, money: 1000 } : p
+      index === 0 ? { ...p, position: 39, money: 1000 } : p,
     ),
+    voteout: null,
   };
 
   const next = movePlayer(state, { die1: 2, die2: 1 });

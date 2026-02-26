@@ -17,5 +17,6 @@ export function createInitialGameState(): GameState {
     properties: [],
     communityChestDeck: initialCommunityChestDeck,
     communityChestIndex: 0,
+    voteout: null,
   };
 }

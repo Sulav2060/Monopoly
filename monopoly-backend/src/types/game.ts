@@ -178,7 +178,35 @@ export type GameEvent =
       tradeId: string;
       initiatingPlayerId: PlayerId;
       targetPlayerId: PlayerId;
+    }
+  //voteout regarding events
+  | {
+      type: "VOTEOUT_INITIATED";
+      targetPlayerId: PlayerId;
+    }
+  | {
+      type: "VOTEOUT_VOTED";
+      votedByPlayerId: PlayerId;
+      targetPlayerId: PlayerId;
+      voteCount: number; // Total votes so far
+    }
+  | {
+      type: "VOTEOUT_PLAYER_REMOVED";
+      targetPlayerId: PlayerId;
+      victimPlayerId?: PlayerId;
+    }
+  | {
+      type: "VOTEOUT_RESET";
+      targetPlayerId?: PlayerId;
     };
+
+export type VoteoutState = {
+  targetPlayerId: PlayerId;
+  voters: PlayerId[]; // List of player IDs who voted to kick out
+  voteCount: number; // Count of votes
+  initializedAt: number; // Timestamp when voteout was initiated
+  timerId?: NodeJS.Timeout; // Timer for 2-minute reset
+} | null;
 
 export type GameState = {
   players: PlayerState[];
@@ -194,6 +222,7 @@ export type GameState = {
   communityChestIndex: number;
   pendingAction: PendingAction;
   pendingTrades: TradeOfferData[]; // Array to support multiple concurrent trade offers
+  voteout: VoteoutState; // Voteout state for kicking out players (null if no active voteout)
 };
 
 export type PropertyOwnership = {

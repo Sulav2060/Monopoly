@@ -39,6 +39,7 @@ describe("buyPendingProperty", () => {
         },
       },
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = buyPendingProperty(state);
@@ -85,6 +86,7 @@ describe("buyPendingProperty", () => {
       communityChestIndex: 0,
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = buyPendingProperty(state);
@@ -115,6 +117,7 @@ describe("buyPendingProperty", () => {
       communityChestDeck: [],
       communityChestIndex: 0,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = buyPendingProperty(state);
@@ -158,6 +161,7 @@ describe("buyPendingProperty", () => {
       communityChestDeck: [],
       communityChestIndex: 0,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = buyPendingProperty(state);
@@ -204,6 +208,7 @@ describe("buyPendingProperty", () => {
       communityChestDeck: [],
       communityChestIndex: 0,
       pendingTrades: [],
+      voteout: null,
     };
 
     buyPendingProperty(state);

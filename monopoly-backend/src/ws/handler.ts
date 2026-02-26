@@ -17,9 +17,58 @@ import { acceptTrade, rejectTrade, deleteTrade } from "../engine/finalizeTrade";
 import { mortgageProperty } from "../engine/mortgage";
 import { unmortgageProperty } from "../engine/unmortgage";
 import { bankruptPlayer } from "../engine/bankruptPlayer";
+import { voteoutPlayer, resetVoteout } from "../engine/voteout";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
+
+// Voteout timer management
+const voteoutTimers = new Map<string, NodeJS.Timeout>();
+
+const VOTEOUT_RESET_DURATION = 2 * 60 * 1000; // 2 minutes
+
+/**
+ * Start or restart the voteout reset timer for a game
+ */
+function startVoteoutResetTimer(gameId: string, wss: WebSocketServer): void {
+  // Clear existing timer if any
+  const existingTimer = voteoutTimers.get(gameId);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+  }
+
+  // Set new timer to reset votes after 2 minutes
+  const timer = setTimeout(() => {
+    const game = getGame(gameId);
+    if (game && game.state.voteout) {
+      const resetState = resetVoteout(game.state);
+      updateGame(gameId, resetState);
+
+      safeBroadcast(wss, {
+        type: "GAME_STATE_UPDATE",
+        gameId,
+        state: resetState,
+      });
+
+      console.log(`🔄 Voteout votes reset for game ${gameId} after 2 minutes`);
+    }
+
+    voteoutTimers.delete(gameId);
+  }, VOTEOUT_RESET_DURATION);
+
+  voteoutTimers.set(gameId, timer);
+}
+
+/**
+ * Clear the voteout reset timer for a game
+ */
+function clearVoteoutResetTimer(gameId: string): void {
+  const timer = voteoutTimers.get(gameId);
+  if (timer) {
+    clearTimeout(timer);
+    voteoutTimers.delete(gameId);
+  }
+}
 
 export function setupWebSocket(wss: WebSocketServer) {
   wss.on("connection", (socket: WebSocket) => {
@@ -694,6 +743,117 @@ export function setupWebSocket(wss: WebSocketServer) {
           console.log(
             `💸 ${player.name} declared bankruptcy in game ${msg.gameId}`,
           );
+          return;
+        }
+
+        /* =======================
+           VOTEOUT_PLAYER
+        ======================= */
+        if (msg.type === "VOTEOUT_PLAYER") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          const votingPlayer = game.state.players.find(
+            (p) => p.id === msg.playerId,
+          );
+          if (!votingPlayer) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Voting player not found",
+            });
+            return;
+          }
+
+          const targetPlayer = game.state.players.find(
+            (p) => p.id === msg.targetPlayerId,
+          );
+          if (!targetPlayer) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Target player not found",
+            });
+            return;
+          }
+
+          // Cannot vote to kick out yourself
+          if (msg.playerId === msg.targetPlayerId) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Cannot vote to kick out yourself",
+            });
+            return;
+          }
+
+          // Cannot vote out an already bankrupt player
+          if (targetPlayer.isBankrupt) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Cannot vote out an already bankrupt player",
+            });
+            return;
+          }
+
+          // If there's an active voteout for a different player, reject the new vote
+          if (
+            game.state.voteout &&
+            game.state.voteout.targetPlayerId !== msg.targetPlayerId
+          ) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: `There is an active voteout against ${
+                game.state.players.find(
+                  (p) => p.id === game.state.voteout?.targetPlayerId,
+                )?.name || "another player"
+              }. Wait for it to complete or expire before voting for a different player.`,
+            });
+            return;
+          }
+
+          // Check if player already voted for this target
+          if (
+            game.state.voteout &&
+            game.state.voteout.targetPlayerId === msg.targetPlayerId &&
+            game.state.voteout.voters.includes(msg.playerId)
+          ) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "You have already voted to kick out this player",
+            });
+            return;
+          }
+
+          // Process voteout
+          const { state: newState, shouldRemovePlayer } = voteoutPlayer(
+            game.state,
+            msg.playerId,
+            msg.targetPlayerId,
+          );
+
+          updateGame(msg.gameId, newState);
+
+          safeBroadcast(wss, {
+            type: "GAME_STATE_UPDATE",
+            gameId: msg.gameId,
+            state: newState,
+          });
+
+          if (shouldRemovePlayer) {
+            console.log(
+              `🚫 ${targetPlayer.name} was voted out in game ${msg.gameId}`,
+            );
+            // Clear any existing timer since voteout is done
+            clearVoteoutResetTimer(msg.gameId);
+          } else {
+            console.log(
+              `🗳️ ${votingPlayer.name} voted to kick out ${targetPlayer.name} in game ${msg.gameId} (${newState.voteout?.voteCount ?? 0} votes)`,
+            );
+            // Start or restart the 2-minute reset timer
+            startVoteoutResetTimer(msg.gameId, wss);
+          }
+
           return;
         }
 

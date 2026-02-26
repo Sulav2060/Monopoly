@@ -78,6 +78,12 @@ export type ClientMessage =
       type: "DECLARE_BANKRUPTCY";
       gameId: string;
       playerId: string; // Player declaring bankruptcy
+    }
+  | {
+      type: "VOTEOUT_PLAYER";
+      gameId: string;
+      playerId: string; // Player voting
+      targetPlayerId: string; // Player being voted out
     };
 
 export type ServerMessage =

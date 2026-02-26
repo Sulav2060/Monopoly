@@ -8,6 +8,7 @@ export function createBaseState(): GameState {
     currentTurnIndex: 0,
     communityChestDeck: [],
     communityChestIndex: 0,
+    voteout: null,
     players: [
       {
         id: "p1",

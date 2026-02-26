@@ -32,6 +32,7 @@ export const baseState: GameState = {
   events: [],
   pendingAction: null,
   pendingTrades: [],
+  voteout: null,
 };
 
 test("player moves correct number of steps", () => {

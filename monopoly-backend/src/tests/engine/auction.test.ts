@@ -46,6 +46,7 @@ test("auction assigns property to highest bidder", () => {
       },
     },
     pendingTrades: [],
+    voteout: null,
   };
 
   const result = finalizeAuction(state);

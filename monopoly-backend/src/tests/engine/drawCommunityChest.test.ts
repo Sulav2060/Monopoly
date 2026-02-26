@@ -23,6 +23,7 @@ describe("drawCommunityChest", () => {
       communityChestIndex: 0,
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = drawCommunityChest(state);
@@ -56,13 +57,14 @@ describe("drawCommunityChest", () => {
       communityChestIndex: 0,
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = drawCommunityChest(state);
 
     expect(result.players[0]!.inJail).toBe(true);
     expect(result.events.some((e) => e.type === "PLAYER_SENT_TO_JAIL")).toBe(
-      true
+      true,
     );
   });
 });

@@ -28,6 +28,7 @@ describe("handleFreeParking", () => {
       communityChestIndex: 0,
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = handleFreeParking(state);
@@ -61,6 +62,7 @@ describe("handleFreeParking", () => {
       communityChestIndex: 0,
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     const result = handleFreeParking(state);
@@ -100,6 +102,7 @@ describe("handleFreeParking", () => {
       communityChestIndex: 0,
       pendingAction: null,
       pendingTrades: [],
+      voteout: null,
     };
 
     handleFreeParking(state);

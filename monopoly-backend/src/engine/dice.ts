@@ -8,5 +8,7 @@ export function rollDice(): DiceRoll {
   return {
     die1: (values[0]! % 6) + 1,
     die2: (values[1]! % 6) + 1,
+    // die1: 6,
+    // die2: 4,
   };
 }

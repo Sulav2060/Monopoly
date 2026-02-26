@@ -84,6 +84,11 @@ export type ClientMessage =
       gameId: string;
       playerId: string;
       targetPlayerId: string;
+    }
+  | {
+      type: "PAY_TO_EXIT_JAIL";
+      gameId: string;
+      playerId: string;
     };
 
 export type ServerMessage =

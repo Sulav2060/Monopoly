@@ -92,6 +92,7 @@ const Game = () => {
   const [notification, setNotification] = useState(null);
   const [inactivityWarning, setInactivityWarning] = useState(null);
   const [voteKickStatus, setVoteKickStatus] = useState(null);
+  const [isJailAutoEnding, setIsJailAutoEnding] = useState(false);
   const [eventCards, setEventCards] = useState([]);
   const [pendingEventCards, setPendingEventCards] = useState([]);
   const [pendingSounds, setPendingSounds] = useState([]);
@@ -764,12 +765,33 @@ const Game = () => {
       }
 
       if (cardEvents.length > 0) {
+        // Separate jail events for immediate display
+        const jailEvents = cardEvents.filter((e) => e.type === "PLAYER_SENT_TO_JAIL");
+        const passedGoEvents = cardEvents.filter((e) => e.type === "PASSED_GO");
+        const otherEvents = cardEvents.filter(
+          (e) => e.type !== "PASSED_GO" && e.type !== "PLAYER_SENT_TO_JAIL"
+        );
+
+        // Show jail cards immediately (for 3 doubles scenario)
+        if (jailEvents.length > 0) {
+          setEventCards((prev) => {
+            const filteredPrev = prev.filter((c) => c.type !== "PLAYER_SENT_TO_JAIL");
+            const newCards = [...filteredPrev, ...jailEvents];
+            if (eventCardTimeoutRef.current) {
+              clearTimeout(eventCardTimeoutRef.current);
+            }
+            eventCardTimeoutRef.current = setTimeout(
+              () => setEventCards([]),
+              4000,
+            );
+            return newCards;
+          });
+        }
+
         // If there's a COMMUNITY_CHEST event with PASSED_GO, queue them in correct order
         const hasCommunityChestOrChance = cardEvents.some(
           (evt) => evt.type === "COMMUNITY_CHEST",
         );
-        const passedGoEvents = cardEvents.filter((e) => e.type === "PASSED_GO");
-        const otherEvents = cardEvents.filter((e) => e.type !== "PASSED_GO");
 
         // If there's a community chest/chance card with PASSED_GO, queue in proper order
         if (hasCommunityChestOrChance && passedGoEvents.length > 0) {
@@ -977,6 +999,41 @@ const Game = () => {
     isLoadingAction,
     currentGame,
     contextEndTurn,
+    currentPlayerId,
+    showNotification,
+  ]);
+
+  // Pay Rs.50 to Exit Jail
+  const payJailFee = useCallback(async () => {
+    if (isLoadingAction || !currentGame) return;
+
+    const currentPlayer = currentGame?.players?.find(
+      (player) => player.id === currentPlayerId,
+    );
+    
+    if (!currentPlayer || !currentPlayer.inJail) {
+      showNotification("❌ You are not in jail!", "error");
+      return;
+    }
+
+    if (currentPlayer.money < 50) {
+      showNotification("❌ You need Rs.50 to exit jail!", "error");
+      return;
+    }
+
+    try {
+      setIsLoadingAction(true);
+      wsClient.payToExitJail();
+      showNotification("✅ You paid Rs.50 to exit jail!", "success");
+    } catch (error) {
+      showNotification(error.message || "Failed to pay jail fee", "error");
+      console.error("Pay jail fee failed:", error);
+    } finally {
+      setIsLoadingAction(false);
+    }
+  }, [
+    isLoadingAction,
+    currentGame,
     currentPlayerId,
     showNotification,
   ]);
@@ -1395,6 +1452,52 @@ const Game = () => {
 
     previousDebtRef.current = isInDebt;
   }, [currentUser?.debtResolution, showNotification]);
+
+  // Force end turn when player is sent to jail (on first entry only, not every turn)
+  // Track which players have had their turn auto-ended for jail
+  const jailAutoEndedPlayersRef = useRef(new Set());
+  
+  useEffect(() => {
+    if (!currentPlayer || !isMyTurn || !currentGame) {
+      setIsJailAutoEnding(false);
+      return;
+    }
+
+    const nowInJail = currentPlayer.inJail;
+    const jailTurns = currentPlayer.jailTurns ?? 0;
+    const playerId = currentPlayer.id;
+
+    // Clear tracking when player exits jail
+    if (!nowInJail && jailAutoEndedPlayersRef.current.has(playerId)) {
+      jailAutoEndedPlayersRef.current.delete(playerId);
+      setIsJailAutoEnding(false);
+      return;
+    }
+
+    // Only auto-end turn if:
+    // 1. Player is in jail
+    // 2. jailTurns is 0 (first turn in jail, before any roll attempts)
+    // 3. We haven't already auto-ended this player's turn for this jail entry
+    if (nowInJail && jailTurns === 0 && !jailAutoEndedPlayersRef.current.has(playerId)) {
+      // Mark this player as having their turn auto-ended
+      jailAutoEndedPlayersRef.current.add(playerId);
+      setIsJailAutoEnding(true);
+      
+      // Send END_TURN directly to force turn to end
+      const timeout = setTimeout(() => {
+        try {
+          wsClient.endTurn();
+          console.log("🚔 Forced end turn for newly jailed player", playerId);
+        } catch (error) {
+          console.error("Failed to end turn:", error);
+        }
+      }, 300);
+      
+      return () => clearTimeout(timeout);
+    } else {
+      setIsJailAutoEnding(false);
+    }
+  }, [currentPlayer?.inJail, currentPlayer?.jailTurns, currentPlayer?.id, isMyTurn, currentGame]);
 
   useEffect(() => {
     if (!pendingActionPlayerId) {
@@ -1886,6 +1989,8 @@ const Game = () => {
             isPendingDebt={isCurrentUserInDebt}
             onRollDice={rollDice}
             onEndTurn={endTurn}
+            onPayJailFee={payJailFee}
+            isJailAutoEnding={isJailAutoEnding}
             onRollComplete={() => {
               if (animationStep === "rotating") {
                 setAnimationStep("waving");

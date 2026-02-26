@@ -231,6 +231,23 @@ class GameSocketManager {
   }
 
   /**
+   * Pay Rs.50 to exit jail
+   */
+  payToExitJail() {
+    if (!this.gameId || !this.playerId) {
+      throw new Error(
+        `Game or player not set. GameId: ${this.gameId}, PlayerId: ${this.playerId}`,
+      );
+    }
+
+    this.send({
+      type: "PAY_TO_EXIT_JAIL",
+      gameId: this.gameId,
+      playerId: this.playerId,
+    });
+  }
+
+  /**
    * Listen for events
    * @param {string} event - Event name ('gameStateUpdate', 'error', 'connect', etc.)
    * @param {function} callback - Handler function

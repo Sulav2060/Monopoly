@@ -16,6 +16,8 @@ const Board = ({
   hasRolled,
   onRollDice,
   onEndTurn,
+  onPayJailFee,
+  isJailAutoEnding,
   onTileClick,
   prevPositions = {},
   currentGame,
@@ -393,6 +395,8 @@ const Board = ({
               isAnimating={isAnimating}
               onRollDice={onRollDice}
               onEndTurn={onEndTurn}
+              onPayJailFee={onPayJailFee}
+              isJailAutoEnding={isJailAutoEnding}
               currentPlayer={players[currentTurnIndex]}
               isPendingAction={isPendingAction}
               isPendingDebt={isPendingDebt}

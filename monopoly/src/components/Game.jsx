@@ -199,7 +199,8 @@ const Game = () => {
   const getPendingActionPlayerId = (pendingAction) => {
     if (!pendingAction) return null;
     if (pendingAction.playerId) return pendingAction.playerId;
-    if (pendingAction.property?.playerId) return pendingAction.property.playerId;
+    if (pendingAction.property?.playerId)
+      return pendingAction.property.playerId;
     return null;
   };
 
@@ -780,16 +781,20 @@ const Game = () => {
 
       if (cardEvents.length > 0) {
         // Separate jail events for immediate display
-        const jailEvents = cardEvents.filter((e) => e.type === "PLAYER_SENT_TO_JAIL");
+        const jailEvents = cardEvents.filter(
+          (e) => e.type === "PLAYER_SENT_TO_JAIL",
+        );
         const passedGoEvents = cardEvents.filter((e) => e.type === "PASSED_GO");
         const otherEvents = cardEvents.filter(
-          (e) => e.type !== "PASSED_GO" && e.type !== "PLAYER_SENT_TO_JAIL"
+          (e) => e.type !== "PASSED_GO" && e.type !== "PLAYER_SENT_TO_JAIL",
         );
 
         // Show jail cards immediately (for 3 doubles scenario)
         if (jailEvents.length > 0) {
           setEventCards((prev) => {
-            const filteredPrev = prev.filter((c) => c.type !== "PLAYER_SENT_TO_JAIL");
+            const filteredPrev = prev.filter(
+              (c) => c.type !== "PLAYER_SENT_TO_JAIL",
+            );
             const newCards = [...filteredPrev, ...jailEvents];
             if (eventCardTimeoutRef.current) {
               clearTimeout(eventCardTimeoutRef.current);
@@ -1024,7 +1029,7 @@ const Game = () => {
     const currentPlayer = currentGame?.players?.find(
       (player) => player.id === currentPlayerId,
     );
-    
+
     if (!currentPlayer || !currentPlayer.inJail) {
       showNotification("❌ You are not in jail!", "error");
       return;
@@ -1045,12 +1050,7 @@ const Game = () => {
     } finally {
       setIsLoadingAction(false);
     }
-  }, [
-    isLoadingAction,
-    currentGame,
-    currentPlayerId,
-    showNotification,
-  ]);
+  }, [isLoadingAction, currentGame, currentPlayerId, showNotification]);
 
   // Helper to get tile at position
   const getTileAtPosition = (position) => {
@@ -1425,24 +1425,25 @@ const Game = () => {
   const isCurrentUserBankrupt = currentUser?.isBankrupt ?? false;
   const isCurrentUserInDebt = !!currentUser?.debtResolution;
   const isMyTurn = currentPlayer?.id === currentPlayerId;
-  
+
   // Determine which player is being tracked for inactivity
   // Priority: 1) pending action, 2) inactivity warning, 3) vote kick status
-  const pendingActionPlayerId = 
+  const pendingActionPlayerId =
     getPendingActionPlayerId(currentGame?.pendingAction) ||
     inactivityWarning?.playerId ||
     voteKickStatus?.targetPlayerId ||
     null;
-  
+
   const pendingActionPlayer = currentGame?.players?.find(
     (player) => player.id === pendingActionPlayerId,
   );
-  
-  const activeVoteKickStatus = voteKickStatus?.targetPlayerId ? voteKickStatus : null;
-  
-  const hasVotedKick = activeVoteKickStatus?.voterIds?.includes(
-    currentPlayerId,
-  );
+
+  const activeVoteKickStatus = voteKickStatus?.targetPlayerId
+    ? voteKickStatus
+    : null;
+
+  const hasVotedKick =
+    activeVoteKickStatus?.voterIds?.includes(currentPlayerId);
   const canVoteKick =
     !!pendingActionPlayerId &&
     pendingActionPlayerId !== currentPlayerId &&
@@ -1470,7 +1471,7 @@ const Game = () => {
   // Force end turn when player is sent to jail (on first entry only, not every turn)
   // Track which players have had their turn auto-ended for jail
   const jailAutoEndedPlayersRef = useRef(new Set());
-  
+
   useEffect(() => {
     if (!currentPlayer || !isMyTurn || !currentGame) {
       setIsJailAutoEnding(false);
@@ -1492,11 +1493,15 @@ const Game = () => {
     // 1. Player is in jail
     // 2. jailTurns is 0 (first turn in jail, before any roll attempts)
     // 3. We haven't already auto-ended this player's turn for this jail entry
-    if (nowInJail && jailTurns === 0 && !jailAutoEndedPlayersRef.current.has(playerId)) {
+    if (
+      nowInJail &&
+      jailTurns === 0 &&
+      !jailAutoEndedPlayersRef.current.has(playerId)
+    ) {
       // Mark this player as having their turn auto-ended
       jailAutoEndedPlayersRef.current.add(playerId);
       setIsJailAutoEnding(true);
-      
+
       // Send END_TURN directly to force turn to end
       const timeout = setTimeout(() => {
         try {
@@ -1506,12 +1511,18 @@ const Game = () => {
           console.error("Failed to end turn:", error);
         }
       }, 300);
-      
+
       return () => clearTimeout(timeout);
     } else {
       setIsJailAutoEnding(false);
     }
-  }, [currentPlayer?.inJail, currentPlayer?.jailTurns, currentPlayer?.id, isMyTurn, currentGame]);
+  }, [
+    currentPlayer?.inJail,
+    currentPlayer?.jailTurns,
+    currentPlayer?.id,
+    isMyTurn,
+    currentGame,
+  ]);
 
   useEffect(() => {
     if (!pendingActionPlayerId) {
@@ -1786,26 +1797,27 @@ const Game = () => {
       )}
 
       {(inactivityWarning || activeVoteKickStatus) && pendingActionPlayer && (
-        <div className={`fixed top-6 left-1/2 z-40 -translate-x-1/2 px-5 py-3 rounded-xl border backdrop-blur-md text-amber-100 flex items-center gap-4 ${
-          activeVoteKickStatus && !inactivityWarning
-            ? "border-red-400/40 bg-red-500/10 shadow-[0_12px_40px_-18px_rgba(239,68,68,0.8)]"
-            : "border-amber-400/40 bg-amber-500/10 shadow-[0_12px_40px_-18px_rgba(245,158,11,0.8)]"
-        }`}>
+        <div
+          className={`fixed top-6 left-1/2 z-40 -translate-x-1/2 px-5 py-3 rounded-xl border backdrop-blur-md text-amber-100 flex items-center gap-4 ${
+            activeVoteKickStatus && !inactivityWarning
+              ? "border-red-400/40 bg-red-500/10 shadow-[0_12px_40px_-18px_rgba(239,68,68,0.8)]"
+              : "border-amber-400/40 bg-amber-500/10 shadow-[0_12px_40px_-18px_rgba(245,158,11,0.8)]"
+          }`}
+        >
           <div className="text-sm">
             <span className="font-semibold">
               {pendingActionPlayerId === currentPlayerId
                 ? "You are inactive"
                 : `${pendingActionPlayer?.name || "Player"} is inactive`}
             </span>
-            {inactivityWarning?.playerId === pendingActionPlayerId && !activeVoteKickStatus && (
-              <span className="ml-2 text-amber-200/80">
-                {`Act within ${inactivityWarning.secondsRemaining}s`}
-              </span>
-            )}
+            {inactivityWarning?.playerId === pendingActionPlayerId &&
+              !activeVoteKickStatus && (
+                <span className="ml-2 text-amber-200/80">
+                  {`Act within ${inactivityWarning.secondsRemaining}s`}
+                </span>
+              )}
             {activeVoteKickStatus && !inactivityWarning && (
-              <span className="ml-2 text-red-200/80">
-                Vote to kick player
-              </span>
+              <span className="ml-2 text-red-200/80">Vote to kick player</span>
             )}
           </div>
           {activeVoteKickStatus && (
@@ -2249,7 +2261,7 @@ const Game = () => {
           </div>
 
           {/* Tile Details / Creative Space */}
-          <div 
+          <div
             className="border-t border-white/10 pt-3 flex-1 flex flex-col overflow-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-white/5 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-white/30"
             onMouseEnter={() => setIsHoveringPropertyCard(true)}
             onMouseLeave={() => setIsHoveringPropertyCard(false)}
@@ -2270,6 +2282,7 @@ const Game = () => {
                     </div>
                   )}
                   {_showPropertyCard.tile.price &&
+                    _showPropertyCard.tile.type !== "tax" &&
                     (() => {
                       const mortgageValue = Math.floor(
                         _showPropertyCard.tile.price / 2,
@@ -2360,26 +2373,69 @@ const Game = () => {
                         Rent Schedule
                       </div>
                       <div className="space-y-1 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Base</span>
-                          <span className="text-white">
-                            ${_showPropertyCard.tile.rent[0]}
-                          </span>
-                        </div>
-                        {_showPropertyCard.tile.rent.slice(1).map((r, i) => (
-                          <div
-                            key={`rent-${i}`}
-                            className="flex justify-between"
-                          >
-                            <span className="text-gray-400">
-                              {i < _showPropertyCard.tile.rent.length - 2
-                                ? `${i + 1} House${i === 0 ? "" : "s"}`
-                                : "Hotel"}
-                            </span>
-                            <span className="text-white">${r}</span>
-                          </div>
-                        ))}
+                        {_showPropertyCard.tile.type === "railroad" ? (
+                          // For airports/railroads
+                          _showPropertyCard.tile.rent.map((r, i) => (
+                            <div
+                              key={`rent-${i}`}
+                              className="flex justify-between"
+                            >
+                              <span className="text-gray-400">
+                                {i + 1} Airport{i === 0 ? "" : "s"} owned
+                              </span>
+                              <span className="text-white">${r}</span>
+                            </div>
+                          ))
+                        ) : _showPropertyCard.tile.type === "utility" ? (
+                          // For utilities
+                          _showPropertyCard.tile.rent.map((r, i) => (
+                            <div
+                              key={`rent-${i}`}
+                              className="flex justify-between"
+                            >
+                              <span className="text-gray-400">
+                                {i + 1} Utilit{i === 0 ? "y" : "ies"} owned
+                              </span>
+                              <span className="text-white">${r}</span>
+                            </div>
+                          ))
+                        ) : (
+                          // For regular properties with houses/hotels
+                          <>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Base</span>
+                              <span className="text-white">
+                                ${_showPropertyCard.tile.rent[0]}
+                              </span>
+                            </div>
+                            {_showPropertyCard.tile.rent
+                              .slice(1)
+                              .map((r, i) => (
+                                <div
+                                  key={`rent-${i}`}
+                                  className="flex justify-between"
+                                >
+                                  <span className="text-gray-400">
+                                    {i < _showPropertyCard.tile.rent.length - 2
+                                      ? `${i + 1} House${i === 0 ? "" : "s"}`
+                                      : "Hotel"}
+                                  </span>
+                                  <span className="text-white">${r}</span>
+                                </div>
+                              ))}
+                          </>
+                        )}
                       </div>
+                    </div>
+                  )}
+                  {_showPropertyCard.tile.description && (
+                    <div className="pt-3 border-t border-white/10">
+                      <div className="text-gray-300 font-semibold mb-2 text-xs">
+                        📍 About
+                      </div>
+                      <p className="text-gray-300 text-xs leading-relaxed">
+                        {_showPropertyCard.tile.description}
+                      </p>
                     </div>
                   )}
                 </div>

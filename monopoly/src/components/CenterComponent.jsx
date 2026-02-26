@@ -13,6 +13,8 @@ const CenterComponent = ({
   isAnimating,
   onRollDice,
   onEndTurn,
+  onPayJailFee,
+  isJailAutoEnding,
   currentPlayer,
   isPendingAction,
   isPendingDebt,
@@ -33,7 +35,8 @@ const CenterComponent = ({
     (!isEndState && hasRolled) ||
     (!isEndState && !isMyTurn) ||
     isPendingAction ||
-    isPendingDebt;
+    isPendingDebt ||
+    isJailAutoEnding;
   const buttonTone = isEndState
     ? "bg-indigo-500/80 border-indigo-400/60 hover:bg-indigo-500"
     : `${rollBg} border-white/20 hover:opacity-90`;
@@ -68,6 +71,25 @@ const CenterComponent = ({
       {/* Control Panel at Bottom */}
       {showControls && (
         <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-60 flex flex-col items-center gap-4 max-w-sm w-[min(420px,90vw)]">
+          {/* Jail Payment Button - Only show when in jail AND not during auto-ending turn */}
+          {currentPlayer?.inJail && !isJailAutoEnding && (
+            <button
+              onClick={onPayJailFee}
+              disabled={isAnimating || currentPlayer.money < 50}
+              className={`mx-auto px-6 py-2.5 text-sm font-semibold rounded-lg
+    border backdrop-blur-md transition-all
+    shadow-[0_10px_30px_-12px_rgba(0,0,0,0.9)]
+    ${
+      isAnimating || currentPlayer.money < 50
+        ? "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+        : "bg-linear-to-r from-amber-500 to-amber-600 border-amber-400/30 text-white hover:-translate-y-0.5 hover:shadow-amber-500/25"
+    }`}
+            >
+              🔓 Pay Rs.50 to Exit Jail
+            </button>
+          )}
+
+          
           <button
             onClick={actionHandler}
             disabled={actionDisabled}

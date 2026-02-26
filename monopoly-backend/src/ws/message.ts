@@ -78,6 +78,17 @@ export type ClientMessage =
       type: "DECLARE_BANKRUPTCY";
       gameId: string;
       playerId: string; // Player declaring bankruptcy
+    }
+  | {
+      type: "VOTE_KICK";
+      gameId: string;
+      playerId: string;
+      targetPlayerId: string;
+    }
+  | {
+      type: "PAY_TO_EXIT_JAIL";
+      gameId: string;
+      playerId: string;
     };
 
 export type ServerMessage =
@@ -89,4 +100,35 @@ export type ServerMessage =
   | {
       type: "ERROR";
       message: string;
+    }
+  | {
+      type: "INACTIVITY_WARNING";
+      gameId: string;
+      playerId: string;
+      secondsRemaining: number;
+    }
+  | {
+      type: "INACTIVITY_RESOLVED";
+      gameId: string;
+      playerId: string;
+    }
+  | {
+      type: "VOTE_KICK_AVAILABLE";
+      gameId: string;
+      targetPlayerId: string;
+      targetPlayerName: string;
+      requiredVotes: number;
+    }
+  | {
+      type: "VOTE_KICK_STATUS";
+      gameId: string;
+      targetPlayerId: string;
+      voterIds: string[];
+      requiredVotes: number;
+    }
+  | {
+      type: "PLAYER_KICKED";
+      gameId: string;
+      playerId: string;
+      reason: "VOTE_KICK";
     };

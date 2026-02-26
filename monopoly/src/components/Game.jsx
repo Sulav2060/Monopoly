@@ -92,6 +92,9 @@ const Game = () => {
   const [selectedMortgageTiles, setSelectedMortgageTiles] = useState([]);
   const [showRules, setShowRules] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [inactivityWarning, setInactivityWarning] = useState(null);
+  const [voteKickStatus, setVoteKickStatus] = useState(null);
+  const [isJailAutoEnding, setIsJailAutoEnding] = useState(false);
   const [eventCards, setEventCards] = useState([]);
   const [pendingEventCards, setPendingEventCards] = useState([]);
   const [pendingSounds, setPendingSounds] = useState([]);
@@ -191,6 +194,13 @@ const Game = () => {
       },
       ...prev.slice(0, 19), // Keep last 20 logs
     ]);
+  };
+
+  const getPendingActionPlayerId = (pendingAction) => {
+    if (!pendingAction) return null;
+    if (pendingAction.playerId) return pendingAction.playerId;
+    if (pendingAction.property?.playerId) return pendingAction.property.playerId;
+    return null;
   };
 
   const formatEventMessage = (event, game) => {
@@ -584,6 +594,79 @@ const Game = () => {
     };
   }, [currentGame?.id, currentPlayerId]);
 
+  useEffect(() => {
+    if (!currentGame || !currentPlayerId) return;
+
+    const handleWarning = (message) => {
+      console.log("📢 Inactivity warning received:", message);
+      setInactivityWarning(message);
+      if (message.playerId === currentPlayerId) {
+        showNotification(
+          "You are inactive. Take action within 30 seconds to avoid being kicked.",
+          "error",
+        );
+      }
+    };
+
+    const handleInactivityResolved = (message) => {
+      console.log("✅ Inactivity resolved:", message);
+      // Clear warning and voting status for this player
+      setInactivityWarning((prev) =>
+        prev?.playerId === message.playerId ? null : prev,
+      );
+      setVoteKickStatus((prev) =>
+        prev?.targetPlayerId === message.playerId ? null : prev,
+      );
+    };
+
+    const handleVoteAvailable = (message) => {
+      console.log("🔨 Vote kick available received:", message);
+      setVoteKickStatus({
+        gameId: message.gameId,
+        targetPlayerId: message.targetPlayerId,
+        voterIds: [],
+        requiredVotes: message.requiredVotes,
+      });
+      // Don't show notification - the banner UI is more prominent
+    };
+
+    const handleVoteStatus = (message) => {
+      console.log("📊 Vote status update received:", message);
+      setVoteKickStatus((prev) =>
+        prev && prev.targetPlayerId === message.targetPlayerId
+          ? {
+              ...prev,
+              voterIds: message.voterIds,
+              requiredVotes: message.requiredVotes,
+            }
+          : prev,
+      );
+    };
+
+    const handlePlayerKicked = (message) => {
+      console.log("👢 Player kicked:", message);
+      const kickedPlayer = currentGame?.players?.find(
+        (player) => player.id === message.playerId,
+      );
+      const name = kickedPlayer?.name || "Player";
+      showNotification(`${name} was kicked by player vote.`, "error");
+    };
+
+    wsClient.on("INACTIVITY_WARNING", handleWarning);
+    wsClient.on("INACTIVITY_RESOLVED", handleInactivityResolved);
+    wsClient.on("VOTE_KICK_AVAILABLE", handleVoteAvailable);
+    wsClient.on("VOTE_KICK_STATUS", handleVoteStatus);
+    wsClient.on("PLAYER_KICKED", handlePlayerKicked);
+
+    return () => {
+      wsClient.off("INACTIVITY_WARNING", handleWarning);
+      wsClient.off("INACTIVITY_RESOLVED", handleInactivityResolved);
+      wsClient.off("VOTE_KICK_AVAILABLE", handleVoteAvailable);
+      wsClient.off("VOTE_KICK_STATUS", handleVoteStatus);
+      wsClient.off("PLAYER_KICKED", handlePlayerKicked);
+    };
+  }, [currentGame, currentPlayerId]);
+
   // Reset hasRolled when turn changes
   useEffect(() => {
     const currentTurnIndex = currentGame?.currentTurnIndex;
@@ -696,12 +779,33 @@ const Game = () => {
       }
 
       if (cardEvents.length > 0) {
+        // Separate jail events for immediate display
+        const jailEvents = cardEvents.filter((e) => e.type === "PLAYER_SENT_TO_JAIL");
+        const passedGoEvents = cardEvents.filter((e) => e.type === "PASSED_GO");
+        const otherEvents = cardEvents.filter(
+          (e) => e.type !== "PASSED_GO" && e.type !== "PLAYER_SENT_TO_JAIL"
+        );
+
+        // Show jail cards immediately (for 3 doubles scenario)
+        if (jailEvents.length > 0) {
+          setEventCards((prev) => {
+            const filteredPrev = prev.filter((c) => c.type !== "PLAYER_SENT_TO_JAIL");
+            const newCards = [...filteredPrev, ...jailEvents];
+            if (eventCardTimeoutRef.current) {
+              clearTimeout(eventCardTimeoutRef.current);
+            }
+            eventCardTimeoutRef.current = setTimeout(
+              () => setEventCards([]),
+              4000,
+            );
+            return newCards;
+          });
+        }
+
         // If there's a COMMUNITY_CHEST event with PASSED_GO, queue them in correct order
         const hasCommunityChestOrChance = cardEvents.some(
           (evt) => evt.type === "COMMUNITY_CHEST",
         );
-        const passedGoEvents = cardEvents.filter((e) => e.type === "PASSED_GO");
-        const otherEvents = cardEvents.filter((e) => e.type !== "PASSED_GO");
 
         // If there's a community chest/chance card with PASSED_GO, queue in proper order
         if (hasCommunityChestOrChance && passedGoEvents.length > 0) {
@@ -909,6 +1013,41 @@ const Game = () => {
     isLoadingAction,
     currentGame,
     contextEndTurn,
+    currentPlayerId,
+    showNotification,
+  ]);
+
+  // Pay Rs.50 to Exit Jail
+  const payJailFee = useCallback(async () => {
+    if (isLoadingAction || !currentGame) return;
+
+    const currentPlayer = currentGame?.players?.find(
+      (player) => player.id === currentPlayerId,
+    );
+    
+    if (!currentPlayer || !currentPlayer.inJail) {
+      showNotification("❌ You are not in jail!", "error");
+      return;
+    }
+
+    if (currentPlayer.money < 50) {
+      showNotification("❌ You need Rs.50 to exit jail!", "error");
+      return;
+    }
+
+    try {
+      setIsLoadingAction(true);
+      wsClient.payToExitJail();
+      showNotification("✅ You paid Rs.50 to exit jail!", "success");
+    } catch (error) {
+      showNotification(error.message || "Failed to pay jail fee", "error");
+      console.error("Pay jail fee failed:", error);
+    } finally {
+      setIsLoadingAction(false);
+    }
+  }, [
+    isLoadingAction,
+    currentGame,
     currentPlayerId,
     showNotification,
   ]);
@@ -1286,6 +1425,28 @@ const Game = () => {
   const isCurrentUserBankrupt = currentUser?.isBankrupt ?? false;
   const isCurrentUserInDebt = !!currentUser?.debtResolution;
   const isMyTurn = currentPlayer?.id === currentPlayerId;
+  
+  // Determine which player is being tracked for inactivity
+  // Priority: 1) pending action, 2) inactivity warning, 3) vote kick status
+  const pendingActionPlayerId = 
+    getPendingActionPlayerId(currentGame?.pendingAction) ||
+    inactivityWarning?.playerId ||
+    voteKickStatus?.targetPlayerId ||
+    null;
+  
+  const pendingActionPlayer = currentGame?.players?.find(
+    (player) => player.id === pendingActionPlayerId,
+  );
+  
+  const activeVoteKickStatus = voteKickStatus?.targetPlayerId ? voteKickStatus : null;
+  
+  const hasVotedKick = activeVoteKickStatus?.voterIds?.includes(
+    currentPlayerId,
+  );
+  const canVoteKick =
+    !!pendingActionPlayerId &&
+    pendingActionPlayerId !== currentPlayerId &&
+    !isCurrentUserBankrupt;
 
   // Detect debt resolution and notify user
   const previousDebtRef = useRef(false);
@@ -1305,6 +1466,74 @@ const Game = () => {
 
     previousDebtRef.current = isInDebt;
   }, [currentUser?.debtResolution, showNotification]);
+
+  // Force end turn when player is sent to jail (on first entry only, not every turn)
+  // Track which players have had their turn auto-ended for jail
+  const jailAutoEndedPlayersRef = useRef(new Set());
+  
+  useEffect(() => {
+    if (!currentPlayer || !isMyTurn || !currentGame) {
+      setIsJailAutoEnding(false);
+      return;
+    }
+
+    const nowInJail = currentPlayer.inJail;
+    const jailTurns = currentPlayer.jailTurns ?? 0;
+    const playerId = currentPlayer.id;
+
+    // Clear tracking when player exits jail
+    if (!nowInJail && jailAutoEndedPlayersRef.current.has(playerId)) {
+      jailAutoEndedPlayersRef.current.delete(playerId);
+      setIsJailAutoEnding(false);
+      return;
+    }
+
+    // Only auto-end turn if:
+    // 1. Player is in jail
+    // 2. jailTurns is 0 (first turn in jail, before any roll attempts)
+    // 3. We haven't already auto-ended this player's turn for this jail entry
+    if (nowInJail && jailTurns === 0 && !jailAutoEndedPlayersRef.current.has(playerId)) {
+      // Mark this player as having their turn auto-ended
+      jailAutoEndedPlayersRef.current.add(playerId);
+      setIsJailAutoEnding(true);
+      
+      // Send END_TURN directly to force turn to end
+      const timeout = setTimeout(() => {
+        try {
+          wsClient.endTurn();
+          console.log("🚔 Forced end turn for newly jailed player", playerId);
+        } catch (error) {
+          console.error("Failed to end turn:", error);
+        }
+      }, 300);
+      
+      return () => clearTimeout(timeout);
+    } else {
+      setIsJailAutoEnding(false);
+    }
+  }, [currentPlayer?.inJail, currentPlayer?.jailTurns, currentPlayer?.id, isMyTurn, currentGame]);
+
+  useEffect(() => {
+    if (!pendingActionPlayerId) {
+      if (inactivityWarning) setInactivityWarning(null);
+      if (voteKickStatus) setVoteKickStatus(null);
+      return;
+    }
+
+    if (
+      inactivityWarning &&
+      inactivityWarning.playerId !== pendingActionPlayerId
+    ) {
+      setInactivityWarning(null);
+    }
+
+    if (
+      voteKickStatus &&
+      voteKickStatus.targetPlayerId !== pendingActionPlayerId
+    ) {
+      setVoteKickStatus(null);
+    }
+  }, [pendingActionPlayerId, inactivityWarning, voteKickStatus]);
   const gameOverEvent = currentGame?.events
     ?.slice()
     .reverse()
@@ -1556,6 +1785,53 @@ const Game = () => {
         </div>
       )}
 
+      {(inactivityWarning || activeVoteKickStatus) && pendingActionPlayer && (
+        <div className={`fixed top-6 left-1/2 z-40 -translate-x-1/2 px-5 py-3 rounded-xl border backdrop-blur-md text-amber-100 flex items-center gap-4 ${
+          activeVoteKickStatus && !inactivityWarning
+            ? "border-red-400/40 bg-red-500/10 shadow-[0_12px_40px_-18px_rgba(239,68,68,0.8)]"
+            : "border-amber-400/40 bg-amber-500/10 shadow-[0_12px_40px_-18px_rgba(245,158,11,0.8)]"
+        }`}>
+          <div className="text-sm">
+            <span className="font-semibold">
+              {pendingActionPlayerId === currentPlayerId
+                ? "You are inactive"
+                : `${pendingActionPlayer?.name || "Player"} is inactive`}
+            </span>
+            {inactivityWarning?.playerId === pendingActionPlayerId && !activeVoteKickStatus && (
+              <span className="ml-2 text-amber-200/80">
+                {`Act within ${inactivityWarning.secondsRemaining}s`}
+              </span>
+            )}
+            {activeVoteKickStatus && !inactivityWarning && (
+              <span className="ml-2 text-red-200/80">
+                Vote to kick player
+              </span>
+            )}
+          </div>
+          {activeVoteKickStatus && (
+            <div className="text-xs text-amber-200/80">
+              Votes: {activeVoteKickStatus.voterIds.length}/
+              {activeVoteKickStatus.requiredVotes}
+            </div>
+          )}
+          {canVoteKick && activeVoteKickStatus && (
+            <button
+              onClick={() => {
+                wsClient.voteKick(pendingActionPlayerId);
+              }}
+              disabled={hasVotedKick}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                hasVotedKick
+                  ? "bg-white/10 border-white/10 text-amber-200/60 cursor-not-allowed"
+                  : "bg-red-500/80 border-red-400/70 text-white hover:-translate-y-0.5 hover:bg-red-600/80"
+              }`}
+            >
+              {hasVotedKick ? "Voted ✓" : "Vote Kick"}
+            </button>
+          )}
+        </div>
+      )}
+
       <div className="w-full h-full flex flex-col lg:flex-row gap-2 lg:gap-5 overflow-y-auto lg:overflow-hidden scrollbar-hide">
         {/* Left Sidebar - Players */}
         <div className="w-full lg:w-64 order-1 lg:order-1 shrink-0 bg-white/5 border border-white/10 rounded-2xl shadow-[0_10px_40px_-18px_rgba(0,0,0,0.9)] p-4 lg:p-5 flex flex-col gap-4 backdrop-blur-lg">
@@ -1727,6 +2003,8 @@ const Game = () => {
             isPendingDebt={isCurrentUserInDebt}
             onRollDice={rollDice}
             onEndTurn={endTurn}
+            onPayJailFee={payJailFee}
+            isJailAutoEnding={isJailAutoEnding}
             onRollComplete={() => {
               if (animationStep === "rotating") {
                 setAnimationStep("waving");

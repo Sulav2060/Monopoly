@@ -17,11 +17,20 @@ import { acceptTrade, rejectTrade, deleteTrade } from "../engine/finalizeTrade";
 import { mortgageProperty } from "../engine/mortgage";
 import { unmortgageProperty } from "../engine/unmortgage";
 import { bankruptPlayer } from "../engine/bankruptPlayer";
+import { payToExitJail } from "../engine/payToExitJail";
+import { createInactivityManager } from "./inactivityManager";
 
 type SocketMeta = { gameId: string; playerId: string };
 const socketMeta = new WeakMap<WebSocket, SocketMeta>();
+let inactivityManager: ReturnType<typeof createInactivityManager> | null = null;
 
 export function setupWebSocket(wss: WebSocketServer) {
+  if (!inactivityManager) {
+    inactivityManager = createInactivityManager((message) =>
+      safeBroadcast(wss, message),
+    );
+  }
+
   wss.on("connection", (socket: WebSocket) => {
     console.log("🔌 WebSocket client connected");
 
@@ -29,9 +38,9 @@ export function setupWebSocket(wss: WebSocketServer) {
       try {
         let msg: ClientMessage;
 
-        /* =======================
-           PARSE MESSAGE
-        ======================= */
+          /* =======================
+            PARSE MESSAGE
+          ======================= */
         try {
           msg = JSON.parse(raw.toString());
         } catch (err) {
@@ -41,6 +50,10 @@ export function setupWebSocket(wss: WebSocketServer) {
             message: "Invalid JSON format",
           });
           return;
+        }
+
+        if (inactivityManager && "playerId" in msg && msg.playerId) {
+          inactivityManager.recordPlayerActivity(msg.gameId, msg.playerId);
         }
 
         /* =======================
@@ -698,6 +711,70 @@ export function setupWebSocket(wss: WebSocketServer) {
         }
 
         /* =======================
+           VOTE_KICK
+        ======================= */
+        if (msg.type === "VOTE_KICK") {
+          if (!inactivityManager) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: "Vote kick is not available",
+            });
+            return;
+          }
+
+          const result = inactivityManager.recordVoteKick(
+            msg.gameId,
+            msg.playerId,
+            msg.targetPlayerId,
+          );
+
+          if (!result.ok) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: result.error,
+            });
+          }
+          return;
+        }
+
+        /* =======================
+           PAY_TO_EXIT_JAIL
+        ======================= */
+        if (msg.type === "PAY_TO_EXIT_JAIL") {
+          const game = getGame(msg.gameId);
+          if (!game) {
+            safeSend(socket, { type: "ERROR", message: "Game not found" });
+            return;
+          }
+
+          try {
+            const newState = payToExitJail(game.state, msg.playerId);
+            updateGame(msg.gameId, newState);
+
+            safeBroadcast(wss, {
+              type: "GAME_STATE_UPDATE",
+              gameId: msg.gameId,
+              state: newState,
+            });
+
+            // Record activity to reset inactivity timer
+            if (inactivityManager) {
+              inactivityManager.recordPlayerActivity(msg.gameId, msg.playerId);
+            }
+
+            console.log(
+              `🔓 Player ${msg.playerId} paid Rs.50 to exit jail in game ${msg.gameId}`,
+            );
+          } catch (err: any) {
+            safeSend(socket, {
+              type: "ERROR",
+              message: err.message || "Failed to pay jail fee",
+            });
+          }
+          return;
+        }
+
+        /* =======================
            UNKNOWN MESSAGE
         ======================= */
         console.warn("⚠️ Unknown message type:", msg);
@@ -741,8 +818,12 @@ function safeBroadcast(wss: WebSocketServer, message: ServerMessage) {
 
   // Extract target game ID if applicable
   let targetGameId: string | undefined;
-  if (message.type === "GAME_STATE_UPDATE") {
+  if ("gameId" in message) {
     targetGameId = message.gameId;
+  }
+
+  if (message.type === "GAME_STATE_UPDATE" && inactivityManager) {
+    inactivityManager.syncFromGameState(message.gameId, message.state);
   }
 
   wss.clients.forEach((client) => {

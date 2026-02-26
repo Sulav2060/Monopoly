@@ -76,6 +76,8 @@ const Game = () => {
 
   // UI States
   const [_showPropertyCard, setShowPropertyCard] = useState(null);
+  const [isHoveringPropertyCard, setIsHoveringPropertyCard] = useState(false);
+  const propertyCardTimeoutRef = useRef(null);
   const [showBuildMenu, setShowBuildMenu] = useState(false);
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showBankruptcyModal, setShowBankruptcyModal] = useState(false);
@@ -151,15 +153,27 @@ const Game = () => {
     }
   }, [_showPropertyCard, allPropertyTiles.length]);
 
-  // Auto-hide tile details after 5 seconds
+  // Auto-hide tile details after 4 seconds of no hover
   useEffect(() => {
-    if (_showPropertyCard) {
-      const timeout = setTimeout(() => {
-        setShowPropertyCard(null);
-      }, 5000); // Hide after 5 seconds
-      return () => clearTimeout(timeout);
+    // Clear any existing timeout
+    if (propertyCardTimeoutRef.current) {
+      clearTimeout(propertyCardTimeoutRef.current);
+      propertyCardTimeoutRef.current = null;
     }
-  }, [_showPropertyCard]);
+
+    // Only set timeout if property card is shown and not being hovered
+    if (_showPropertyCard && !isHoveringPropertyCard) {
+      propertyCardTimeoutRef.current = setTimeout(() => {
+        setShowPropertyCard(null);
+      }, 4000); // Hide after 4 seconds
+    }
+
+    return () => {
+      if (propertyCardTimeoutRef.current) {
+        clearTimeout(propertyCardTimeoutRef.current);
+      }
+    };
+  }, [_showPropertyCard, isHoveringPropertyCard]);
 
   const botTimerRef = useRef(null);
   const socketRef = useRef(null);
@@ -1957,7 +1971,11 @@ const Game = () => {
           </div>
 
           {/* Tile Details / Creative Space */}
-          <div className="border-t border-white/10 pt-3 flex-1 flex flex-col">
+          <div 
+            className="border-t border-white/10 pt-3 flex-1 flex flex-col overflow-auto [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-white/5 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:hover:bg-white/30"
+            onMouseEnter={() => setIsHoveringPropertyCard(true)}
+            onMouseLeave={() => setIsHoveringPropertyCard(false)}
+          >
             {_showPropertyCard ? (
               // Show tile details
               <div>
@@ -2103,77 +2121,6 @@ const Game = () => {
                   <p className="text-xs text-gray-500">
                     💡 Tip: Gather properties of the same color to build houses!
                   </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Image Display Section */}
-          <div className="border-t border-white/10 pt-3">
-            {_showPropertyCard ? (
-              // Show clicked tile's image
-              <div className="relative h-48 rounded-xl overflow-hidden group">
-                <img
-                  src={_showPropertyCard.tile.image}
-                  alt={_showPropertyCard.tile.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex items-end p-4">
-                  <div>
-                    <h5 className="text-white font-bold text-lg drop-shadow-lg">
-                      {_showPropertyCard.tile.title}
-                    </h5>
-                    <p className="text-white/80 text-xs">
-                      {_showPropertyCard.tile.type?.toUpperCase()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // Slideshow carousel
-              <div className="relative h-48 rounded-xl overflow-hidden">
-                <div
-                  className={`flex h-full w-full ${
-                    isTransitioning
-                      ? "transition-transform duration-700 ease-in-out"
-                      : ""
-                  }`}
-                  style={{
-                    transform: `translateX(-${carouselIndex * 100}%)`,
-                  }}
-                >
-                  {allPropertyTiles.map((tile, idx) => (
-                    <div key={idx} className="w-full h-full relative shrink-0">
-                      <img
-                        src={tile.image}
-                        alt={tile.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/30 to-transparent flex items-end p-4">
-                        <div className="w-full">
-                          <h5 className="text-white font-bold text-lg drop-shadow-lg mb-1">
-                            {tile.title}
-                          </h5>
-                          <p className="text-white/80 text-xs">
-                            {tile.type?.toUpperCase()}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {/* Carousel indicators */}
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1.5">
-                  {allPropertyTiles.slice(0, 10).map((_, idx) => (
-                    <div
-                      key={idx}
-                      className={`h-1.5 rounded-full transition-all ${
-                        idx === carouselIndex % 10
-                          ? "w-6 bg-white"
-                          : "w-1.5 bg-white/40"
-                      }`}
-                    />
-                  ))}
                 </div>
               </div>
             )}

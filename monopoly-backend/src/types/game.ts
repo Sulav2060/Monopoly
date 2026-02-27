@@ -70,7 +70,8 @@ export type GameEvent =
   //jail regarding events
   | { type: "PLAYER_SENT_TO_JAIL"; playerId: PlayerId }
   | { type: "JAIL_TURN_FAILED"; attempt: number }
-  | { type: "JAIL_EXITED"; reason: "DOUBLES" | "MAX_TURNS" }
+  | { type: "JAIL_EXITED"; reason: "DOUBLES" | "MAX_TURNS" | "PAID_FEE" }
+  | { type: "JAIL_FEE_PAID"; playerId: PlayerId; amount: number }
   //bankruptcy regarding events
   | {
       type: "PLAYER_BANKRUPT";

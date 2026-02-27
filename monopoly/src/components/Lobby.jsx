@@ -187,7 +187,7 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
               NE-POLY
             </h1>
             <p className="text-white/60 text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em]">
-              Expedition Waiting Room
+              Nepal Themed Monopoly
             </p>
           </div>
         </div>
@@ -200,13 +200,13 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
               <div className="flex items-center gap-2 mb-4 sm:mb-8">
                 <Ticket className="text-[#FFD700]" size={20} />
                 <span className="text-[8px] sm:text-xs font-black uppercase tracking-widest text-white/50">
-                  Access Permit
+                  Joined Players
                 </span>
               </div>
 
               <div className="space-y-1">
                 <label className="text-[8px] sm:text-[10px] font-bold text-white/30 uppercase tracking-tighter">
-                  Room Identifier
+                  Room Code
                 </label>
                 <div className="text-3xl sm:text-4xl md:text-5xl font-black text-white tracking-widest mb-4 sm:mb-6">
                   {currentGame?.id || "----"}
@@ -271,7 +271,10 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
                 </button>
               ) : (
                 <div className="flex items-center gap-2 sm:gap-3 bg-white/5 p-2 sm:p-4 rounded-xl border border-white/5">
-                  <Loader2 size={14} className="animate-spin text-[#FFD700] flex-shrink-0" />
+                  <Loader2
+                    size={14}
+                    className="animate-spin text-[#FFD700] flex-shrink-0"
+                  />
                   <span className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-white/40">
                     Waiting for Host...
                   </span>
@@ -286,7 +289,7 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
               <div className="flex items-center gap-2">
                 <Users className="text-[#00205B]" size={18} />
                 <h3 className="text-xs sm:text-sm font-black uppercase tracking-widest text-[#00205B]">
-                  Expedition Members
+                  Players
                 </h3>
               </div>
               <Map className="text-gray-200" size={18} />
@@ -359,7 +362,6 @@ const Lobby = ({ currentGame, currentPlayerId, isHost, onStartGame }) => {
                 );
               })}
             </div>
-            
           </div>
         </div>
       </motion.div>

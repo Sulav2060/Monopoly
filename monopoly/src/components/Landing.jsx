@@ -60,21 +60,9 @@ const Landing = ({
 
   // --- Fun Nepal-Themed / Generic Names ---
   const PLAYER_NAMES = [
-    "Sherpa",
-    "Yeti",
-    "Gurkha",
-    "Danfe",
-    "Everest",
-    "Lumbini",
-    "Rhino",
-    "Tiger",
-    "Momo",
-    "DalBhat",
-    "Patan",
-    "Koshi",
-    "Gandaki",
-    "Karnali",
-    "Guras",
+    "Bob", "Max", "Leo", "Alex", "Sam", "Emma", "Zoe", "Mia", "Ava", "Ivy",
+    "Jack", "Tom", "Dan", "Ben", "Kai", "Lily", "Eva", "Anna", "Nina", "Ren",
+    "Rio", "Ash", "Rey", "Sage", "Sky", "Nash", "Beck", "Felix", "Rohan", "Sera"
   ];
 
   const generateRandomName = () => {

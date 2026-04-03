@@ -11,4 +11,10 @@ export function rollDice(): DiceRoll {
     // die1: 6,
     // die2: 4,
   };
+  // const results = [];
+  // for (let i = 0; i < 1000; i++) {
+  //   const roll = rollDice();
+  //   results.push({ ...roll, total: roll.die1 + roll.die2 });
+  // }
+  // console.log(JSON.stringify(results, null, 2));
 }
